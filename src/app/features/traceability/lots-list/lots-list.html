@@ -1,0 +1,22 @@
+<div class="bg-white rounded shadow p-6">
+  <h2 class="text-lg font-semibold mb-4">Lotes</h2>
+
+  <table class="w-full border-collapse text-sm">
+    <thead>
+      <tr class="bg-gray-100 text-left">
+        <th class="border px-3 py-2">Código</th>
+        <th class="border px-3 py-2">Estado</th>
+        <th class="border px-3 py-2">Origen</th>
+        <th class="border px-3 py-2">Ubicación actual</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let lot of lots" class="hover:bg-gray-50">
+        <td class="border px-3 py-2">{{ lot.code }}</td>
+        <td class="border px-3 py-2">{{ lot.status }}</td>
+        <td class="border px-3 py-2">{{ lot.origin }}</td>
+        <td class="border px-3 py-2">{{ lot.currentLocation }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
