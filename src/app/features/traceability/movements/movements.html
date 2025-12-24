@@ -1,1 +1,172 @@
-<p>movements works!</p>
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Movimientos</h3>
+      <p class="ui-subtitle">Modo rápido (escaneo) + kardex + reglas de estado.</p>
+    </div>
+  </div>
+
+  <!-- Scan + Form -->
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="ui-surface p-5 xl:col-span-1">
+      <p class="text-sm font-semibold mb-3">Escaneo / Selección</p>
+
+      <div class="space-y-3">
+        <div>
+          <label class="ui-label">Escanear lote (QR/Barcode)</label>
+          <input
+            [(ngModel)]="scanCode"
+            (keydown.enter)="onScanEnter()"
+            class="ui-input"
+            placeholder="LOT-MP-0001"
+          />
+          <p class="text-[11px] text-slate-500 mt-1">Enter para cargar el lote.</p>
+        </div>
+
+        <div *ngIf="error" class="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200">
+          {{ error }}
+        </div>
+        <div *ngIf="success" class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+          {{ success }}
+        </div>
+
+        <div *ngIf="selectedLot" class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
+          <div class="text-sm font-semibold">{{ selectedLot.code }}</div>
+          <div class="text-xs text-slate-400 mt-1">{{ selectedLot.description }}</div>
+          <div class="text-xs text-slate-300 mt-2">
+            Stock: <b class="text-slate-100">{{ selectedLot.qty }} {{ selectedLot.uom }}</b>
+            · Ubicación: <b class="text-slate-100">{{ selectedLot.location }}</b>
+          </div>
+          <div class="text-xs text-slate-300 mt-1">
+            Estado: <span class="ui-badge">{{ selectedLot.status }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ui-surface p-5 xl:col-span-2">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Registrar movimiento</p>
+        <span class="text-[11px] text-slate-500">Se aplica sobre el lote seleccionado</span>
+      </div>
+
+      <form (ngSubmit)="submit()" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="md:col-span-1">
+          <label class="ui-label">Tipo</label>
+          <select [(ngModel)]="form.type" name="type" class="ui-select">
+            <option value="TRANSFER">Transferencia</option>
+            <option value="CONSUME">Consumo</option>
+            <option value="ADJUST">Ajuste</option>
+            <option value="SCRAP">Merma</option>
+          </select>
+        </div>
+
+        <div class="md:col-span-1">
+          <label class="ui-label">Cantidad</label>
+          <input type="number" [(ngModel)]="form.qty" name="qty" min="0" class="ui-input" />
+        </div>
+
+        <div class="md:col-span-1">
+          <label class="ui-label">UoM</label>
+          <input [(ngModel)]="form.uom" name="uom" class="ui-input" placeholder="kg" />
+        </div>
+
+        <div class="md:col-span-3">
+          <label class="ui-label">Destino (para transferencia)</label>
+          <input [(ngModel)]="form.toLocation" name="toLocation" class="ui-input" placeholder="ALM-01/R2/N1" />
+        </div>
+
+        <div>
+          <label class="ui-label">Orden (opcional)</label>
+          <input [(ngModel)]="form.orderCode" name="orderCode" class="ui-input" placeholder="OP-0001" />
+        </div>
+
+        <div>
+          <label class="ui-label">Operación (opcional)</label>
+          <input [(ngModel)]="form.operation" name="operation" class="ui-input" placeholder="Hilado / Bobinado" />
+        </div>
+
+        <div>
+          <label class="ui-label">Máquina (opcional)</label>
+          <input [(ngModel)]="form.machineCode" name="machineCode" class="ui-input" placeholder="MC-001" />
+        </div>
+
+        <div>
+          <label class="ui-label">Turno</label>
+          <input [(ngModel)]="form.shiftCode" name="shiftCode" class="ui-input" placeholder="A" />
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="ui-label">Motivo / Nota</label>
+          <input [(ngModel)]="form.reason" name="reason" class="ui-input" placeholder="Motivo (merma/ajuste)..." />
+        </div>
+
+        <div class="md:col-span-3">
+          <label class="ui-label">Observación</label>
+          <input [(ngModel)]="form.note" name="note" class="ui-input" placeholder="Detalle del movimiento..." />
+        </div>
+
+        <div class="md:col-span-3 flex gap-2 pt-2">
+          <button type="submit" class="ui-btn-primary flex-1">Aplicar movimiento</button>
+          <button type="button" class="ui-btn-ghost" (click)="resolveLot()">Recargar lote</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Kardex -->
+  <div class="ui-surface p-5">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <div>
+        <p class="text-sm font-semibold">Kardex / Historial</p>
+        <p class="text-xs text-slate-400 mt-1">Filtra por tipo y texto. (Luego: export y paginación)</p>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <input [(ngModel)]="q" class="ui-input w-64" placeholder="Buscar en movimientos..." />
+
+        <select [(ngModel)]="type" class="ui-select">
+          <option value="ALL">Todos</option>
+          <option value="TRANSFER">Transferencia</option>
+          <option value="CONSUME">Consumo</option>
+          <option value="ADJUST">Ajuste</option>
+          <option value="SCRAP">Merma</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead class="ui-thead">
+          <tr>
+            <th class="ui-th">Fecha</th>
+            <th class="ui-th">Tipo</th>
+            <th class="ui-th">Lote</th>
+            <th class="ui-th">Cantidad</th>
+            <th class="ui-th">Origen</th>
+            <th class="ui-th">Destino</th>
+            <th class="ui-th">Orden/Op</th>
+            <th class="ui-th">Usuario</th>
+          </tr>
+        </thead>
+
+        <tbody class="bg-slate-950/20">
+          <tr *ngFor="let m of movements" class="ui-tr">
+            <td class="ui-td">{{ m.at }}</td>
+            <td class="ui-td"><span [ngClass]="badgeType(m.type)">{{ m.type }}</span></td>
+            <td class="ui-td">{{ m.lotCode }}</td>
+            <td class="ui-td">{{ m.qty }} {{ m.uom }}</td>
+            <td class="ui-td">{{ m.fromLocation || '-' }}</td>
+            <td class="ui-td">{{ m.toLocation || '-' }}</td>
+            <td class="ui-td">{{ (m.orderCode || '-') }} / {{ (m.operation || '-') }}</td>
+            <td class="ui-td">{{ m.by }}</td>
+          </tr>
+
+          <tr *ngIf="movements.length === 0">
+            <td colspan="8" class="px-4 py-10 text-center text-slate-500">Aún no hay movimientos registrados.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

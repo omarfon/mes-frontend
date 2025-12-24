@@ -104,7 +104,7 @@
   </a>
 </div>
 
-        <!-- TRAZABILIDAD (grupo desplegable) -->
+<!-- TRAZABILIDAD (grupo desplegable) -->
 <button
   type="button"
   (click)="toggle('traceability')"
@@ -115,45 +115,42 @@
     Trazabilidad
   </span>
 
-  <i
-    class="pi pi-chevron-down text-xs text-slate-400 transition"
-    [class.rotate-180]="open.traceability"
-  ></i>
+  <i class="pi pi-chevron-down text-xs text-slate-400 transition"
+     [class.rotate-180]="open.traceability"></i>
 </button>
 
 <div *ngIf="open.traceability" class="mt-2 ml-2 space-y-1">
-  <a
-    routerLink="/traceability/lots"
-    routerLinkActive="bg-slate-800/60 text-white"
-    class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition"
-  >
-    Lotes
-  </a>
+  <a routerLink="/traceability/lots" routerLinkActive="bg-slate-800/60 text-white"
+     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Lotes</a>
 
-  <a
-    routerLink="/traceability/movements"
-    routerLinkActive="bg-slate-800/60 text-white"
-    class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition"
-  >
-    Movimientos
-  </a>
+  <a routerLink="/traceability/movements" routerLinkActive="bg-slate-800/60 text-white"
+     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Movimientos</a>
 
-  <a
-    routerLink="/traceability/genealogy"
-    routerLinkActive="bg-slate-800/60 text-white"
-    class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition"
-  >
-    Genealogía
-  </a>
+  <a routerLink="/traceability/genealogy" routerLinkActive="bg-slate-800/60 text-white"
+     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Genealogía</a>
 
-  <a
-    routerLink="/traceability/audit"
-    routerLinkActive="bg-slate-800/60 text-white"
-    class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition"
-  >
-    Auditoría
-  </a>
+  <a routerLink="/traceability/serials" routerLinkActive="bg-slate-800/60 text-white"
+     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Seriales / Unidades</a>
+
+  <a routerLink="/traceability/quarantine" routerLinkActive="bg-slate-800/60 text-white"
+     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Cuarentena / Bloqueos</a>
+
+  <a routerLink="/traceability/warehouse-map" routerLinkActive="bg-slate-800/60 text-white"
+     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Ubicaciones / Mapa</a>
+
+  <a routerLink="/traceability/search" routerLinkActive="bg-slate-800/60 text-white"
+     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Búsqueda avanzada</a>
+
+  <a routerLink="/traceability/labels" routerLinkActive="bg-slate-800/60 text-white"
+     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Etiquetas / Impresión</a>
+
+  <a routerLink="/traceability/audit" routerLinkActive="bg-slate-800/60 text-white"
+     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Auditoría / Eventos</a>
+
+  <a routerLink="/traceability/integrations" routerLinkActive="bg-slate-800/60 text-white"
+     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Integraciones</a>
 </div>
+
 
 
         <a

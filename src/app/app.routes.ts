@@ -27,7 +27,7 @@ export const routes: Routes = [
           import('./features/dashboard/dashboard/dashboard').then(m => m.Dashboard),
       },
       {
-        path: 'traceability/lots',
+        path: 'traceability/lots-list',
         loadComponent: () =>
           import('./features/traceability/lots-list/lots-list').then(m => m.LotsListComponent),
       },
@@ -51,10 +51,10 @@ export const routes: Routes = [
      import('./features/master-data/master-data.routes').then(m => m.MASTER_DATA_ROUTES),
       },
         {
-    path: 'production',
-    loadChildren: () =>
-      import('./features/production/productions.routes').then((m) => m.PRODUCTION_ROUTES),
-      },
+      path: 'production',
+      loadChildren: () =>
+        import('./features/production/productions.routes').then((m) => m.PRODUCTION_ROUTES),
+        },
       {
         path: 'traceability',
         loadChildren: () =>

@@ -1,1 +1,317 @@
-<p>lots works!</p>
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Lotes</h3>
+      <p class="ui-subtitle">Gestión moderna de lotes con detalle, eventos y acciones rápidas.</p>
+    </div>
+
+    <div class="flex gap-2">
+      <button class="ui-btn-primary text-xs" (click)="newLot()">Nuevo lote</button>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="ui-surface p-5">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div>
+        <label class="ui-label">Buscar</label>
+        <input [(ngModel)]="q" class="ui-input" placeholder="LOT-..., material, ubicación, proveedor..." />
+      </div>
+
+      <div>
+        <label class="ui-label">Tipo</label>
+        <select [(ngModel)]="type" class="ui-select">
+          <option value="ALL">Todos</option>
+          <option value="MP">MP</option>
+          <option value="WIP">WIP</option>
+          <option value="PT">PT</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="ui-label">Estado</label>
+        <select [(ngModel)]="status" class="ui-select">
+          <option value="ALL">Todos</option>
+          <option value="AVAILABLE">Disponible</option>
+          <option value="IN_PROCESS">En proceso</option>
+          <option value="QUARANTINE">Cuarentena</option>
+          <option value="BLOCKED">Bloqueado</option>
+          <option value="CONSUMED">Consumido</option>
+          <option value="CLOSED">Cerrado</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="ui-label">Ubicación</label>
+        <select [(ngModel)]="location" class="ui-select">
+          <option value="ALL">Todas</option>
+          <option *ngFor="let l of locations" [value]="l">{{ l }}</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="ui-surface p-5">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-sm font-semibold">Listado</p>
+      <span class="text-[11px] text-slate-500">{{ filtered.length }} lotes</span>
+    </div>
+
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead class="ui-thead">
+          <tr>
+            <th class="ui-th">Lote</th>
+            <th class="ui-th">Tipo</th>
+            <th class="ui-th">Ítem</th>
+            <th class="ui-th">Cantidad</th>
+            <th class="ui-th">Ubicación</th>
+            <th class="ui-th">Estado</th>
+            <th class="ui-th w-40">Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody class="bg-slate-950/20">
+          <tr *ngFor="let lot of filtered" class="ui-tr">
+            <td class="ui-td">
+              <div class="font-medium text-slate-100">{{ lot.code }}</div>
+              <div class="text-xs text-slate-400 mt-1">{{ lot.description }}</div>
+            </td>
+
+            <td class="ui-td">
+              <span class="text-[11px] px-2 py-1 rounded-full border"
+                    [ngClass]="typeBadge(lot.type)">{{ lot.type }}</span>
+            </td>
+
+            <td class="ui-td">
+              <div class="text-slate-200">{{ lot.itemCode }}</div>
+              <div class="text-xs text-slate-500 mt-1">{{ lot.supplier || '-' }}</div>
+            </td>
+
+            <td class="ui-td">{{ lot.qty }} {{ lot.uom }}</td>
+            <td class="ui-td">{{ lot.location }}</td>
+
+            <td class="ui-td">
+              <span [ngClass]="statusBadge(lot.status)">{{ lot.status }}</span>
+            </td>
+
+            <td class="ui-td">
+              <div class="flex gap-2">
+                <button class="ui-btn-ghost text-xs" (click)="openDrawer(lot)">Ver</button>
+                <button class="ui-btn-ghost text-xs" (click)="openDrawer(lot); startEdit()">Editar</button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="filtered.length === 0">
+            <td colspan="7" class="px-4 py-10 text-center text-slate-500">No hay lotes con esos filtros.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Drawer -->
+  <div *ngIf="drawerOpen" class="fixed inset-0 z-50">
+    <!-- overlay -->
+    <div class="absolute inset-0 bg-black/60" (click)="closeDrawer()"></div>
+
+    <!-- panel -->
+    <div class="absolute right-0 top-0 h-full w-full sm:w-[520px] bg-slate-950 border-l border-slate-800/70 shadow-2xl">
+      <div class="h-full flex flex-col">
+        <!-- header -->
+        <div class="p-5 border-b border-slate-800/70 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-sm text-slate-400">{{ activeLot ? 'Detalle de lote' : 'Nuevo lote' }}</div>
+            <div class="text-lg font-semibold text-slate-100">{{ (form.code || activeLot?.code) ?? '-' }}</div>
+          </div>
+
+          <div class="flex gap-2">
+            <button class="ui-btn-ghost text-xs" (click)="closeDrawer()">Cerrar</button>
+            <button class="ui-btn-primary text-xs" (click)="saveLot()" [disabled]="!editing">Guardar</button>
+          </div>
+        </div>
+
+        <!-- body -->
+        <div class="flex-1 overflow-auto p-5 space-y-4">
+
+          <!-- Quick actions -->
+          <div *ngIf="activeLot" class="rounded-2xl border border-slate-800/70 bg-slate-950/40 p-4">
+            <div class="flex items-center justify-between mb-3">
+              <p class="text-sm font-semibold">Acciones rápidas</p>
+              <div class="flex gap-2">
+                <button class="ui-btn-ghost text-xs" (click)="printLabel()">Imprimir</button>
+                <button class="ui-btn-ghost text-xs" (click)="startEdit()">Editar</button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3">
+              <div class="flex gap-2">
+                <input [(ngModel)]="moveTo" class="ui-input" placeholder="Mover a ubicación (ej: ALM-01/R2/N1)" />
+                <button class="ui-btn-primary text-xs" (click)="moveLot()">Mover</button>
+              </div>
+
+              <div class="flex gap-2">
+                <input [(ngModel)]="blockReason" class="ui-input" placeholder="Motivo de bloqueo" />
+                <button class="ui-btn-danger text-xs" (click)="blockLot()">Bloquear</button>
+              </div>
+
+              <div class="flex gap-2">
+                <button class="ui-btn-ghost text-xs flex-1" (click)="quarantineLot()">Cuarentena</button>
+                <button class="ui-btn-primary text-xs flex-1" (click)="releaseLot()">Liberar</button>
+              </div>
+
+              <div class="flex gap-2">
+                <input [(ngModel)]="noteText" class="ui-input" placeholder="Agregar nota..." />
+                <button class="ui-btn-ghost text-xs" (click)="addNote()">Agregar</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form fields -->
+          <div class="rounded-2xl border border-slate-800/70 bg-slate-950/40 p-4">
+            <div class="flex items-center justify-between mb-3">
+              <p class="text-sm font-semibold">Datos</p>
+              <span class="text-[11px] text-slate-500" *ngIf="!editing">Solo lectura</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div class="col-span-2">
+                <label class="ui-label">Código</label>
+                <input [(ngModel)]="form.code" [disabled]="!editing" class="ui-input" />
+              </div>
+
+              <div>
+                <label class="ui-label">Tipo</label>
+                <select [(ngModel)]="form.type" [disabled]="!editing" class="ui-select">
+                  <option value="MP">MP</option>
+                  <option value="WIP">WIP</option>
+                  <option value="PT">PT</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="ui-label">Estado</label>
+                <select [(ngModel)]="form.status" [disabled]="!editing" class="ui-select">
+                  <option value="AVAILABLE">Disponible</option>
+                  <option value="IN_PROCESS">En proceso</option>
+                  <option value="QUARANTINE">Cuarentena</option>
+                  <option value="BLOCKED">Bloqueado</option>
+                  <option value="CONSUMED">Consumido</option>
+                  <option value="CLOSED">Cerrado</option>
+                </select>
+              </div>
+
+              <div class="col-span-2">
+                <label class="ui-label">Ítem</label>
+                <input [(ngModel)]="form.itemCode" [disabled]="!editing" class="ui-input" placeholder="MAT-ALG / PT-HIL-20" />
+              </div>
+
+              <div class="col-span-2">
+                <label class="ui-label">Descripción</label>
+                <input [(ngModel)]="form.description" [disabled]="!editing" class="ui-input" placeholder="Descripción..." />
+              </div>
+
+              <div>
+                <label class="ui-label">Cantidad</label>
+                <input type="number" [(ngModel)]="form.qty" [disabled]="!editing" class="ui-input" min="0" />
+              </div>
+
+              <div>
+                <label class="ui-label">UoM</label>
+                <input [(ngModel)]="form.uom" [disabled]="!editing" class="ui-input" />
+              </div>
+
+              <div class="col-span-2">
+                <label class="ui-label">Ubicación</label>
+                <input [(ngModel)]="form.location" [disabled]="!editing" class="ui-input" />
+              </div>
+
+              <div>
+                <label class="ui-label">Creación</label>
+                <input type="date" [(ngModel)]="form.createdAt" [disabled]="!editing" class="ui-input" />
+              </div>
+
+              <div>
+                <label class="ui-label">Vence (opcional)</label>
+                <input type="date" [(ngModel)]="form.expiresAt" [disabled]="!editing" class="ui-input" />
+              </div>
+
+              <div class="col-span-2">
+                <label class="ui-label">Proveedor (opcional)</label>
+                <input [(ngModel)]="form.supplier" [disabled]="!editing" class="ui-input" placeholder="Proveedor..." />
+              </div>
+
+              <div class="col-span-2">
+                <label class="ui-label">Batch Ref (opcional)</label>
+                <input [(ngModel)]="form.batchRef" [disabled]="!editing" class="ui-input" placeholder="Lote proveedor..." />
+              </div>
+            </div>
+          </div>
+
+          <!-- Properties -->
+          <div class="rounded-2xl border border-slate-800/70 bg-slate-950/40 p-4">
+            <div class="flex items-center justify-between mb-3">
+              <p class="text-sm font-semibold">Propiedades</p>
+              <button *ngIf="editing" class="ui-btn-ghost text-xs" (click)="addProperty()">+ Agregar</button>
+            </div>
+
+            <div class="space-y-2" *ngIf="form.properties?.length; else noProps">
+              <div *ngFor="let p of form.properties; let i = index" class="grid grid-cols-5 gap-2">
+                <input [(ngModel)]="p.key" [disabled]="!editing" class="ui-input col-span-2" placeholder="Clave" />
+                <input [(ngModel)]="p.value" [disabled]="!editing" class="ui-input col-span-2" placeholder="Valor" />
+                <div class="flex gap-2">
+                  <input [(ngModel)]="p.unit" [disabled]="!editing" class="ui-input" placeholder="U" />
+                  <button *ngIf="editing" class="ui-btn-danger text-xs" (click)="removeProperty(i)">X</button>
+                </div>
+              </div>
+            </div>
+
+            <ng-template #noProps>
+              <div class="text-sm text-slate-500">Sin propiedades.</div>
+            </ng-template>
+          </div>
+
+          <!-- Timeline -->
+          <div *ngIf="activeLot" class="rounded-2xl border border-slate-800/70 bg-slate-950/40 p-4">
+            <div class="flex items-center justify-between mb-3">
+              <p class="text-sm font-semibold">Eventos</p>
+              <span class="text-[11px] text-slate-500">{{ activeLot.events.length }} eventos</span>
+            </div>
+
+            <div class="space-y-3">
+              <div *ngFor="let ev of activeLot.events" class="rounded-xl border border-slate-800/70 bg-slate-900/20 p-3">
+                <div class="flex items-start justify-between">
+                  <div class="text-xs text-slate-300">
+                    <span class="font-semibold text-slate-100">{{ ev.type }}</span>
+                    <span class="text-slate-500"> · {{ ev.by }}</span>
+                  </div>
+                  <div class="text-[11px] text-slate-500">{{ ev.at }}</div>
+                </div>
+
+                <div *ngIf="ev.note" class="text-xs text-slate-300 mt-2">{{ ev.note }}</div>
+
+                <div *ngIf="ev.meta" class="text-[11px] text-slate-400 mt-2">
+                  <span *ngFor="let kv of (ev.meta | keyvalue)" class="mr-3">
+                    {{ kv.key }}: <span class="text-slate-200">{{ kv.value }}</span>
+                  </span>
+                </div>
+              </div>
+
+              <div *ngIf="activeLot.events.length === 0" class="text-center text-slate-500 py-6">
+                Sin eventos aún.
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- footer -->
+        <div class="p-5 border-t border-slate-800/70 text-xs text-slate-500">
+          Tip: desde aquí luego conectamos impresión de etiquetas (PDF/ZPL) y escaneo QR.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
