@@ -1,52 +1,58 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject } from 'rxjs';
-import { tap } from 'rxjs/operators';
-import { Router } from '@angular/router';
 
-interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
+import { tap } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { environment } from '../../../environmets/environments';
+
+interface LoginRequest {
+  username: string;
+  password: string;
 }
 
-@Injectable({
-  providedIn: 'root',
-})
+interface LoginResponse {
+  access_token: string;
+  user: {
+    id: number;
+    username: string;
+    role?: string;
+    // lo que devuelva tu backend
+  };
+}
+
+@Injectable({ providedIn: 'root' })
 export class AuthService {
-  private loggedIn = new BehaviorSubject<boolean>(this.hasToken());
+  private apiUrl = environment.apiUrl;
 
-  get isLoggedIn(): Observable<boolean> {
-    return this.loggedIn.asObservable();
+  constructor(private http: HttpClient) {}
+
+  login(credentials: LoginRequest): Observable<LoginResponse> {
+    console.log('AuthService: Iniciando login con', credentials);
+    return this.http
+      .post<LoginResponse>(`${this.apiUrl}/auth/login`, credentials)
+      .pipe(
+        tap((res) => {
+          localStorage.setItem('access_token', res.access_token);
+          localStorage.setItem('current_user', JSON.stringify(res.user));
+        }),
+      );
   }
 
-  constructor(private http: HttpClient, private router: Router) {}
-
-  login(credentials: any): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>('http://localhost:3000/auth/login', credentials).pipe(
-      tap(response => {
-        localStorage.setItem('accessToken', response.accessToken);
-        localStorage.setItem('refreshToken', response.refreshToken);
-        this.loggedIn.next(true);
-      }),
-    );
+  logout() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('current_user');
   }
 
-  logout(): void {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    this.loggedIn.next(false);
-    this.router.navigate(['/auth/login']);
+  get token(): string | null {
+    return localStorage.getItem('access_token');
   }
 
-  getAccessToken(): string | null {
-    return localStorage.getItem('accessToken');
+  get currentUser() {
+    const raw = localStorage.getItem('current_user');
+    return raw ? JSON.parse(raw) : null;
   }
 
-  getRefreshToken(): string | null {
-    return localStorage.getItem('refreshToken');
-  }
-
-  private hasToken(): boolean {
-    return !!localStorage.getItem('accessToken');
+  isAuthenticated(): boolean {
+    return !!this.token;
   }
 }

@@ -1,0 +1,123 @@
+<div class="space-y-5">
+
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Maestro · Productos</h3>
+      <p class="ui-subtitle">Catálogo de productos fabricados (hilado, tela, prenda).</p>
+    </div>
+
+    <div class="w-full max-w-sm">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar producto..." />
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">{{ editingId ? 'Editar producto' : 'Nuevo producto' }}</p>
+        <span class="text-[11px] text-slate-500">Campos mínimos</span>
+      </div>
+
+      <form (ngSubmit)="submit()" class="space-y-4">
+        <div>
+          <label class="ui-label">Código</label>
+          <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="PRD-XXX" />
+        </div>
+
+        <div>
+          <label class="ui-label">Nombre</label>
+          <input [(ngModel)]="form.name" name="name" required class="ui-input" placeholder="Hilo 20/1" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Tipo</label>
+            <select [(ngModel)]="form.type" name="type" class="ui-select">
+              <option value="YARN">Hilado</option>
+              <option value="FABRIC">Tela</option>
+              <option value="GARMENT">Prenda</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Unidad</label>
+            <input [(ngModel)]="form.uom" name="uom" class="ui-input" placeholder="kg / m / un" />
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Especificación (breve)</label>
+          <input [(ngModel)]="form.spec" name="spec" class="ui-input" placeholder="Ej: 180 g/m², Algodón peinado..." />
+        </div>
+
+        <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+          <input type="checkbox" [(ngModel)]="form.active" name="active"
+                 class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+          Activo
+        </label>
+
+        <div class="flex gap-2 pt-1">
+          <button type="submit" class="flex-1 ui-btn-primary">
+            {{ editingId ? 'Guardar cambios' : 'Agregar' }}
+          </button>
+          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="xl:col-span-2 ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Listado</p>
+        <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
+      </div>
+
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead class="ui-thead">
+            <tr>
+              <th class="ui-th">Código</th>
+              <th class="ui-th">Nombre</th>
+              <th class="ui-th">Tipo</th>
+              <th class="ui-th">UoM</th>
+              <th class="ui-th">Especificación</th>
+              <th class="ui-th">Estado</th>
+              <th class="ui-th w-40">Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody class="bg-slate-950/20">
+            <tr *ngFor="let it of filtered" class="ui-tr">
+              <td class="ui-td">{{ it.code }}</td>
+              <td class="ui-td">{{ it.name }}</td>
+              <td class="ui-td">{{ it.type }}</td>
+              <td class="ui-td">{{ it.uom }}</td>
+              <td class="ui-td">{{ it.spec || '-' }}</td>
+              <td class="ui-td">
+                <span [ngClass]="it.active ? 'ui-badge-ok' : 'ui-badge-bad'">
+                  {{ it.active ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="ui-td">
+                <div class="flex gap-2">
+                  <button (click)="edit(it)" class="ui-btn-ghost text-xs">Editar</button>
+                  <button (click)="remove(it.id)" class="ui-btn-danger text-xs">Eliminar</button>
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="filtered.length === 0">
+              <td colspan="7" class="px-4 py-10 text-center text-slate-500">No hay registros.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>

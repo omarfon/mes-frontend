@@ -1,0 +1,136 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">WIP · Avances</h3>
+      <p class="ui-subtitle">Avance por operación (plan vs realizado) y estado de ejecución.</p>
+    </div>
+
+    <div class="w-full max-w-sm">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar WIP..." />
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Form -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">{{ editingId ? 'Editar avance' : 'Nuevo avance' }}</p>
+        <span class="text-[11px] text-slate-500">MVP</span>
+      </div>
+
+      <form (ngSubmit)="submit()" class="space-y-4">
+        <div>
+          <label class="ui-label">Orden</label>
+          <input [(ngModel)]="form.orderCode" name="orderCode" required class="ui-input" placeholder="OP-0001" />
+        </div>
+
+        <div>
+          <label class="ui-label">Operación</label>
+          <input [(ngModel)]="form.operation" name="operation" required class="ui-input" placeholder="Hilado / Bobinado..." />
+        </div>
+
+        <div>
+          <label class="ui-label">Máquina</label>
+          <input [(ngModel)]="form.machineCode" name="machineCode" class="ui-input" placeholder="MC-001" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Plan</label>
+            <input type="number" [(ngModel)]="form.plannedQty" name="plannedQty" min="0" class="ui-input" />
+          </div>
+          <div>
+            <label class="ui-label">Realizado</label>
+            <input type="number" [(ngModel)]="form.doneQty" name="doneQty" min="0" class="ui-input" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">UoM</label>
+            <input [(ngModel)]="form.uom" name="uom" class="ui-input" placeholder="kg" />
+          </div>
+          <div>
+            <label class="ui-label">Fecha</label>
+            <input type="date" [(ngModel)]="form.updatedAt" name="updatedAt" class="ui-input" />
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Estado</label>
+          <select [(ngModel)]="form.status" name="status" class="ui-select">
+            <option value="WAITING">En espera</option>
+            <option value="IN_PROGRESS">En proceso</option>
+            <option value="DONE">Terminado</option>
+            <option value="BLOCKED">Bloqueado</option>
+          </select>
+        </div>
+
+        <div class="flex gap-2 pt-1">
+          <button type="submit" class="flex-1 ui-btn-primary">{{ editingId ? 'Guardar' : 'Agregar' }}</button>
+          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- List -->
+    <div class="xl:col-span-2 ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Avances</p>
+        <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
+      </div>
+
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead class="ui-thead">
+            <tr>
+              <th class="ui-th">Orden</th>
+              <th class="ui-th">Operación</th>
+              <th class="ui-th">Máquina</th>
+              <th class="ui-th">Avance</th>
+              <th class="ui-th">Fecha</th>
+              <th class="ui-th">Estado</th>
+              <th class="ui-th w-40">Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody class="bg-slate-950/20">
+            <tr *ngFor="let it of filtered" class="ui-tr">
+              <td class="ui-td">{{ it.orderCode }}</td>
+              <td class="ui-td">{{ it.operation }}</td>
+              <td class="ui-td">{{ it.machineCode || '-' }}</td>
+              <td class="ui-td">
+                <div class="flex items-center gap-3">
+                  <div class="min-w-[90px] text-xs text-slate-200">
+                    {{ it.doneQty }}/{{ it.plannedQty }} {{ it.uom }}
+                  </div>
+                  <div class="flex-1 h-2 rounded-full bg-slate-900/60 border border-slate-800/70 overflow-hidden">
+                    <div class="h-full bg-blue-500/60" [style.width.%]="pct(it)"></div>
+                  </div>
+                  <div class="w-10 text-right text-xs text-slate-300">{{ pct(it) }}%</div>
+                </div>
+              </td>
+              <td class="ui-td">{{ it.updatedAt || '-' }}</td>
+              <td class="ui-td">
+                <span [ngClass]="statusBadge(it.status)">{{ it.status }}</span>
+              </td>
+              <td class="ui-td">
+                <div class="flex gap-2">
+                  <button (click)="edit(it)" class="ui-btn-ghost text-xs">Editar</button>
+                  <button (click)="remove(it.id)" class="ui-btn-danger text-xs">Eliminar</button>
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="filtered.length === 0">
+              <td colspan="7" class="px-4 py-10 text-center text-slate-500">No hay avances.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

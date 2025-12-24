@@ -1,0 +1,143 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Ejecución</h3>
+      <p class="ui-subtitle">Registro de producción por orden, máquina y turno (buenas/merma).</p>
+    </div>
+
+    <div class="w-full max-w-sm">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar ejecución..." />
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Form -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">{{ editingId ? 'Editar registro' : 'Nuevo registro' }}</p>
+        <span class="text-[11px] text-slate-500">MVP</span>
+      </div>
+
+      <form (ngSubmit)="submit()" class="space-y-4">
+        <div>
+          <label class="ui-label">Orden</label>
+          <input [(ngModel)]="form.orderCode" name="orderCode" required class="ui-input" placeholder="OP-0001" />
+        </div>
+
+        <div>
+          <label class="ui-label">Máquina</label>
+          <input [(ngModel)]="form.machineCode" name="machineCode" required class="ui-input" placeholder="MC-001" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Turno</label>
+            <input [(ngModel)]="form.shiftCode" name="shiftCode" class="ui-input" placeholder="A / B / C" />
+          </div>
+          <div>
+            <label class="ui-label">UoM</label>
+            <input [(ngModel)]="form.uom" name="uom" class="ui-input" placeholder="kg" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Buenas</label>
+            <input type="number" [(ngModel)]="form.producedGood" name="producedGood" min="0" class="ui-input" />
+          </div>
+          <div>
+            <label class="ui-label">Merma</label>
+            <input type="number" [(ngModel)]="form.producedScrap" name="producedScrap" min="0" class="ui-input" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Inicio</label>
+            <input type="date" [(ngModel)]="form.startedAt" name="startedAt" class="ui-input" />
+          </div>
+          <div>
+            <label class="ui-label">Fin (opcional)</label>
+            <input type="date" [(ngModel)]="form.endedAt" name="endedAt" class="ui-input" />
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Estado</label>
+          <select [(ngModel)]="form.status" name="status" class="ui-select">
+            <option value="OPEN">Abierto</option>
+            <option value="CLOSED">Cerrado</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="ui-label">Notas</label>
+          <input [(ngModel)]="form.notes" name="notes" class="ui-input" placeholder="Observaciones..." />
+        </div>
+
+        <div class="flex gap-2 pt-1">
+          <button type="submit" class="flex-1 ui-btn-primary">{{ editingId ? 'Guardar' : 'Agregar' }}</button>
+          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- List -->
+    <div class="xl:col-span-2 ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <p class="text-sm font-semibold">Registros</p>
+          <p class="text-xs text-slate-400 mt-1">
+            Buenas: <span class="text-slate-200 font-medium">{{ totalGood }}</span>
+            · Merma: <span class="text-slate-200 font-medium">{{ totalScrap }}</span>
+          </p>
+        </div>
+        <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
+      </div>
+
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead class="ui-thead">
+            <tr>
+              <th class="ui-th">Orden</th>
+              <th class="ui-th">Máquina</th>
+              <th class="ui-th">Turno</th>
+              <th class="ui-th">Buenas</th>
+              <th class="ui-th">Merma</th>
+              <th class="ui-th">Fecha</th>
+              <th class="ui-th">Estado</th>
+              <th class="ui-th w-40">Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody class="bg-slate-950/20">
+            <tr *ngFor="let it of filtered" class="ui-tr">
+              <td class="ui-td">{{ it.orderCode }}</td>
+              <td class="ui-td">{{ it.machineCode }}</td>
+              <td class="ui-td">{{ it.shiftCode }}</td>
+              <td class="ui-td">{{ it.producedGood }} {{ it.uom }}</td>
+              <td class="ui-td">{{ it.producedScrap }} {{ it.uom }}</td>
+              <td class="ui-td">{{ it.startedAt || '-' }}</td>
+              <td class="ui-td">
+                <span [ngClass]="statusBadge(it.status)">{{ it.status }}</span>
+              </td>
+              <td class="ui-td">
+                <div class="flex gap-2">
+                  <button (click)="edit(it)" class="ui-btn-ghost text-xs">Editar</button>
+                  <button (click)="remove(it.id)" class="ui-btn-danger text-xs">Eliminar</button>
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="filtered.length === 0">
+              <td colspan="8" class="px-4 py-10 text-center text-slate-500">No hay registros.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

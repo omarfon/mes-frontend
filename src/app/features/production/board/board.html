@@ -1,0 +1,139 @@
+<div class="space-y-5">
+
+  <!-- Header -->
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <h3 class="text-xl font-semibold">Control Visual · Órdenes</h3>
+      <p class="text-xs text-slate-400 mt-1">Filtra y agrupa órdenes para control rápido.</p>
+    </div>
+
+    <!-- KPIs -->
+    <div class="flex flex-wrap gap-2">
+      <div class="rounded-xl border border-slate-800/70 bg-slate-950/40 px-3 py-2">
+        <div class="text-[11px] text-slate-400">Total</div>
+        <div class="text-sm font-semibold text-slate-100">{{ kpi.total }}</div>
+      </div>
+      <div class="rounded-xl border border-slate-800/70 bg-slate-950/40 px-3 py-2">
+        <div class="text-[11px] text-slate-400">Liberadas</div>
+        <div class="text-sm font-semibold text-slate-100">{{ kpi.released }}</div>
+      </div>
+      <div class="rounded-xl border border-slate-800/70 bg-slate-950/40 px-3 py-2">
+        <div class="text-[11px] text-slate-400">En proceso</div>
+        <div class="text-sm font-semibold text-slate-100">{{ kpi.inProgress }}</div>
+      </div>
+      <div class="rounded-xl border border-slate-800/70 bg-slate-950/40 px-3 py-2">
+        <div class="text-[11px] text-slate-400">Vencidas</div>
+        <div class="text-sm font-semibold text-rose-200">{{ overdueCount }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="rounded-2xl border border-slate-800/70 bg-slate-950/40 backdrop-blur p-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3">
+      <div class="xl:col-span-2">
+        <label class="text-[11px] text-slate-400">Buscar</label>
+        <input [(ngModel)]="q" class="mt-1 w-full rounded-xl border border-slate-800/70 bg-slate-900/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-600"
+               placeholder="OP-0001, producto, máquina..." />
+      </div>
+
+      <div>
+        <label class="text-[11px] text-slate-400">Estado</label>
+        <select [(ngModel)]="status" class="mt-1 w-full rounded-xl border border-slate-800/70 bg-slate-900/30 px-3 py-2 text-sm outline-none">
+          <option value="ALL">Todos</option>
+          <option value="DRAFT">Borrador</option>
+          <option value="RELEASED">Liberada</option>
+          <option value="IN_PROGRESS">En proceso</option>
+          <option value="COMPLETED">Cerrada</option>
+          <option value="CANCELLED">Cancelada</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="text-[11px] text-slate-400">Producto</label>
+        <select [(ngModel)]="product" class="mt-1 w-full rounded-xl border border-slate-800/70 bg-slate-900/30 px-3 py-2 text-sm outline-none">
+          <option value="ALL">Todos</option>
+          <option *ngFor="let p of products" [value]="p">{{ p }}</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="text-[11px] text-slate-400">Máquina</label>
+        <select [(ngModel)]="machine" class="mt-1 w-full rounded-xl border border-slate-800/70 bg-slate-900/30 px-3 py-2 text-sm outline-none">
+          <option value="ALL">Todas</option>
+          <option *ngFor="let m of machines" [value]="m">{{ m }}</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="text-[11px] text-slate-400">Agrupar por</label>
+        <select [(ngModel)]="groupBy" class="mt-1 w-full rounded-xl border border-slate-800/70 bg-slate-900/30 px-3 py-2 text-sm outline-none">
+          <option value="status">Estado</option>
+          <option value="product">Producto</option>
+          <option value="machine">Máquina</option>
+          <option value="due">Vencimiento</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="text-[11px] text-slate-400">Vence desde</label>
+        <input type="date" [(ngModel)]="dueFrom" class="mt-1 w-full rounded-xl border border-slate-800/70 bg-slate-900/30 px-3 py-2 text-sm outline-none" />
+      </div>
+
+      <div>
+        <label class="text-[11px] text-slate-400">Vence hasta</label>
+        <input type="date" [(ngModel)]="dueTo" class="mt-1 w-full rounded-xl border border-slate-800/70 bg-slate-900/30 px-3 py-2 text-sm outline-none" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Board -->
+  <div class="grid grid-cols-1 xl:grid-cols-4 gap-4">
+    <div *ngFor="let g of groups" class="rounded-2xl border border-slate-800/70 bg-slate-950/40 backdrop-blur p-4">
+      <div class="flex items-center justify-between mb-3">
+        <div class="text-sm font-semibold">{{ g.key }}</div>
+        <div class="text-[11px] text-slate-400">{{ g.items.length }}</div>
+      </div>
+
+      <div class="space-y-3">
+        <div *ngFor="let o of g.items" class="rounded-2xl border border-slate-800/70 bg-slate-900/20 p-4">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="text-sm font-semibold">{{ o.code }}</div>
+              <div class="text-xs text-slate-400 mt-1">
+                {{ o.productCode }} · {{ o.machineCode || 'Sin máquina' }}
+              </div>
+            </div>
+
+            <div class="flex flex-col items-end gap-2">
+              <span class="text-[11px] px-2 py-1 rounded-full border"
+                    [ngClass]="badgeStatus(o.status)">{{ o.status }}</span>
+
+              <span class="text-[11px] px-2 py-1 rounded-full border"
+                    [ngClass]="badgePriority(o.priority)">{{ o.priority }}</span>
+            </div>
+          </div>
+
+          <div class="mt-3 flex items-center justify-between text-xs text-slate-300">
+            <span>Plan: <b class="text-slate-100">{{ o.plannedQty }} {{ o.uom }}</b></span>
+            <span>Hecho: <b class="text-slate-100">{{ o.doneQty }} {{ o.uom }}</b></span>
+          </div>
+
+          <div class="mt-2 h-2 rounded-full bg-slate-900/60 border border-slate-800/70 overflow-hidden">
+            <div class="h-full bg-blue-500/60" [style.width.%]="pct(o)"></div>
+          </div>
+
+          <div class="mt-2 flex items-center justify-between text-[11px] text-slate-400">
+            <span>{{ pct(o) }}%</span>
+            <span>Vence: <span class="text-slate-200">{{ o.dueDate || '-' }}</span></span>
+          </div>
+        </div>
+
+        <div *ngIf="g.items.length === 0" class="text-center text-slate-500 py-6 text-sm">
+          Sin órdenes
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

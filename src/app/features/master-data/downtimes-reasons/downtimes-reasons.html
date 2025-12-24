@@ -1,0 +1,117 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Maestro · Motivos de parada</h3>
+      <p class="ui-subtitle">Catálogo para OEE: mantenimiento, material, set-up, calidad, etc.</p>
+    </div>
+
+    <div class="w-full max-w-sm">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar motivo..." />
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">{{ editingId ? 'Editar motivo' : 'Nuevo motivo' }}</p>
+        <span class="text-[11px] text-slate-500">Campos mínimos</span>
+      </div>
+
+      <form (ngSubmit)="submit()" class="space-y-4">
+        <div>
+          <label class="ui-label">Código</label>
+          <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="DT-XXX" />
+        </div>
+
+        <div>
+          <label class="ui-label">Nombre</label>
+          <input [(ngModel)]="form.name" name="name" required class="ui-input" placeholder="Falta de material" />
+        </div>
+
+        <div>
+          <label class="ui-label">Categoría</label>
+          <select [(ngModel)]="form.category" name="category" class="ui-select">
+            <option value="MAINTENANCE">Mantenimiento</option>
+            <option value="MATERIAL">Material</option>
+            <option value="SETUP">Set-up / Cambio</option>
+            <option value="QUALITY">Calidad</option>
+            <option value="OTHER">Otros</option>
+          </select>
+        </div>
+
+        <div class="flex items-center justify-between gap-3">
+          <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+            <input type="checkbox" [(ngModel)]="form.planned" name="planned"
+                   class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+            Parada planificada
+          </label>
+
+          <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+            <input type="checkbox" [(ngModel)]="form.active" name="active"
+                   class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+            Activo
+          </label>
+        </div>
+
+        <div class="flex gap-2 pt-1">
+          <button type="submit" class="flex-1 ui-btn-primary">{{ editingId ? 'Guardar' : 'Agregar' }}</button>
+          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="xl:col-span-2 ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Listado</p>
+        <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
+      </div>
+
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead class="ui-thead">
+            <tr>
+              <th class="ui-th">Código</th>
+              <th class="ui-th">Motivo</th>
+              <th class="ui-th">Categoría</th>
+              <th class="ui-th">Planificada</th>
+              <th class="ui-th">Estado</th>
+              <th class="ui-th w-40">Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody class="bg-slate-950/20">
+            <tr *ngFor="let it of filtered" class="ui-tr">
+              <td class="ui-td">{{ it.code }}</td>
+              <td class="ui-td">{{ it.name }}</td>
+              <td class="ui-td">{{ it.category }}</td>
+              <td class="ui-td">
+                <span [ngClass]="it.planned ? 'ui-badge-warn' : 'ui-badge'">
+                  {{ it.planned ? 'Sí' : 'No' }}
+                </span>
+              </td>
+              <td class="ui-td">
+                <span [ngClass]="it.active ? 'ui-badge-ok' : 'ui-badge-bad'">
+                  {{ it.active ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="ui-td">
+                <div class="flex gap-2">
+                  <button (click)="edit(it)" class="ui-btn-ghost text-xs">Editar</button>
+                  <button (click)="remove(it.id)" class="ui-btn-danger text-xs">Eliminar</button>
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="filtered.length === 0">
+              <td colspan="6" class="px-4 py-10 text-center text-slate-500">No hay registros.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>

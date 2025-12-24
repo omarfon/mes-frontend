@@ -1,0 +1,112 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Órdenes de Producción</h3>
+      <p class="ui-subtitle">Crea, libera y controla el estado de las órdenes.</p>
+    </div>
+
+    <div class="w-full max-w-sm">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar orden..." />
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">{{ editingId ? 'Editar orden' : 'Nueva orden' }}</p>
+        <span class="text-[11px] text-slate-500">MVP</span>
+      </div>
+
+      <form (ngSubmit)="submit()" class="space-y-4">
+        <div>
+          <label class="ui-label">Código</label>
+          <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="OP-0003" />
+        </div>
+
+        <div>
+          <label class="ui-label">Producto</label>
+          <input [(ngModel)]="form.productCode" name="productCode" required class="ui-input" placeholder="PRD-HIL-20" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Cantidad</label>
+            <input type="number" [(ngModel)]="form.plannedQty" name="plannedQty" min="0" class="ui-input" />
+          </div>
+          <div>
+            <label class="ui-label">UoM</label>
+            <input [(ngModel)]="form.uom" name="uom" class="ui-input" placeholder="kg" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Vence</label>
+            <input type="date" [(ngModel)]="form.dueDate" name="dueDate" class="ui-input" />
+          </div>
+          <div>
+            <label class="ui-label">Estado</label>
+            <select [(ngModel)]="form.status" name="status" class="ui-select">
+              <option value="DRAFT">Borrador</option>
+              <option value="RELEASED">Liberada</option>
+              <option value="IN_PROGRESS">En proceso</option>
+              <option value="COMPLETED">Cerrada</option>
+              <option value="CANCELLED">Cancelada</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-1">
+          <button type="submit" class="flex-1 ui-btn-primary">{{ editingId ? 'Guardar' : 'Agregar' }}</button>
+          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="xl:col-span-2 ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Listado</p>
+        <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
+      </div>
+
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead class="ui-thead">
+            <tr>
+              <th class="ui-th">Código</th>
+              <th class="ui-th">Producto</th>
+              <th class="ui-th">Plan</th>
+              <th class="ui-th">Vence</th>
+              <th class="ui-th">Estado</th>
+              <th class="ui-th w-40">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="bg-slate-950/20">
+            <tr *ngFor="let it of filtered" class="ui-tr">
+              <td class="ui-td">{{ it.code }}</td>
+              <td class="ui-td">{{ it.productCode }}</td>
+              <td class="ui-td">{{ it.plannedQty }} {{ it.uom }}</td>
+              <td class="ui-td">{{ it.dueDate || '-' }}</td>
+              <td class="ui-td">
+                <span [ngClass]="badgeClass(it.status)">{{ it.status }}</span>
+              </td>
+              <td class="ui-td">
+                <div class="flex gap-2">
+                  <button (click)="edit(it)" class="ui-btn-ghost text-xs">Editar</button>
+                  <button (click)="remove(it.id)" class="ui-btn-danger text-xs">Eliminar</button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="filtered.length === 0">
+              <td colspan="6" class="px-4 py-10 text-center text-slate-500">No hay órdenes.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>

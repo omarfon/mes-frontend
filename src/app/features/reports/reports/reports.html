@@ -1,0 +1,106 @@
+<div class="rounded-2xl border border-slate-800/70 bg-slate-950/40 backdrop-blur p-6 shadow-xl shadow-slate-950/30">
+
+  <!-- Header -->
+  <div class="flex items-start justify-between gap-4 mb-6">
+    <div>
+      <h2 class="text-xl font-semibold">Reportes</h2>
+      <p class="text-xs text-slate-400 mt-1">Resumen semanal (ejemplo) · Producción, calidad y órdenes</p>
+    </div>
+
+    <div class="flex gap-2">
+      <button class="px-3 py-2 text-xs rounded-xl border border-slate-800/80 bg-slate-900/40 hover:bg-slate-800/50 transition">
+        Exportar PDF
+      </button>
+      <button class="px-3 py-2 text-xs rounded-xl border border-slate-800/80 bg-slate-900/40 hover:bg-slate-800/50 transition">
+        Exportar Excel
+      </button>
+    </div>
+  </div>
+
+  <!-- KPIs row -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+    <div *ngFor="let k of kpis" class="rounded-2xl border border-slate-800/70 bg-slate-900/30 p-4">
+      <p class="text-[11px] text-slate-400">{{ k.label }}</p>
+      <p class="text-lg font-semibold mt-1">{{ k.value }}</p>
+    </div>
+  </div>
+
+  <!-- Charts grid (en el mismo cuadro) -->
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Line chart -->
+    <div class="rounded-2xl border border-slate-800/70 bg-slate-900/20 p-4">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-sm font-medium">Producción por día</p>
+        <span class="text-[11px] text-slate-400">Kg</span>
+      </div>
+      <div class="h-56">
+        <canvas
+            baseChart
+            type="line"
+          [data]="productionLineData"
+          [options]="productionLineOptions">
+        </canvas>
+      </div>
+    </div>
+
+    <!-- Bar chart -->
+    <div class="rounded-2xl border border-slate-800/70 bg-slate-900/20 p-4">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-sm font-medium">Defectos por familia</p>
+        <span class="text-[11px] text-slate-400">Conteo</span>
+      </div>
+      <div class="h-56">
+        <canvas
+          baseChart
+          type="bar"
+          [data]="defectsBarData"
+          [options]="defectsBarOptions">
+        </canvas>
+      </div>
+    </div>
+
+    <!-- Doughnut chart -->
+    <div class="rounded-2xl border border-slate-800/70 bg-slate-900/20 p-4">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-sm font-medium">Estado de órdenes</p>
+        <span class="text-[11px] text-slate-400">Distribución</span>
+      </div>
+      <div class="h-56">
+        <canvas
+          baseChart
+          type="doughnut"
+          [data]="ordersDoughnutData"
+          [options]="ordersDoughnutOptions">
+        </canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table inside same card -->
+  <div class="mt-6 rounded-2xl border border-slate-800/70 bg-slate-900/20 p-4">
+    <div class="flex items-center justify-between mb-3">
+      <p class="text-sm font-medium">Top máquinas (uptime)</p>
+      <span class="text-[11px] text-slate-400">Ejemplo</span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-slate-300">
+          <tr class="border-b border-slate-800/70">
+            <th class="text-left py-2 pr-3">Máquina</th>
+            <th class="text-left py-2 pr-3">Uptime</th>
+            <th class="text-left py-2 pr-3">Paradas</th>
+          </tr>
+        </thead>
+        <tbody class="text-slate-200">
+          <tr *ngFor="let m of topMachines" class="border-b border-slate-800/40">
+            <td class="py-2 pr-3">{{ m.machine }}</td>
+            <td class="py-2 pr-3">{{ m.uptime }}</td>
+            <td class="py-2 pr-3">{{ m.stops }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

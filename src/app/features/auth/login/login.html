@@ -1,34 +1,145 @@
-<div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-sm">
-  <h2 class="text-2xl font-bold mb-6 text-center">Ingreso al MES</h2>
+<div class="w-screen h-screen flex bg-slate-950 text-slate-100 overflow-hidden">
 
-  <form (ngSubmit)="submit()" class="space-y-4">
-    <div>
-      <label class="block text-sm font-medium mb-1">Usuario</label>
-      <input
-        type="text"
-        [(ngModel)]="username"
-        name="username"
-        required
-        class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+  <!-- LADO IZQUIERDO (branding) -->
+  <div class="hidden lg:flex flex-1 flex-col justify-between p-16 relative">
+
+    <!-- Background glows -->
+    <div class="absolute -top-40 -left-40 h-96 w-96 bg-blue-600/40 blur-3xl rounded-full"></div>
+    <div class="absolute bottom-0 -right-40 h-96 w-96 bg-cyan-500/30 blur-3xl rounded-full"></div>
+
+    <!-- Contenido principal -->
+    <div class="relative z-10">
+      <div class="flex items-center gap-2 mb-6">
+        <span class="h-3 w-3 bg-emerald-400 rounded-full animate-pulse"></span>
+        <span class="text-xs text-slate-300">MES Hilandería · Royal Systems</span>
+      </div>
+
+      <h1 class="text-4xl font-bold leading-tight">
+        Control total de tu planta<br />
+        <span class="text-blue-400">en tiempo real</span>
+      </h1>
+
+      <p class="mt-4 text-sm leading-relaxed text-slate-300 max-w-lg">
+        Conecta lotes, calidad, producción y dashboards ejecutivos en un solo panel,
+        totalmente integrado con el backend MES en NestJS.
+      </p>
+
+      <!-- Features -->
+      <div class="mt-12 space-y-6">
+        <div class="flex gap-4">
+          <div class="h-12 w-12 bg-slate-900/60 border border-slate-700 rounded-xl flex items-center justify-center">
+            <span class="pi pi-sitemap text-xl text-blue-300"></span>
+          </div>
+          <div>
+            <p class="font-medium">Trazabilidad completa</p>
+            <p class="text-slate-400 text-xs w-72">Lotes, prendas, procesos y movimientos en tiempo real.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-4">
+          <div class="h-12 w-12 bg-slate-900/60 border border-slate-700 rounded-xl flex items-center justify-center">
+            <span class="pi pi-flag text-xl text-emerald-300"></span>
+          </div>
+          <div>
+            <p class="font-medium">Control de calidad</p>
+            <p class="text-slate-400 text-xs w-72">Catálogo de defectos, severidades y su impacto en producción.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-4">
+          <div class="h-12 w-12 bg-slate-900/60 border border-slate-700 rounded-xl flex items-center justify-center">
+            <span class="pi pi-chart-line text-xl text-cyan-300"></span>
+          </div>
+          <div>
+            <p class="font-medium">Indicadores ejecutivos</p>
+            <p class="text-slate-400 text-xs w-72">KPIs de planta, OEE y dashboards inteligentes.</p>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div>
-      <label class="block text-sm font-medium mb-1">Contraseña</label>
-      <input
-        type="password"
-        [(ngModel)]="password"
-        name="password"
-        required
-        class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+    <footer class="relative z-10 text-xs text-slate-500">
+      ©  Dedalus · MES 2025    </footer>
+
+  </div>
+
+  <!-- LADO DERECHO (formulario full-height y centrado) -->
+  <div class="flex-1 flex items-center justify-center bg-slate-900 px-10">
+
+    <div class="w-full max-w-md">
+
+      <div class="mb-10 text-left">
+        <p class="text-xs uppercase tracking-wider text-slate-400 mb-2">
+          Acceso Interno
+        </p>
+        <h2 class="text-3xl font-semibold text-white">
+          Inicia sesión en el MES
+        </h2>
+        <p class="mt-1 text-xs text-slate-400">
+          Usa tus credenciales corporativas de Royal Systems.
+        </p>
+      </div>
+
+      <div class="bg-slate-950/60 border border-slate-800/80 rounded-2xl shadow-xl p-8 backdrop-blur-sm">
+
+        <form (ngSubmit)="submit(username, password)" class="space-y-5">
+
+          <div class="space-y-1">
+            <label class="text-xs font-medium text-slate-300">Usuario</label>
+            <div class="relative">
+              <span class="pi pi-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+              <input
+                type="text"
+                [(ngModel)]="username"
+                name="username"
+                required
+                class="w-full bg-slate-900/80 border border-slate-700/60 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-100
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="ej. operador01"
+              />
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-medium text-slate-300">Contraseña</label>
+            <div class="relative">
+              <span class="pi pi-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+              <input
+                type="password"
+                [(ngModel)]="password"
+                name="password"
+                required
+                class="w-full bg-slate-900/80 border border-slate-700/60 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-100
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="••••••••"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit(username, password)"
+            [disabled]="loading"
+            class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-60
+                   text-white py-2 rounded-lg text-sm font-medium transition">
+            <span *ngIf="!loading">Ingresar</span>
+            <span *ngIf="loading" class="flex items-center gap-2">
+              <span class="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              Ingresando...
+            </span>
+          </button>
+
+          <p *ngIf="error" class="text-red-400 text-xs text-center mt-1">
+            {{ error }}
+          </p>
+        </form>
+
+        <div class="mt-6 flex justify-between text-[11px] text-slate-500">
+          <span>Ambiente: <span class="text-emerald-400">DEV</span></span>
+          <span>Versión: 0.1.0</span>
+        </div>
+
+      </div>
     </div>
+  </div>
 
-    <button
-      type="submit"
-      [disabled]="loading"
-      class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded text-sm font-medium transition">
-      {{ loading ? 'Ingresando...' : 'Ingresar' }}
-    </button>
-
-    <p *ngIf="error" class="text-red-500 text-xs text-center mt-2">{{ error }}</p>
-  </form>
 </div>

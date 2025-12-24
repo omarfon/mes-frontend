@@ -15,22 +15,24 @@ export class LoginComponent {
   password = '';
   loading = false;
   error: string | null = null;
+  Date = new Date; // Agregar esta línea
 
   constructor(private auth: AuthService, private router: Router) {}
 
-  submit() {
-    this.loading = true;
-    this.error = null;
+  submit(username: string, password: string) {
+  console.log('Intentando iniciar sesión con', username, password);
+  this.loading = true;
+  this.error = null;
 
-    this.auth.login({ username: this.username, password: this.password }).subscribe({
-      next: () => {
-        this.loading = false;
-        this.router.navigate(['/dashboard']);
-      },
-      error: () => {
-        this.loading = false;
-        this.error = 'Credenciales inválidas';
-      },
-    });
+  this.auth.login({ username: username, password: password }).subscribe({
+    next: () => {
+      this.router.navigate(['/dashboard']);
+      this.loading = false;
+    },
+    error: (err) => {
+      this.loading = false;
+      this.error = err.error?.message || 'Credenciales inválidas';
+    },
+  });
   }
 }

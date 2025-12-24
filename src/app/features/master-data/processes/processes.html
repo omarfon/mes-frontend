@@ -1,0 +1,102 @@
+<div class="space-y-5">
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <h3 class="text-xl font-semibold">Maestro · Procesos</h3>
+      <p class="text-xs text-slate-400 mt-1">Define procesos y su orden de ejecución.</p>
+    </div>
+
+    <div class="w-full max-w-sm">
+      <input [(ngModel)]="q" class="w-full bg-slate-900/60 border border-slate-800/80 rounded-xl px-3 py-2 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/60"
+             placeholder="Buscar proceso..." />
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="rounded-2xl border border-slate-800/70 bg-slate-950/40 backdrop-blur p-5">
+      <p class="text-sm font-semibold mb-4">{{ editingId ? 'Editar proceso' : 'Nuevo proceso' }}</p>
+
+      <form (ngSubmit)="submit()" class="space-y-4">
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">Código</label>
+          <input [(ngModel)]="form.code" name="code" required class="w-full bg-slate-900/60 border border-slate-800/80 rounded-xl px-3 py-2 text-sm" placeholder="PR-HIL" />
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">Nombre</label>
+          <input [(ngModel)]="form.name" name="name" required class="w-full bg-slate-900/60 border border-slate-800/80 rounded-xl px-3 py-2 text-sm" placeholder="Hilado" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-300 mb-1">Orden</label>
+            <input type="number" [(ngModel)]="form.order" name="order" min="1"
+                   class="w-full bg-slate-900/60 border border-slate-800/80 rounded-xl px-3 py-2 text-sm" />
+          </div>
+
+          <div class="flex items-end">
+            <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+              <input type="checkbox" [(ngModel)]="form.active" name="active" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+              Activo
+            </label>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-1">
+          <button class="flex-1 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 transition text-sm font-medium">
+            {{ editingId ? 'Guardar' : 'Agregar' }}
+          </button>
+          <button *ngIf="editingId" type="button" (click)="cancelEdit()"
+                  class="px-4 py-2 rounded-xl border border-slate-800/80 bg-slate-900/40 hover:bg-slate-800/50 transition text-sm">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="xl:col-span-2 rounded-2xl border border-slate-800/70 bg-slate-950/40 backdrop-blur p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Listado</p>
+        <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border border-slate-800/70">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-900/50 text-slate-200">
+            <tr>
+              <th class="text-left px-4 py-3">Código</th>
+              <th class="text-left px-4 py-3">Nombre</th>
+              <th class="text-left px-4 py-3">Orden</th>
+              <th class="text-left px-4 py-3">Estado</th>
+              <th class="text-left px-4 py-3 w-40">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="bg-slate-950/20">
+            <tr *ngFor="let it of filtered" class="border-t border-slate-800/60 hover:bg-slate-900/30">
+              <td class="px-4 py-3">{{ it.code }}</td>
+              <td class="px-4 py-3">{{ it.name }}</td>
+              <td class="px-4 py-3">{{ it.order }}</td>
+              <td class="px-4 py-3">
+                <span class="px-2 py-1 rounded-lg text-xs border"
+                      [ngClass]="it.active ? 'bg-emerald-500/15 border-emerald-500/25 text-emerald-200'
+                                           : 'bg-rose-500/15 border-rose-500/25 text-rose-200'">
+                  {{ it.active ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex gap-2">
+                  <button (click)="edit(it)" class="px-3 py-2 text-xs rounded-xl border border-slate-800/80 bg-slate-900/40 hover:bg-slate-800/50 transition">Editar</button>
+                  <button (click)="remove(it.id)" class="px-3 py-2 text-xs rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/15 transition text-rose-200">Eliminar</button>
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="filtered.length === 0">
+              <td colspan="5" class="px-4 py-10 text-center text-slate-500">No hay registros.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>

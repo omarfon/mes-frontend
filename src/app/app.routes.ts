@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/auth/auth-guard';
+import { AuthGuard } from './core/auth/auth-guard';
 import { MainLayout } from './core/layout/main-layout/main-layout';
 import { AuthLayout } from './core/layout/auth-layout/auth-layout';
 
@@ -19,7 +19,7 @@ export const routes: Routes = [
   {
     path: '',
     component: MainLayout,
-    canActivate: [authGuard],
+/*     canActivate: [AuthGuard], */
     children: [
       {
         path: 'dashboard',
@@ -39,14 +39,31 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'master-data/machines',
-        loadComponent: () =>
-          import('./features/master-data/machines-list/machines-list').then(
-            m => m.MachinesList,
-          ),
+      path: 'reports',
+     loadComponent: () =>
+        import('./features/reports/reports/reports').then(m => m.ReportsComponent),
       },
+
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      {
+      path: 'master-data',
+      loadChildren: () =>
+     import('./features/master-data/master-data.routes').then(m => m.MASTER_DATA_ROUTES),
+      },
+        {
+    path: 'production',
+    loadChildren: () =>
+      import('./features/production/productions.routes').then((m) => m.PRODUCTION_ROUTES),
+      },
+      {
+        path: 'traceability',
+        loadChildren: () =>
+          import('./features/traceability/traceability.routes').then((m) => m.TRACEABILITY_ROUTES),
+      },
+      
     ],
   },
+
   { path: '**', redirectTo: '' },
+  
 ];
