@@ -1,0 +1,171 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Parámetros del Sistema</h3>
+      <p class="ui-subtitle">Configuración de turnos, estados y workflows</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-2 border-b border-slate-800/60">
+    <button (click)="activeTab = 'SHIFTS'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'SHIFTS'" [class.border-b-2]="activeTab === 'SHIFTS'" [class.border-blue-500]="activeTab === 'SHIFTS'" [class.text-slate-400]="activeTab !== 'SHIFTS'">Turnos</button>
+    <button (click)="activeTab = 'STATUSES'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'STATUSES'" [class.border-b-2]="activeTab === 'STATUSES'" [class.border-blue-500]="activeTab === 'STATUSES'" [class.text-slate-400]="activeTab !== 'STATUSES'">Estados</button>
+    <button (click)="activeTab = 'WORKFLOWS'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'WORKFLOWS'" [class.border-b-2]="activeTab === 'WORKFLOWS'" [class.border-blue-500]="activeTab === 'WORKFLOWS'" [class.text-slate-400]="activeTab !== 'WORKFLOWS'">Workflows</button>
+  </div>
+
+  <!-- SHIFTS TAB -->
+  <div *ngIf="activeTab === 'SHIFTS'">
+    <div class="flex justify-end mb-4">
+      <button (click)="newShift()" class="ui-btn-primary">Nuevo Turno</button>
+    </div>
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="ui-surface p-5" *ngIf="editingShift">
+        <p class="text-sm font-semibold mb-4">{{ editingShift.id ? 'Editar Turno' : 'Nuevo Turno' }}</p>
+        <form (ngSubmit)="saveShift()" class="space-y-3">
+          <div><label class="ui-label">Nombre</label><input [(ngModel)]="shiftForm.name" name="name" required class="ui-input" /></div>
+          <div><label class="ui-label">Código</label><input [(ngModel)]="shiftForm.code" name="code" required class="ui-input" /></div>
+          <div><label class="ui-label">Hora Inicio</label><input type="time" [(ngModel)]="shiftForm.startTime" name="startTime" required class="ui-input" /></div>
+          <div><label class="ui-label">Hora Fin</label><input type="time" [(ngModel)]="shiftForm.endTime" name="endTime" required class="ui-input" /></div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" [(ngModel)]="shiftForm.active" name="active" id="active" class="rounded" />
+            <label for="active" class="text-sm">Activo</label>
+          </div>
+          <div class="flex gap-2 pt-2">
+            <button type="submit" class="flex-1 ui-btn-primary">Guardar</button>
+            <button type="button" (click)="cancelShift()" class="ui-btn-ghost">Cancelar</button>
+          </div>
+        </form>
+      </div>
+      <div class="ui-surface p-5" [class.xl:col-span-2]="editingShift" [class.xl:col-span-3]="!editingShift">
+        <p class="text-sm font-semibold mb-4">Turnos ({{ filteredShifts.length }})</p>
+        <div class="space-y-2">
+          <div *ngFor="let shift of filteredShifts" class="ui-surface-inner p-4 flex items-center justify-between">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <p class="text-sm font-semibold text-slate-200">{{ shift.name }} <span class="text-slate-400 font-mono text-xs">({{ shift.code }})</span></p>
+                <span *ngIf="!shift.active" class="text-[10px] px-2 py-0.5 rounded bg-red-500/10 text-red-300">Inactivo</span>
+              </div>
+              <p class="text-xs text-slate-400">{{ shift.startTime }} - {{ shift.endTime }}</p>
+            </div>
+            <div class="flex gap-2">
+              <button (click)="editShift(shift)" class="ui-btn-ghost text-xs">Editar</button>
+              <button (click)="deleteShift(shift.id)" class="ui-btn-danger text-xs">Eliminar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATUSES TAB -->
+  <div *ngIf="activeTab === 'STATUSES'">
+    <div class="flex gap-2 items-center mb-4">
+      <select [(ngModel)]="filterStatusModule" class="ui-select w-48">
+        <option value="ALL">Todos los Módulos</option>
+        <option *ngFor="let mod of modules" [value]="mod">{{ mod }}</option>
+      </select>
+      <div class="flex-1"></div>
+      <button (click)="newStatus()" class="ui-btn-primary">Nuevo Estado</button>
+    </div>
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="ui-surface p-5" *ngIf="editingStatus">
+        <p class="text-sm font-semibold mb-4">{{ editingStatus.id ? 'Editar Estado' : 'Nuevo Estado' }}</p>
+        <form (ngSubmit)="saveStatus()" class="space-y-3">
+          <div><label class="ui-label">Módulo</label>
+            <select [(ngModel)]="statusForm.module" name="module" required class="ui-select">
+              <option *ngFor="let mod of modules" [value]="mod">{{ mod }}</option>
+            </select>
+          </div>
+          <div><label class="ui-label">Clave (KEY)</label><input [(ngModel)]="statusForm.statusKey" name="statusKey" required class="ui-input" placeholder="EN_EJECUCION" /></div>
+          <div><label class="ui-label">Nombre Mostrado</label><input [(ngModel)]="statusForm.displayName" name="displayName" required class="ui-input" /></div>
+          <div><label class="ui-label">Color</label>
+            <select [(ngModel)]="statusForm.color" name="color" required class="ui-select">
+              <option *ngFor="let c of colors" [value]="c">{{ c }}</option>
+            </select>
+          </div>
+          <div><label class="ui-label">Orden</label><input type="number" [(ngModel)]="statusForm.sortOrder" name="sortOrder" required class="ui-input" /></div>
+          <div class="flex gap-2 pt-2">
+            <button type="submit" class="flex-1 ui-btn-primary">Guardar</button>
+            <button type="button" (click)="cancelStatus()" class="ui-btn-ghost">Cancelar</button>
+          </div>
+        </form>
+      </div>
+      <div class="ui-surface p-5" [class.xl:col-span-2]="editingStatus" [class.xl:col-span-3]="!editingStatus">
+        <p class="text-sm font-semibold mb-4">Estados ({{ filteredStatuses.length }})</p>
+        <div class="space-y-2">
+          <div *ngFor="let status of filteredStatuses" class="ui-surface-inner p-3 flex items-center justify-between">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="ui-badge" [style.background]="'var(--color-' + status.color + ')'">{{ status.displayName }}</span>
+                <span class="text-[10px] px-2 py-0.5 rounded bg-slate-900/60 text-slate-400">{{ status.module }}</span>
+              </div>
+              <p class="text-xs text-slate-500 font-mono">{{ status.statusKey }} (Orden: {{ status.sortOrder }})</p>
+            </div>
+            <div class="flex gap-2">
+              <button (click)="editStatus(status)" class="ui-btn-ghost text-xs">Editar</button>
+              <button (click)="deleteStatus(status.id)" class="ui-btn-danger text-xs">Eliminar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORKFLOWS TAB -->
+  <div *ngIf="activeTab === 'WORKFLOWS'">
+    <div class="flex gap-2 items-center mb-4">
+      <select [(ngModel)]="filterWorkflowModule" class="ui-select w-48">
+        <option value="ALL">Todos los Módulos</option>
+        <option *ngFor="let mod of modules" [value]="mod">{{ mod }}</option>
+      </select>
+      <div class="flex-1"></div>
+      <button (click)="newWorkflow()" class="ui-btn-primary">Nuevo Workflow</button>
+    </div>
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="ui-surface p-5" *ngIf="editingWorkflow">
+        <p class="text-sm font-semibold mb-4">{{ editingWorkflow.id ? 'Editar Workflow' : 'Nuevo Workflow' }}</p>
+        <form (ngSubmit)="saveWorkflow()" class="space-y-3">
+          <div><label class="ui-label">Módulo</label>
+            <select [(ngModel)]="workflowForm.module" name="module" required class="ui-select">
+              <option *ngFor="let mod of modules" [value]="mod">{{ mod }}</option>
+            </select>
+          </div>
+          <div><label class="ui-label">Estado</label><input [(ngModel)]="workflowForm.stateName" name="stateName" required class="ui-input" placeholder="PLANIFICADA" /></div>
+          <div><label class="ui-label">Transiciones (separadas por comas)</label>
+            <textarea [(ngModel)]="workflowForm.transitions" name="transitions" rows="2" class="ui-input" placeholder="EN_EJECUCION,PAUSADA"></textarea>
+          </div>
+          <div><label class="ui-label">Campos Requeridos (separados por comas)</label>
+            <textarea [(ngModel)]="workflowForm.requiredFields" name="requiredFields" rows="2" class="ui-input" placeholder="operator,machine"></textarea>
+          </div>
+          <div class="flex gap-2 pt-2">
+            <button type="submit" class="flex-1 ui-btn-primary">Guardar</button>
+            <button type="button" (click)="cancelWorkflow()" class="ui-btn-ghost">Cancelar</button>
+          </div>
+        </form>
+      </div>
+      <div class="ui-surface p-5" [class.xl:col-span-2]="editingWorkflow" [class.xl:col-span-3]="!editingWorkflow">
+        <p class="text-sm font-semibold mb-4">Workflows ({{ filteredWorkflows.length }})</p>
+        <div class="space-y-2">
+          <div *ngFor="let wf of filteredWorkflows" class="ui-surface-inner p-3">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <span class="ui-badge">{{ wf.stateName }}</span>
+                <span class="text-[10px] px-2 py-0.5 rounded bg-slate-900/60 text-slate-400">{{ wf.module }}</span>
+              </div>
+              <div class="flex gap-2">
+                <button (click)="editWorkflow(wf)" class="ui-btn-ghost text-xs">Editar</button>
+                <button (click)="deleteWorkflow(wf.id)" class="ui-btn-danger text-xs">Eliminar</button>
+              </div>
+            </div>
+            <div class="text-xs text-slate-400 mb-1">
+              <span class="text-slate-500">Puede transicionar a:</span> {{ wf.transitions.length ? wf.transitions.join(', ') : 'Ninguno (estado final)' }}
+            </div>
+            <div class="text-xs text-slate-400" *ngIf="wf.requiredFields?.length">
+              <span class="text-slate-500">Campos requeridos:</span> {{ wf.requiredFields?.join(', ') }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,1 +1,343 @@
-<p>components works!</p>
+<div class="space-y-5">
+  <!-- Header -->
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Componentes de Activos</h3>
+      <p class="ui-subtitle">Gestión de partes críticas: motores, rodamientos, sensores, válvulas y más</p>
+    </div>
+
+    <div class="flex gap-2 items-center">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9 w-64" placeholder="Buscar componentes..." />
+      </div>
+      <select [(ngModel)]="filterAsset" class="ui-select w-48">
+        <option value="ALL">Todos los activos</option>
+        <option *ngFor="let assetCode of uniqueAssets" [value]="assetCode">{{ assetCode }}</option>
+      </select>
+      <select [(ngModel)]="filterStatus" class="ui-select w-40">
+        <option value="ALL">Todos</option>
+        <option value="OPERATIONAL">Operacional</option>
+        <option value="DEGRADED">Degradado</option>
+        <option value="FAILED">Fallado</option>
+        <option value="REPLACED">Reemplazado</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Form Column -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">{{ editingId ? 'Editar Componente' : 'Nuevo Componente' }}</p>
+        <span class="text-[11px] text-slate-500">Información del componente</span>
+      </div>
+
+      <form (ngSubmit)="submit()" class="space-y-3">
+        <div>
+          <label class="ui-label">Código</label>
+          <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="COMP-M001-MOT" />
+        </div>
+
+        <div>
+          <label class="ui-label">Nombre</label>
+          <input [(ngModel)]="form.name" name="name" required class="ui-input" placeholder="Motor Principal" />
+        </div>
+
+        <div>
+          <label class="ui-label">Activo Padre</label>
+          <select [(ngModel)]="form.assetCode" name="assetCode" class="ui-select">
+            <option *ngFor="let asset of assets" [value]="asset.code">
+              {{ asset.code }} · {{ asset.name }}
+            </option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Categoría</label>
+            <input [(ngModel)]="form.category" name="category" class="ui-input" placeholder="Motor, Rodamiento..." />
+          </div>
+
+          <div>
+            <label class="ui-label">Estado</label>
+            <select [(ngModel)]="form.status" name="status" class="ui-select">
+              <option value="OPERATIONAL">Operacional</option>
+              <option value="DEGRADED">Degradado</option>
+              <option value="FAILED">Fallado</option>
+              <option value="REPLACED">Reemplazado</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Fabricante</label>
+            <input [(ngModel)]="form.manufacturer" name="manufacturer" class="ui-input" placeholder="Siemens, SKF..." />
+          </div>
+
+          <div>
+            <label class="ui-label">Modelo</label>
+            <input [(ngModel)]="form.model" name="model" class="ui-input" placeholder="IE3-100L" />
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Número de Serie</label>
+          <input [(ngModel)]="form.serialNumber" name="serialNumber" class="ui-input" placeholder="SN-2024-001" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Criticidad</label>
+            <select [(ngModel)]="form.criticality" name="criticality" class="ui-select">
+              <option value="LOW">Baja</option>
+              <option value="MEDIUM">Media</option>
+              <option value="HIGH">Alta</option>
+              <option value="CRITICAL">Crítica</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Fecha Instalación</label>
+            <input type="date" [(ngModel)]="form.installDate" name="installDate" class="ui-input" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Vida Esperada (hrs)</label>
+            <input type="number" [(ngModel)]="form.expectedLifeHours" name="expectedLifeHours" class="ui-input" placeholder="10000" />
+          </div>
+
+          <div>
+            <label class="ui-label">Horas Actuales</label>
+            <input type="number" [(ngModel)]="form.currentHours" name="currentHours" class="ui-input" placeholder="0" />
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Notas</label>
+          <textarea [(ngModel)]="form.notes" name="notes" class="ui-input" rows="2" placeholder="Observaciones..."></textarea>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button type="submit" class="flex-1 ui-btn-primary">
+            {{ editingId ? 'Guardar Cambios' : 'Crear Componente' }}
+          </button>
+          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Components List -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Listado de Componentes</p>
+        <span class="text-[11px] text-slate-500">{{ filtered.length }} componentes</span>
+      </div>
+
+      <div class="space-y-2 max-h-[600px] overflow-y-auto pr-2">
+        <div *ngFor="let comp of filtered"
+             (click)="selectComponent(comp)"
+             class="ui-surface-inner p-3 hover:bg-slate-800/40 transition cursor-pointer"
+             [ngClass]="{'ring-2 ring-blue-500/30': selectedComponent?.id === comp.id}">
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-mono text-xs font-semibold truncate">{{ comp.code }}</span>
+                <span class="text-xs" [ngClass]="getStatusBadge(comp.status)">{{ comp.status }}</span>
+              </div>
+              <p class="text-sm text-slate-200 truncate">{{ comp.name }}</p>
+            </div>
+            <span class="text-xs" [ngClass]="getCriticalityBadge(comp.criticality)">
+              {{ comp.criticality }}
+            </span>
+          </div>
+
+          <div class="flex items-center gap-3 text-xs text-slate-400 mb-2">
+            <span class="pi pi-tag text-[10px]"></span>
+            <span>{{ comp.category }}</span>
+            <span class="pi pi-box text-[10px] ml-auto"></span>
+            <span class="truncate">{{ comp.assetCode }}</span>
+          </div>
+
+          <!-- Life Progress Bar -->
+          <div *ngIf="comp.expectedLifeHours && comp.currentHours" class="space-y-1">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-500">Vida útil</span>
+              <span class="font-medium">{{ getLifePercentage(comp) | number:'1.0-0' }}%</span>
+            </div>
+            <div class="h-1.5 bg-slate-900/60 rounded-full overflow-hidden">
+              <div 
+                class="h-full transition-all duration-500 rounded-full"
+                [ngClass]="getLifeBarColor(getLifePercentage(comp))"
+                [style.width.%]="getLifePercentage(comp)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="filtered.length === 0" class="text-center py-10 text-slate-500 text-sm">
+          No se encontraron componentes
+        </div>
+      </div>
+    </div>
+
+    <!-- Component Detail Panel -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Detalle del Componente</p>
+        <div class="flex gap-2" *ngIf="selectedComponent">
+          <button (click)="editComponent(selectedComponent)" class="ui-btn-ghost text-xs">
+            <span class="pi pi-pencil text-[10px] mr-1"></span>
+            Editar
+          </button>
+          <button (click)="remove(selectedComponent.id)" class="ui-btn-danger text-xs">
+            <span class="pi pi-trash text-[10px] mr-1"></span>
+            Eliminar
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="!selectedComponent" class="text-center py-10 text-slate-500 text-sm">
+        Selecciona un componente para ver sus detalles
+      </div>
+
+      <div *ngIf="selectedComponent" class="space-y-4">
+        <!-- Basic Info Card -->
+        <div class="ui-surface-inner p-4">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-mono text-sm font-bold">{{ selectedComponent.code }}</span>
+                <span class="text-xs" [ngClass]="getStatusBadge(selectedComponent.status)">{{ selectedComponent.status }}</span>
+              </div>
+              <h4 class="text-sm text-slate-200">{{ selectedComponent.name }}</h4>
+            </div>
+            <span class="text-xs" [ngClass]="getCriticalityBadge(selectedComponent.criticality)">
+              {{ selectedComponent.criticality }}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <span class="text-slate-500">Activo Padre</span>
+              <p class="text-slate-200 mt-0.5">{{ selectedComponent.assetCode }}</p>
+              <p class="text-slate-400 text-[11px]">{{ selectedComponent.assetName }}</p>
+            </div>
+            <div>
+              <span class="text-slate-500">Categoría</span>
+              <p class="text-slate-200 mt-0.5">{{ selectedComponent.category }}</p>
+            </div>
+            <div>
+              <span class="text-slate-500">Fabricante</span>
+              <p class="text-slate-200 mt-0.5">{{ selectedComponent.manufacturer || '-' }}</p>
+            </div>
+            <div>
+              <span class="text-slate-500">Modelo</span>
+              <p class="text-slate-200 mt-0.5">{{ selectedComponent.model || '-' }}</p>
+            </div>
+            <div>
+              <span class="text-slate-500">Nº Serie</span>
+              <p class="text-slate-200 mt-0.5 font-mono text-[11px]">{{ selectedComponent.serialNumber || '-' }}</p>
+            </div>
+            <div>
+              <span class="text-slate-500">Instalación</span>
+              <p class="text-slate-200 mt-0.5">{{ selectedComponent.installDate }}</p>
+            </div>
+          </div>
+
+          <!-- Life Progress -->
+          <div *ngIf="selectedComponent.expectedLifeHours && selectedComponent.currentHours" class="mt-3 pt-3 border-t border-slate-800/60">
+            <div class="flex items-center justify-between text-xs mb-2">
+              <span class="text-slate-400">Vida Útil</span>
+              <span class="font-semibold">{{ selectedComponent.currentHours }} / {{ selectedComponent.expectedLifeHours }} hrs</span>
+            </div>
+            <div class="h-2 bg-slate-900/60 rounded-full overflow-hidden">
+              <div 
+                class="h-full transition-all duration-500 rounded-full"
+                [ngClass]="getLifeBarColor(getLifePercentage(selectedComponent))"
+                [style.width.%]="getLifePercentage(selectedComponent)">
+              </div>
+            </div>
+            <div class="flex items-center justify-between text-xs mt-1">
+              <span class="text-slate-500">{{ getLifePercentage(selectedComponent) | number:'1.0-0' }}% usado</span>
+              <span class="text-slate-500">{{ selectedComponent.expectedLifeHours - (selectedComponent.currentHours || 0) }} hrs restantes</span>
+            </div>
+          </div>
+
+          <div *ngIf="selectedComponent.notes" class="mt-3 pt-3 border-t border-slate-800/60">
+            <span class="text-xs text-slate-500">Notas</span>
+            <p class="text-xs text-slate-300 mt-1">{{ selectedComponent.notes }}</p>
+          </div>
+        </div>
+
+        <!-- Inspections -->
+        <div class="ui-surface-inner p-4">
+          <div class="flex items-center justify-between mb-3">
+            <p class="text-sm font-semibold">Inspecciones</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 text-xs mb-3">
+            <div>
+              <span class="text-slate-500">Última Inspección</span>
+              <p class="text-slate-200 mt-0.5">{{ selectedComponent.lastInspection || 'Nunca' }}</p>
+            </div>
+            <div>
+              <span class="text-slate-500">Próxima Inspección</span>
+              <p class="text-slate-200 mt-0.5">{{ selectedComponent.nextInspection || 'No programada' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Maintenance Records -->
+        <div class="ui-surface-inner p-4">
+          <div class="flex items-center justify-between mb-3">
+            <p class="text-sm font-semibold">Historial de Mantenimiento</p>
+            <span class="text-[11px] text-slate-500">{{ getRecords(selectedComponent.id).length }} registros</span>
+          </div>
+
+          <!-- Add Record Form -->
+          <div class="space-y-2 mb-3 pb-3 border-b border-slate-800/60">
+            <select [(ngModel)]="recordForm.type" class="ui-select">
+              <option value="INSPECTION">Inspección</option>
+              <option value="REPAIR">Reparación</option>
+              <option value="REPLACEMENT">Reemplazo</option>
+              <option value="LUBRICATION">Lubricación</option>
+            </select>
+            <input [(ngModel)]="recordForm.technician" class="ui-input" placeholder="Técnico..." />
+            <input type="number" [(ngModel)]="recordForm.hoursAtMaintenance" class="ui-input" placeholder="Horas de operación..." />
+            <textarea [(ngModel)]="recordForm.notes" class="ui-input" rows="2" placeholder="Notas del mantenimiento..."></textarea>
+            <button (click)="addMaintenanceRecord()" class="ui-btn-ghost text-xs w-full">
+              <span class="pi pi-plus text-[10px] mr-2"></span>
+              Agregar Registro
+            </button>
+          </div>
+
+          <!-- Records List -->
+          <div class="space-y-2 max-h-[200px] overflow-y-auto pr-2">
+            <div *ngFor="let record of getRecords(selectedComponent.id)"
+                 class="py-2 px-3 rounded-lg bg-slate-900/40">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs" [ngClass]="getRecordTypeBadge(record.type)">{{ record.type }}</span>
+                <span class="text-[11px] text-slate-500">{{ record.date }}</span>
+              </div>
+              <p class="text-xs text-slate-300 mb-1">{{ record.notes }}</p>
+              <div class="flex items-center justify-between text-[11px] text-slate-500">
+                <span>{{ record.technician }}</span>
+                <span *ngIf="record.hoursAtMaintenance">{{ record.hoursAtMaintenance }} hrs</span>
+              </div>
+            </div>
+
+            <div *ngIf="getRecords(selectedComponent.id).length === 0" class="text-center py-4 text-slate-500 text-xs">
+              Sin registros de mantenimiento
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

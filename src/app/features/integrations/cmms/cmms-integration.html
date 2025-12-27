@@ -1,0 +1,55 @@
+<div class="space-y-5">
+  <div class="ui-page-header"><div><h3 class="ui-title">Integración CMMS</h3><p class="ui-subtitle">Conexión con sistemas de mantenimiento (Maximo, Infor, SAP PM)</p></div></div>
+  <div class="flex gap-2 border-b border-slate-800/60">
+    <button (click)="activeTab = 'CONNECTIONS'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'CONNECTIONS'" [class.border-b-2]="activeTab === 'CONNECTIONS'" [class.border-blue-500]="activeTab === 'CONNECTIONS'" [class.text-slate-400]="activeTab !== 'CONNECTIONS'">Conexiones</button>
+    <button (click)="activeTab = 'MAPPING'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'MAPPING'" [class.border-b-2]="activeTab === 'MAPPING'" [class.border-blue-500]="activeTab === 'MAPPING'" [class.text-slate-400]="activeTab !== 'MAPPING'">Mapeo de Entidades</button>
+  </div>
+  <div *ngIf="activeTab === 'CONNECTIONS'">
+    <button (click)="newConnection()" class="ui-btn-primary mb-4">Nueva Conexión</button>
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="ui-surface p-5" *ngIf="editingConn">
+        <p class="text-sm font-semibold mb-4">{{ editingConn.id ? 'Editar' : 'Nueva' }} Conexión</p>
+        <form (ngSubmit)="saveConnection()" class="space-y-3">
+          <div><label class="ui-label">Nombre</label><input [(ngModel)]="connForm.name" name="name" required class="ui-input" /></div>
+          <div><label class="ui-label">Sistema</label><select [(ngModel)]="connForm.system" name="system" class="ui-select"><option value="Maximo">IBM Maximo</option><option value="Infor">Infor EAM</option><option value="SAP PM">SAP PM</option><option value="Other">Otro</option></select></div>
+          <div><label class="ui-label">URL</label><input [(ngModel)]="connForm.url" name="url" required class="ui-input" placeholder="https://cmms.company.com" /></div>
+          <div class="flex gap-2"><button type="submit" class="flex-1 ui-btn-primary">Guardar</button><button type="button" (click)="cancelConnection()" class="ui-btn-ghost">Cancelar</button></div>
+        </form>
+      </div>
+      <div class="ui-surface p-5" [class.xl:col-span-2]="editingConn" [class.xl:col-span-3]="!editingConn">
+        <p class="text-sm font-semibold mb-4">Conexiones CMMS ({{ connections.length }})</p>
+        <div class="space-y-3">
+          <div *ngFor="let conn of connections" class="ui-surface-inner p-4">
+            <div class="flex items-start justify-between mb-2"><div class="flex-1"><p class="text-sm font-semibold text-slate-200">{{ conn.name }}</p><p class="text-xs text-slate-400 font-mono">{{ conn.url }}</p></div><span [ngClass]="getStatusClass(conn.status)">{{ conn.status }}</span></div>
+            <div class="flex items-center justify-between"><div class="text-xs text-slate-400">Sistema: {{ conn.system }} | Última sync: {{ conn.lastSync }}</div><div class="flex gap-2"><button (click)="editConnection(conn)" class="ui-btn-ghost text-xs">Editar</button><button (click)="deleteConnection(conn.id)" class="ui-btn-danger text-xs">Eliminar</button></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="activeTab === 'MAPPING'">
+    <button (click)="newMapping()" class="ui-btn-primary mb-4">Nuevo Mapeo</button>
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="ui-surface p-5" *ngIf="editingMapping">
+        <p class="text-sm font-semibold mb-4">{{ editingMapping.id ? 'Editar' : 'Nuevo' }} Mapeo</p>
+        <form (ngSubmit)="saveMapping()" class="space-y-3">
+          <div><label class="ui-label">Entidad</label><input [(ngModel)]="mappingForm.entity" name="entity" required class="ui-input" placeholder="Work Orders" /></div>
+          <div><label class="ui-label">Entidad MES</label><input [(ngModel)]="mappingForm.mesEntity" name="mesEntity" required class="ui-input" placeholder="maintenance.work_orders" /></div>
+          <div><label class="ui-label">Entidad CMMS</label><input [(ngModel)]="mappingForm.cmmsEntity" name="cmmsEntity" required class="ui-input" placeholder="WORKORDER" /></div>
+          <div><label class="ui-label">Dirección</label><select [(ngModel)]="mappingForm.syncDirection" name="syncDirection" class="ui-select"><option value="PULL">CMMS → MES</option><option value="PUSH">MES → CMMS</option><option value="BIDIRECTIONAL">Bidireccional</option></select></div>
+          <div class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="mappingForm.active" name="active" id="active" class="rounded" /><label for="active" class="text-sm">Activo</label></div>
+          <div class="flex gap-2"><button type="submit" class="flex-1 ui-btn-primary">Guardar</button><button type="button" (click)="cancelMapping()" class="ui-btn-ghost">Cancelar</button></div>
+        </form>
+      </div>
+      <div class="ui-surface p-5" [class.xl:col-span-2]="editingMapping" [class.xl:col-span-3]="!editingMapping">
+        <p class="text-sm font-semibold mb-4">Mapeo de Entidades ({{ mappings.length }})</p>
+        <div class="space-y-2">
+          <div *ngFor="let map of mappings" class="ui-surface-inner p-3">
+            <div class="flex items-start justify-between mb-2"><div class="flex-1"><p class="text-sm font-medium text-slate-200">{{ map.entity }}</p><div class="flex items-center gap-2 mt-1"><span class="text-xs font-mono text-blue-300">{{ map.mesEntity }}</span><i class="pi pi-arrows-h text-xs text-slate-500" *ngIf="map.syncDirection === 'BIDIRECTIONAL'"></i><i class="pi pi-arrow-left text-xs text-slate-500" *ngIf="map.syncDirection === 'PULL'"></i><i class="pi pi-arrow-right text-xs text-slate-500" *ngIf="map.syncDirection === 'PUSH'"></i><span class="text-xs font-mono text-green-300">{{ map.cmmsEntity }}</span></div></div><span class="ui-badge" [class.text-green-300]="map.active" [class.bg-green-500/10]="map.active" [class.border-green-500/20]="map.active" [class.text-slate-400]="!map.active" [class.bg-slate-500/10]="!map.active" [class.border-slate-500/20]="!map.active">{{ map.active ? 'Activo' : 'Inactivo' }}</span></div>
+            <div class="flex gap-2 justify-end"><button (click)="editMapping(map)" class="ui-btn-ghost text-xs">Editar</button><button (click)="deleteMapping(map.id)" class="ui-btn-danger text-xs">Eliminar</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

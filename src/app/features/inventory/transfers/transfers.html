@@ -1,0 +1,170 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Transferencias entre Ubicaciones</h3>
+      <p class="ui-subtitle">Gestión de movimientos internos de materiales</p>
+    </div>
+    <div class="flex gap-2 items-center flex-wrap">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9 w-64" placeholder="Buscar transferencias..." />
+      </div>
+      <select [(ngModel)]="filterStatus" class="ui-select w-40">
+        <option value="ALL">Todos los estados</option>
+        <option value="PENDING">Pendiente</option>
+        <option value="APPROVED">Aprobada</option>
+        <option value="IN_TRANSIT">En Tránsito</option>
+        <option value="COMPLETED">Completada</option>
+        <option value="CANCELLED">Cancelada</option>
+      </select>
+      <select [(ngModel)]="filterPriority" class="ui-select w-36">
+        <option value="ALL">Prioridad</option>
+        <option value="LOW">Baja</option>
+        <option value="MEDIUM">Media</option>
+        <option value="HIGH">Alta</option>
+        <option value="URGENT">Urgente</option>
+      </select>
+      <select [(ngModel)]="filterMaterialType" class="ui-select w-32">
+        <option value="ALL">Tipo</option>
+        <option value="RM">MP</option>
+        <option value="WIP">WIP</option>
+        <option value="FG">PT</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">{{ editingId ? 'Editar Transferencia' : 'Nueva Transferencia' }}</p>
+      </div>
+      <form (ngSubmit)="submit()" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="ui-label">Código</label><input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="TRF-2024-001" /></div>
+          <div><label class="ui-label">Fecha</label><input type="date" [(ngModel)]="form.date" name="date" class="ui-input" /></div>
+        </div>
+        <div><label class="ui-label">Código Material</label><input [(ngModel)]="form.materialCode" name="materialCode" required class="ui-input" placeholder="RM-001" /></div>
+        <div><label class="ui-label">Nombre Material</label><input [(ngModel)]="form.materialName" name="materialName" class="ui-input" /></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="ui-label">Tipo Material</label>
+            <select [(ngModel)]="form.materialType" name="materialType" class="ui-select">
+              <option value="RM">MP</option><option value="WIP">WIP</option><option value="FG">PT</option>
+            </select>
+          </div>
+          <div><label class="ui-label">Lote</label><input [(ngModel)]="form.lotCode" name="lotCode" class="ui-input" placeholder="LOT-2024-123" /></div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="ui-label">Ubicación Origen</label><input [(ngModel)]="form.fromLocation" name="fromLocation" required class="ui-input" placeholder="A-01-01" /></div>
+          <div><label class="ui-label">Ubicación Destino</label><input [(ngModel)]="form.toLocation" name="toLocation" required class="ui-input" placeholder="A-02-05" /></div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="ui-label">Cantidad</label><input type="number" [(ngModel)]="form.quantity" name="quantity" required class="ui-input" /></div>
+          <div><label class="ui-label">Unidad</label><input [(ngModel)]="form.uom" name="uom" class="ui-input" placeholder="kg, pcs..." /></div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="ui-label">Estado</label>
+            <select [(ngModel)]="form.status" name="status" class="ui-select">
+              <option value="PENDING">Pendiente</option><option value="APPROVED">Aprobada</option><option value="IN_TRANSIT">En Tránsito</option><option value="COMPLETED">Completada</option>
+            </select>
+          </div>
+          <div><label class="ui-label">Prioridad</label>
+            <select [(ngModel)]="form.priority" name="priority" class="ui-select">
+              <option value="LOW">Baja</option><option value="MEDIUM">Media</option><option value="HIGH">Alta</option><option value="URGENT">Urgente</option>
+            </select>
+          </div>
+        </div>
+        <div><label class="ui-label">Notas</label><textarea [(ngModel)]="form.notes" name="notes" class="ui-input" rows="2"></textarea></div>
+        <div class="flex gap-2 pt-2">
+          <button type="submit" class="flex-1 ui-btn-primary">{{ editingId ? 'Guardar' : 'Crear' }}</button>
+          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Listado</p>
+        <span class="text-[11px] text-slate-500">{{ filtered.length }} transferencias</span>
+      </div>
+      <div class="space-y-2 max-h-[700px] overflow-y-auto pr-2">
+        <div *ngFor="let trf of filtered" (click)="selectTransfer(trf)" class="ui-surface-inner p-3 hover:bg-slate-800/40 transition cursor-pointer" [ngClass]="{'ring-2 ring-blue-500/30': selectedTransfer?.id === trf.id}">
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-mono text-xs font-semibold">{{ trf.code }}</span>
+                <span class="text-xs" [ngClass]="getStatusBadge(trf.status)">{{ getStatusLabel(trf.status) }}</span>
+              </div>
+              <p class="text-xs text-slate-400">{{ trf.date }}</p>
+            </div>
+            <span class="text-xs" [ngClass]="getPriorityBadge(trf.priority)">{{ getPriorityLabel(trf.priority) }}</span>
+          </div>
+          <div class="space-y-1 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="pi pi-box text-[10px] text-slate-500"></span>
+              <span class="text-slate-200">{{ trf.materialCode }}</span>
+              <span [ngClass]="getMaterialTypeBadge(trf.materialType)">{{ getMaterialTypeLabel(trf.materialType) }}</span>
+            </div>
+            <div class="flex items-center gap-2 ml-5 text-slate-400">
+              <span class="pi pi-arrow-right text-[10px]"></span>
+              <span>{{ trf.fromLocation }} → {{ trf.toLocation }}</span>
+            </div>
+            <div class="flex justify-between ml-5">
+              <span class="text-slate-500">Cantidad:</span>
+              <span class="font-semibold text-slate-200">{{ trf.quantity }} {{ trf.uom }}</span>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="filtered.length === 0" class="text-center py-10 text-slate-500 text-sm">Sin transferencias</div>
+      </div>
+    </div>
+
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Detalle</p>
+        <div class="flex gap-2" *ngIf="selectedTransfer">
+          <button (click)="editTransfer(selectedTransfer)" class="ui-btn-ghost text-xs"><span class="pi pi-pencil text-[10px] mr-1"></span>Editar</button>
+          <button (click)="remove(selectedTransfer.id)" class="ui-btn-danger text-xs"><span class="pi pi-trash text-[10px] mr-1"></span>Eliminar</button>
+        </div>
+      </div>
+      <div *ngIf="!selectedTransfer" class="text-center py-10 text-slate-500 text-sm">Selecciona una transferencia</div>
+      <div *ngIf="selectedTransfer" class="space-y-4">
+        <div class="ui-surface-inner p-4">
+          <div class="flex justify-between mb-3">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-mono text-sm font-bold">{{ selectedTransfer.code }}</span>
+                <span class="text-xs" [ngClass]="getStatusBadge(selectedTransfer.status)">{{ getStatusLabel(selectedTransfer.status) }}</span>
+              </div>
+              <p class="text-xs text-slate-400">{{ selectedTransfer.date }}</p>
+            </div>
+            <span class="text-xs" [ngClass]="getPriorityBadge(selectedTransfer.priority)">{{ getPriorityLabel(selectedTransfer.priority) }}</span>
+          </div>
+          <div class="space-y-3 text-xs">
+            <div><span class="text-slate-500">Material</span>
+              <div class="flex items-center gap-2 mt-1">
+                <p class="text-slate-200 font-mono">{{ selectedTransfer.materialCode }}</p>
+                <span [ngClass]="getMaterialTypeBadge(selectedTransfer.materialType)">{{ getMaterialTypeLabel(selectedTransfer.materialType) }}</span>
+              </div>
+              <p class="text-slate-300 mt-0.5">{{ selectedTransfer.materialName }}</p>
+            </div>
+            <div *ngIf="selectedTransfer.lotCode"><span class="text-slate-500">Lote</span><p class="text-slate-200 mt-0.5 font-mono">{{ selectedTransfer.lotCode }}</p></div>
+            <div class="grid grid-cols-2 gap-3">
+              <div><span class="text-slate-500">Origen</span><p class="text-slate-200 mt-0.5 font-mono text-lg">{{ selectedTransfer.fromLocation }}</p></div>
+              <div><span class="text-slate-500">Destino</span><p class="text-slate-200 mt-0.5 font-mono text-lg">{{ selectedTransfer.toLocation }}</p></div>
+            </div>
+            <div><span class="text-slate-500">Cantidad</span><p class="text-slate-200 mt-0.5 text-lg font-semibold">{{ selectedTransfer.quantity }} {{ selectedTransfer.uom }}</p></div>
+          </div>
+        </div>
+        <div class="ui-surface-inner p-4">
+          <p class="text-sm font-semibold mb-3">Responsables</p>
+          <div class="space-y-2 text-xs">
+            <div><span class="text-slate-500">Solicitado por</span><p class="text-slate-200 mt-0.5">{{ selectedTransfer.requestedBy }}</p></div>
+            <div *ngIf="selectedTransfer.approvedBy"><span class="text-slate-500">Aprobado por</span><p class="text-slate-200 mt-0.5">{{ selectedTransfer.approvedBy }}</p></div>
+            <div *ngIf="selectedTransfer.movedBy"><span class="text-slate-500">Movido por</span><p class="text-slate-200 mt-0.5">{{ selectedTransfer.movedBy }}</p></div>
+            <div *ngIf="selectedTransfer.notes"><span class="text-slate-500">Notas</span><p class="text-slate-300 mt-0.5">{{ selectedTransfer.notes }}</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

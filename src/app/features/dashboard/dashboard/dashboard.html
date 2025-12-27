@@ -1,1 +1,291 @@
-<p>dashboard works!</p>
+<div class="space-y-5">
+  <!-- Header -->
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Dashboard General MES</h3>
+      <p class="ui-subtitle">Vista consolidada del sistema de ejecución de manufactura</p>
+    </div>
+    <div class="flex gap-2">
+      <button class="ui-btn-ghost text-xs">
+        <i class="pi pi-refresh mr-1"></i> Actualizar
+      </button>
+      <button class="ui-btn-ghost text-xs">
+        <i class="pi pi-cog mr-1"></i> Configurar
+      </button>
+    </div>
+  </div>
+
+  <!-- KPIs Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+    <div *ngFor="let kpi of kpis" class="ui-surface p-4 hover:ring-2 hover:ring-blue-500/20 transition cursor-pointer">
+      <div class="flex items-start justify-between mb-3">
+        <div class="p-2 rounded-lg bg-slate-900/60">
+          <i class="pi {{ kpi.icon }} text-lg" [class.text-blue-400]="kpi.color === 'blue'" [class.text-green-400]="kpi.color === 'green'" [class.text-purple-400]="kpi.color === 'purple'" [class.text-orange-400]="kpi.color === 'orange'" [class.text-red-400]="kpi.color === 'red'"></i>
+        </div>
+        <div class="flex items-center gap-1 text-xs" [ngClass]="getTrendColor(kpi.trend)">
+          <i class="pi {{ getTrendIcon(kpi.trend) }} text-[10px]"></i>
+          <span>{{ kpi.change }}</span>
+        </div>
+      </div>
+      <p class="text-xs text-slate-400 mb-1">{{ kpi.label }}</p>
+      <p class="text-2xl font-bold text-slate-100">{{ kpi.value }}</p>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Órdenes en Ejecución -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Órdenes en Ejecución</p>
+        <a routerLink="/production/execution" class="text-xs text-blue-400 hover:text-blue-300 transition">
+          Ver todas <i class="pi pi-arrow-right text-[9px]"></i>
+        </a>
+      </div>
+      <div class="space-y-3">
+        <div *ngFor="let order of activeOrders" class="ui-surface-inner p-3">
+          <div class="flex items-start justify-between mb-2">
+            <div class="flex-1">
+              <p class="text-sm font-medium text-slate-200 mb-0.5">{{ order.id }}</p>
+              <p class="text-xs text-slate-400">{{ order.product }}</p>
+            </div>
+            <span class="ui-badge text-blue-300 bg-blue-500/10 border-blue-500/20 text-xs">{{ order.machine }}</span>
+          </div>
+          <div class="mb-2">
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="text-slate-400">Progreso</span>
+              <span class="text-slate-300 font-medium">{{ order.progress }}%</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-900/60 rounded-full overflow-hidden">
+              <div class="h-full bg-blue-500 transition-all" [style.width.%]="order.progress"></div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500">Cantidad: {{ order.quantity }} uds</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alertas y Notificaciones -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Alertas Recientes</p>
+        <span class="ui-badge text-red-300 bg-red-500/10 border-red-500/20">{{ alerts.length }}</span>
+      </div>
+      <div class="space-y-2">
+        <div *ngFor="let alert of alerts" class="p-3 rounded-lg" [ngClass]="getAlertClass(alert.type)">
+          <div class="flex items-start gap-3">
+            <i class="pi {{ getAlertIcon(alert.type) }} text-sm mt-0.5"></i>
+            <div class="flex-1">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-medium text-slate-200">{{ alert.module }}</span>
+                <span class="text-[10px] text-slate-500">{{ alert.time }}</span>
+              </div>
+              <p class="text-xs text-slate-300">{{ alert.message }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="w-full mt-3 ui-btn-ghost text-xs">
+        Ver todas las alertas
+      </button>
+    </div>
+
+    <!-- Estado de Máquinas -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Estado de Máquinas</p>
+        <a routerLink="/maintenance/assets" class="text-xs text-blue-400 hover:text-blue-300 transition">
+          Ver detalle <i class="pi pi-arrow-right text-[9px]"></i>
+        </a>
+      </div>
+      <div class="space-y-2">
+        <div *ngFor="let machine of machineStatus" class="ui-surface-inner p-3">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <div class="w-2 h-2 rounded-full" [ngClass]="getMachineStatusClass(machine.status)"></div>
+              <span class="text-sm font-medium text-slate-200">{{ machine.name }}</span>
+            </div>
+            <span class="text-xs text-slate-400">{{ getMachineStatusText(machine.status) }}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <p class="text-slate-500 mb-0.5">Utilización</p>
+              <p class="font-medium text-slate-300">{{ machine.utilization }}%</p>
+            </div>
+            <div>
+              <p class="text-slate-500 mb-0.5">OEE</p>
+              <p class="font-medium" [class.text-green-400]="machine.oee >= 75" [class.text-yellow-400]="machine.oee >= 50 && machine.oee < 75" [class.text-red-400]="machine.oee < 50">{{ machine.oee }}%</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección de Producción por Turno -->
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+    <!-- Producción por Turno -->
+    <div class="ui-surface p-5">
+      <p class="text-sm font-semibold mb-4">Producción por Turno</p>
+      <div class="space-y-3">
+        <div *ngFor="let shift of shiftProduction" class="ui-surface-inner p-4" [class.ring-2]="shift.current" [class.ring-blue-500/30]="shift.current">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <p class="text-sm font-medium text-slate-200">{{ shift.shift }}</p>
+              <span *ngIf="shift.current" class="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">En curso</span>
+            </div>
+            <span class="text-lg font-bold" [class.text-green-400]="shift.efficiency >= 100" [class.text-yellow-400]="shift.efficiency >= 80 && shift.efficiency < 100" [class.text-red-400]="shift.efficiency < 80">{{ shift.efficiency }}%</span>
+          </div>
+          <div class="grid grid-cols-2 gap-4 text-xs">
+            <div>
+              <p class="text-slate-400 mb-1">Planificado</p>
+              <p class="text-slate-200 font-medium">{{ shift.planned }} uds</p>
+            </div>
+            <div>
+              <p class="text-slate-400 mb-1">Real</p>
+              <p class="text-slate-200 font-medium">{{ shift.actual }} uds</p>
+            </div>
+          </div>
+          <div class="mt-2">
+            <div class="w-full h-2 bg-slate-900/60 rounded-full overflow-hidden">
+              <div class="h-full transition-all" [style.width.%]="shift.efficiency > 100 ? 100 : shift.efficiency" [class.bg-green-500]="shift.efficiency >= 100" [class.bg-yellow-500]="shift.efficiency >= 80 && shift.efficiency < 100" [class.bg-red-500]="shift.efficiency < 80"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accesos Rápidos -->
+    <div class="ui-surface p-5">
+      <p class="text-sm font-semibold mb-4">Accesos Rápidos</p>
+      <div class="grid grid-cols-2 gap-3">
+        <a routerLink="/production/execution" class="ui-surface-inner p-4 hover:bg-slate-800/40 transition cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-lg bg-blue-500/10">
+              <i class="pi pi-play text-blue-400"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">Nueva Orden</p>
+              <p class="text-sm font-medium text-slate-200">Producción</p>
+            </div>
+          </div>
+        </a>
+
+        <a routerLink="/quality/inspections" class="ui-surface-inner p-4 hover:bg-slate-800/40 transition cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-lg bg-green-500/10">
+              <i class="pi pi-check-circle text-green-400"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">Nueva</p>
+              <p class="text-sm font-medium text-slate-200">Inspección</p>
+            </div>
+          </div>
+        </a>
+
+        <a routerLink="/maintenance/work-orders" class="ui-surface-inner p-4 hover:bg-slate-800/40 transition cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-lg bg-purple-500/10">
+              <i class="pi pi-wrench text-purple-400"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">Orden de</p>
+              <p class="text-sm font-medium text-slate-200">Mantenimiento</p>
+            </div>
+          </div>
+        </a>
+
+        <a routerLink="/inventory/movements" class="ui-surface-inner p-4 hover:bg-slate-800/40 transition cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-lg bg-orange-500/10">
+              <i class="pi pi-box text-orange-400"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">Movimiento</p>
+              <p class="text-sm font-medium text-slate-200">Inventario</p>
+            </div>
+          </div>
+        </a>
+
+        <a routerLink="/traceability/search" class="ui-surface-inner p-4 hover:bg-slate-800/40 transition cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-lg bg-cyan-500/10">
+              <i class="pi pi-search text-cyan-400"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">Búsqueda</p>
+              <p class="text-sm font-medium text-slate-200">Trazabilidad</p>
+            </div>
+          </div>
+        </a>
+
+        <a routerLink="/reports-kpi/oee" class="ui-surface-inner p-4 hover:bg-slate-800/40 transition cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-lg bg-pink-500/10">
+              <i class="pi pi-chart-line text-pink-400"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">Reportes</p>
+              <p class="text-sm font-medium text-slate-200">KPIs</p>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumen de Módulos -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="ui-surface p-5">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="p-2 rounded-lg bg-blue-500/10">
+          <i class="pi pi-cog text-blue-400 text-lg"></i>
+        </div>
+        <div>
+          <p class="text-xs text-slate-400">Producción</p>
+          <p class="text-lg font-bold text-slate-100">12</p>
+        </div>
+      </div>
+      <p class="text-xs text-slate-500">Órdenes activas</p>
+    </div>
+
+    <div class="ui-surface p-5">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="p-2 rounded-lg bg-green-500/10">
+          <i class="pi pi-check-circle text-green-400 text-lg"></i>
+        </div>
+        <div>
+          <p class="text-xs text-slate-400">Calidad</p>
+          <p class="text-lg font-bold text-slate-100">8</p>
+        </div>
+      </div>
+      <p class="text-xs text-slate-500">Inspecciones pendientes</p>
+    </div>
+
+    <div class="ui-surface p-5">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="p-2 rounded-lg bg-purple-500/10">
+          <i class="pi pi-wrench text-purple-400 text-lg"></i>
+        </div>
+        <div>
+          <p class="text-xs text-slate-400">Mantenimiento</p>
+          <p class="text-lg font-bold text-slate-100">3</p>
+        </div>
+      </div>
+      <p class="text-xs text-slate-500">Trabajos programados hoy</p>
+    </div>
+
+    <div class="ui-surface p-5">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="p-2 rounded-lg bg-orange-500/10">
+          <i class="pi pi-warehouse text-orange-400 text-lg"></i>
+        </div>
+        <div>
+          <p class="text-xs text-slate-400">Inventarios</p>
+          <p class="text-lg font-bold text-slate-100">25</p>
+        </div>
+      </div>
+      <p class="text-xs text-slate-500">Movimientos hoy</p>
+    </div>
+  </div>
+</div>

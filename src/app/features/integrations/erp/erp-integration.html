@@ -1,0 +1,203 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Integración ERP</h3>
+      <p class="ui-subtitle">Conexión con sistemas SAP, Odoo, Oracle y otros</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-2 border-b border-slate-800/60">
+    <button (click)="activeTab = 'CONNECTIONS'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'CONNECTIONS'" [class.border-b-2]="activeTab === 'CONNECTIONS'" [class.border-blue-500]="activeTab === 'CONNECTIONS'" [class.text-slate-400]="activeTab !== 'CONNECTIONS'">Conexiones</button>
+    <button (click)="activeTab = 'SYNC'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'SYNC'" [class.border-b-2]="activeTab === 'SYNC'" [class.border-blue-500]="activeTab === 'SYNC'" [class.text-slate-400]="activeTab !== 'SYNC'">Sincronización</button>
+    <button (click)="activeTab = 'MAPPING'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'MAPPING'" [class.border-b-2]="activeTab === 'MAPPING'" [class.border-blue-500]="activeTab === 'MAPPING'" [class.text-slate-400]="activeTab !== 'MAPPING'">Mapeo de Campos</button>
+  </div>
+
+  <!-- CONNECTIONS TAB -->
+  <div *ngIf="activeTab === 'CONNECTIONS'">
+    <div class="flex justify-end mb-4">
+      <button (click)="newConnection()" class="ui-btn-primary">Nueva Conexión</button>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="ui-surface p-5" *ngIf="editingConnection">
+        <p class="text-sm font-semibold mb-4">{{ editingConnection.id ? 'Editar Conexión' : 'Nueva Conexión' }}</p>
+        <form (ngSubmit)="saveConnection()" class="space-y-3">
+          <div><label class="ui-label">Nombre</label><input [(ngModel)]="connectionForm.name" name="name" required class="ui-input" /></div>
+          <div><label class="ui-label">Tipo</label>
+            <select [(ngModel)]="connectionForm.type" name="type" required class="ui-select">
+              <option value="SAP">SAP</option>
+              <option value="Odoo">Odoo</option>
+              <option value="Oracle">Oracle</option>
+              <option value="Other">Otro</option>
+            </select>
+          </div>
+          <div><label class="ui-label">URL</label><input [(ngModel)]="connectionForm.url" name="url" required class="ui-input" placeholder="https://erp.company.com" /></div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" [(ngModel)]="connectionForm.autoSync" name="autoSync" id="autoSync" class="rounded" />
+            <label for="autoSync" class="text-sm">Sincronización Automática</label>
+          </div>
+          <div class="flex gap-2 pt-2">
+            <button type="submit" class="flex-1 ui-btn-primary">Guardar</button>
+            <button type="button" (click)="cancelConnection()" class="ui-btn-ghost">Cancelar</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="ui-surface p-5" [class.xl:col-span-2]="editingConnection" [class.xl:col-span-3]="!editingConnection">
+        <p class="text-sm font-semibold mb-4">Conexiones Configuradas ({{ connections.length }})</p>
+        <div class="space-y-3">
+          <div *ngFor="let conn of connections" class="ui-surface-inner p-4">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <div class="p-2 rounded-lg bg-slate-900/60">
+                  <i class="pi {{ getTypeIcon(conn.type) }} text-blue-400"></i>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-slate-200">{{ conn.name }}</p>
+                  <p class="text-xs text-slate-400 font-mono">{{ conn.url }}</p>
+                </div>
+              </div>
+              <span [ngClass]="getStatusClass(conn.status)">{{ conn.status }}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-3 text-xs mb-3">
+              <div>
+                <p class="text-slate-400 mb-0.5">Tipo</p>
+                <p class="text-slate-200">{{ conn.type }}</p>
+              </div>
+              <div>
+                <p class="text-slate-400 mb-0.5">Última Sincronización</p>
+                <p class="text-slate-200">{{ conn.lastSync }}</p>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2 text-xs">
+                <span class="text-slate-400">Auto-Sync:</span>
+                <span [class.text-green-400]="conn.autoSync" [class.text-slate-500]="!conn.autoSync">{{ conn.autoSync ? 'Activo' : 'Inactivo' }}</span>
+              </div>
+              <div class="flex gap-2">
+                <button (click)="testConnection(conn)" class="ui-btn-ghost text-xs">Test</button>
+                <button (click)="editConnection(conn)" class="ui-btn-ghost text-xs">Editar</button>
+                <button (click)="deleteConnection(conn.id)" class="ui-btn-danger text-xs">Eliminar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SYNC TAB -->
+  <div *ngIf="activeTab === 'SYNC'">
+    <div class="flex gap-2 items-center mb-4">
+      <select [(ngModel)]="filterSyncType" class="ui-select w-32">
+        <option value="ALL">Todos</option>
+        <option value="PUSH">Push</option>
+        <option value="PULL">Pull</option>
+      </select>
+      <select [(ngModel)]="filterSyncStatus" class="ui-select w-32">
+        <option value="ALL">Todos</option>
+        <option value="SUCCESS">Success</option>
+        <option value="FAILED">Failed</option>
+        <option value="PARTIAL">Partial</option>
+      </select>
+      <div class="flex-1"></div>
+      <button class="ui-btn-primary text-xs">Sincronizar Ahora</button>
+    </div>
+
+    <div class="ui-surface p-5">
+      <p class="text-sm font-semibold mb-4">Historial de Sincronización ({{ filteredSyncLogs.length }})</p>
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead class="ui-thead">
+            <tr>
+              <th class="ui-th">Timestamp</th>
+              <th class="ui-th">Tipo</th>
+              <th class="ui-th">Entidad</th>
+              <th class="ui-th">Registros</th>
+              <th class="ui-th">Duración</th>
+              <th class="ui-th">Estado</th>
+              <th class="ui-th">Errores</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="ui-tr" *ngFor="let log of filteredSyncLogs">
+              <td class="ui-td text-xs font-mono">{{ log.timestamp }}</td>
+              <td class="ui-td">
+                <span class="ui-badge" [class.text-blue-300]="log.type === 'PUSH'" [class.bg-blue-500/10]="log.type === 'PUSH'" [class.border-blue-500/20]="log.type === 'PUSH'" [class.text-purple-300]="log.type === 'PULL'" [class.bg-purple-500/10]="log.type === 'PULL'" [class.border-purple-500/20]="log.type === 'PULL'">
+                  {{ log.type }}
+                </span>
+              </td>
+              <td class="ui-td">{{ log.entity }}</td>
+              <td class="ui-td text-center">{{ log.records }}</td>
+              <td class="ui-td text-xs">{{ log.duration }}s</td>
+              <td class="ui-td"><span [ngClass]="getStatusClass(log.status)">{{ log.status }}</span></td>
+              <td class="ui-td text-xs text-red-400">{{ log.errors || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAPPING TAB -->
+  <div *ngIf="activeTab === 'MAPPING'">
+    <div class="flex justify-end mb-4">
+      <button (click)="newMapping()" class="ui-btn-primary">Nueva Regla</button>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="ui-surface p-5" *ngIf="editingMapping">
+        <p class="text-sm font-semibold mb-4">{{ editingMapping.id ? 'Editar Regla' : 'Nueva Regla' }}</p>
+        <form (ngSubmit)="saveMapping()" class="space-y-3">
+          <div><label class="ui-label">Campo MES</label><input [(ngModel)]="mappingForm.mesField" name="mesField" required class="ui-input" placeholder="production_order.id" /></div>
+          <div><label class="ui-label">Campo ERP</label><input [(ngModel)]="mappingForm.erpField" name="erpField" required class="ui-input" placeholder="AUFNR" /></div>
+          <div><label class="ui-label">Dirección</label>
+            <select [(ngModel)]="mappingForm.direction" name="direction" required class="ui-select">
+              <option value="BIDIRECTIONAL">Bidireccional</option>
+              <option value="MES_TO_ERP">MES → ERP</option>
+              <option value="ERP_TO_MES">ERP → MES</option>
+            </select>
+          </div>
+          <div><label class="ui-label">Transformación (opcional)</label><input [(ngModel)]="mappingForm.transform" name="transform" class="ui-input" placeholder="toUpperCase" /></div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" [(ngModel)]="mappingForm.active" name="active" id="active" class="rounded" />
+            <label for="active" class="text-sm">Activa</label>
+          </div>
+          <div class="flex gap-2 pt-2">
+            <button type="submit" class="flex-1 ui-btn-primary">Guardar</button>
+            <button type="button" (click)="cancelMapping()" class="ui-btn-ghost">Cancelar</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="ui-surface p-5" [class.xl:col-span-2]="editingMapping" [class.xl:col-span-3]="!editingMapping">
+        <p class="text-sm font-semibold mb-4">Reglas de Mapeo ({{ mappingRules.length }})</p>
+        <div class="space-y-2">
+          <div *ngFor="let rule of mappingRules" class="ui-surface-inner p-3">
+            <div class="flex items-start justify-between mb-2">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-sm font-mono text-blue-300">{{ rule.mesField }}</span>
+                  <i class="pi pi-arrow-right text-xs text-slate-500" *ngIf="rule.direction === 'MES_TO_ERP'"></i>
+                  <i class="pi pi-arrows-h text-xs text-slate-500" *ngIf="rule.direction === 'BIDIRECTIONAL'"></i>
+                  <i class="pi pi-arrow-left text-xs text-slate-500" *ngIf="rule.direction === 'ERP_TO_MES'"></i>
+                  <span class="text-sm font-mono text-green-300">{{ rule.erpField }}</span>
+                </div>
+                <p class="text-xs text-slate-400">{{ rule.direction }}</p>
+                <p class="text-xs text-slate-500" *ngIf="rule.transform">Transform: {{ rule.transform }}</p>
+              </div>
+              <div class="flex gap-2">
+                <span class="ui-badge" [class.text-green-300]="rule.active" [class.bg-green-500/10]="rule.active" [class.border-green-500/20]="rule.active" [class.text-slate-400]="!rule.active" [class.bg-slate-500/10]="!rule.active" [class.border-slate-500/20]="!rule.active">{{ rule.active ? 'Activa' : 'Inactiva' }}</span>
+              </div>
+            </div>
+            <div class="flex gap-2 justify-end">
+              <button (click)="editMapping(rule)" class="ui-btn-ghost text-xs">Editar</button>
+              <button (click)="deleteMapping(rule.id)" class="ui-btn-danger text-xs">Eliminar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

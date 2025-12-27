@@ -1,1 +1,121 @@
-<p>inventory works!</p>
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Inventario de Repuestos</h3>
+      <p class="ui-subtitle">Stock, mínimos, movimientos (IN/OUT/AJUSTE) y consumo por WO.</p>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200">{{ error }}</div>
+  <div *ngIf="success" class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">{{ success }}</div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="ui-surface p-5">
+      <p class="text-sm font-semibold mb-3">KPIs</p>
+      <div class="grid grid-cols-3 gap-2">
+        <div class="rounded-xl border border-slate-800/70 bg-slate-950/30 p-3">
+          <div class="text-[11px] text-slate-400">SKUs</div>
+          <div class="text-lg font-semibold text-slate-100 mt-1">{{ kpi().totalSkus }}</div>
+        </div>
+        <div class="rounded-xl border border-slate-800/70 bg-slate-950/30 p-3">
+          <div class="text-[11px] text-slate-400">Bajo mínimo</div>
+          <div class="text-lg font-semibold text-slate-100 mt-1">{{ kpi().low }}</div>
+        </div>
+        <div class="rounded-xl border border-slate-800/70 bg-slate-950/30 p-3">
+          <div class="text-[11px] text-slate-400">Valor (aprox)</div>
+          <div class="text-lg font-semibold text-slate-100 mt-1">{{ kpi().stockValue | number:'1.0-0' }}</div>
+        </div>
+      </div>
+
+      <div class="my-4 border-t border-slate-800/70"></div>
+
+      <label class="ui-label">Buscar repuesto</label>
+      <input [(ngModel)]="q" class="ui-input" placeholder="REP-001, rodamiento..." />
+    </div>
+
+    <div class="ui-surface p-5 xl:col-span-1">
+      <p class="text-sm font-semibold mb-3">Repuestos</p>
+
+      <div class="space-y-2">
+        <button *ngFor="let s of list" (click)="open(s)"
+          class="w-full text-left rounded-xl border border-slate-800/70 bg-slate-950/30 p-3 hover:bg-slate-900/30 transition">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="text-sm font-semibold text-slate-100">{{ s.code }}</div>
+              <div class="text-xs text-slate-400 mt-1">{{ s.name }}</div>
+              <div class="text-[11px] text-slate-500 mt-1">{{ s.location || '-' }}</div>
+            </div>
+            <span [ngClass]="badgeStock(s)">{{ s.stock }} {{ s.uom }}</span>
+          </div>
+          <div class="mt-2 text-[11px] text-slate-400">Min: {{ s.minStock }}</div>
+        </button>
+
+        <div *ngIf="list.length===0" class="text-center text-slate-500 py-10">Sin repuestos.</div>
+      </div>
+    </div>
+
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-sm font-semibold">Movimiento</p>
+        <button class="ui-btn-ghost text-xs" (click)="selected=null" *ngIf="selected">Cerrar</button>
+      </div>
+
+      <div *ngIf="!selected" class="text-sm text-slate-500 py-10 text-center">Selecciona un repuesto.</div>
+
+      <div *ngIf="selected" class="space-y-3">
+        <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
+          <div class="text-sm font-semibold text-slate-100">{{ selected.code }} · {{ selected.name }}</div>
+          <div class="text-xs text-slate-400 mt-1">Stock: {{ selected.stock }} {{ selected.uom }} · Min: {{ selected.minStock }}</div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="ui-label">Tipo</label>
+            <select [(ngModel)]="txn.type" class="ui-select">
+              <option value="IN">IN</option>
+              <option value="OUT">OUT</option>
+              <option value="ADJUST">ADJUST</option>
+            </select>
+          </div>
+          <div>
+            <label class="ui-label">Cantidad</label>
+            <input type="number" [(ngModel)]="txn.qty" class="ui-input" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="ui-label">Ref (WO/Compra)</label>
+            <input [(ngModel)]="txn.ref" class="ui-input" placeholder="WO-0001" />
+          </div>
+          <div>
+            <label class="ui-label">Por</label>
+            <input [(ngModel)]="txn.by" class="ui-input" />
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Nota</label>
+          <input [(ngModel)]="txn.note" class="ui-input" placeholder="opcional" />
+        </div>
+
+        <button class="ui-btn-primary w-full" (click)="applyTxn()">Registrar</button>
+
+        <div class="my-3 border-t border-slate-800/70"></div>
+
+        <p class="text-sm font-semibold mb-2">Movimientos recientes</p>
+        <div class="space-y-2">
+          <div *ngFor="let t of (ms.inventoryTxns | slice:0:8)"
+               class="rounded-xl border border-slate-800/70 bg-slate-900/20 p-3">
+            <div class="flex items-center justify-between">
+              <div class="text-xs text-slate-200"><b>{{ t.type }}</b> · {{ t.spareCode }}</div>
+              <div class="text-[11px] text-slate-500">{{ t.at }}</div>
+            </div>
+            <div class="text-xs text-slate-300 mt-1">Qty: {{ t.qty }} · Ref: {{ t.ref || '-' }} · By: {{ t.by }}</div>
+            <div class="text-[11px] text-slate-400 mt-1" *ngIf="t.note">{{ t.note }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

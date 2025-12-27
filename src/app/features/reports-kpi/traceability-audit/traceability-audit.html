@@ -1,0 +1,66 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Trazabilidad y Auditoría</h3>
+      <p class="ui-subtitle">Consultas y seguimiento de lotes/materiales</p>
+    </div>
+  </div>
+
+  <div class="ui-surface p-5">
+    <p class="text-sm font-semibold mb-4">Búsqueda Avanzada</p>
+    <div class="flex gap-3">
+      <select [(ngModel)]="searchType" class="ui-select w-40">
+        <option value="LOT">Por Lote</option>
+        <option value="MATERIAL">Por Material</option>
+        <option value="ORDER">Por Orden</option>
+        <option value="SERIAL">Por Serial</option>
+      </select>
+      <div class="relative flex-1">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="searchValue" class="ui-input pl-9 w-full" placeholder="Ingrese código o número..." />
+      </div>
+      <button class="ui-btn-primary">Buscar</button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="ui-surface p-4">
+      <span class="text-xs text-slate-500">Registros Encontrados</span>
+      <p class="text-3xl font-bold text-blue-400 mt-2">{{ results.length }}</p>
+    </div>
+    <div class="ui-surface p-4">
+      <span class="text-xs text-slate-500">Última Búsqueda</span>
+      <p class="text-sm text-slate-300 mt-2">{{ searchType }}</p>
+    </div>
+    <div class="ui-surface p-4">
+      <span class="text-xs text-slate-500">Estado</span>
+      <p class="text-sm text-green-400 mt-2">Sistema activo</p>
+    </div>
+  </div>
+
+  <div class="ui-surface p-5">
+    <p class="text-sm font-semibold mb-4">Resultados</p>
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead class="ui-thead">
+          <tr>
+            <th class="ui-th">Tipo</th>
+            <th class="ui-th">Código</th>
+            <th class="ui-th">Fecha</th>
+            <th class="ui-th">Información</th>
+            <th class="ui-th text-right">Cantidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="ui-tr" *ngFor="let result of results">
+            <td class="ui-td"><span class="ui-badge">{{ result.type }}</span></td>
+            <td class="ui-td font-mono">{{ result.code }}</td>
+            <td class="ui-td text-xs text-slate-400">{{ result.date }}</td>
+            <td class="ui-td text-sm">{{ result.status || result.action || result.product }}</td>
+            <td class="ui-td text-right font-semibold">{{ result.quantity }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

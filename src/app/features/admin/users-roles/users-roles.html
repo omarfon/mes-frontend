@@ -1,0 +1,158 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Usuarios, Roles y Permisos</h3>
+      <p class="ui-subtitle">Gestión de acceso y seguridad del sistema</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-2 border-b border-slate-800/60">
+    <button (click)="activeTab = 'USERS'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'USERS'" [class.border-b-2]="activeTab === 'USERS'" [class.border-blue-500]="activeTab === 'USERS'" [class.text-slate-400]="activeTab !== 'USERS'">
+      Usuarios
+    </button>
+    <button (click)="activeTab = 'ROLES'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'ROLES'" [class.border-b-2]="activeTab === 'ROLES'" [class.border-blue-500]="activeTab === 'ROLES'" [class.text-slate-400]="activeTab !== 'ROLES'">
+      Roles y Permisos
+    </button>
+  </div>
+
+  <!-- USERS TAB -->
+  <div *ngIf="activeTab === 'USERS'">
+    <div class="flex gap-2 items-center mb-4">
+      <div class="relative flex-1">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9 w-full" placeholder="Buscar usuarios..." />
+      </div>
+      <select [(ngModel)]="filterStatus" class="ui-select w-36">
+        <option value="ALL">Todos</option>
+        <option value="ACTIVE">Activos</option>
+        <option value="INACTIVE">Inactivos</option>
+        <option value="LOCKED">Bloqueados</option>
+      </select>
+      <button (click)="editingUserId = 0; userForm = { status: 'ACTIVE' }" class="ui-btn-primary">Nuevo Usuario</button>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <!-- User Form -->
+      <div class="ui-surface p-5" *ngIf="editingUserId !== null">
+        <p class="text-sm font-semibold mb-4">{{ editingUserId ? 'Editar Usuario' : 'Nuevo Usuario' }}</p>
+        <form (ngSubmit)="saveUser()" class="space-y-3">
+          <div><label class="ui-label">Usuario</label><input [(ngModel)]="userForm.username" name="username" required class="ui-input" /></div>
+          <div><label class="ui-label">Nombre Completo</label><input [(ngModel)]="userForm.fullName" name="fullName" required class="ui-input" /></div>
+          <div><label class="ui-label">Email</label><input type="email" [(ngModel)]="userForm.email" name="email" required class="ui-input" /></div>
+          <div><label class="ui-label">Rol</label>
+            <select [(ngModel)]="userForm.roleId" name="roleId" required class="ui-select">
+              <option *ngFor="let role of roles" [value]="role.id">{{ role.name }}</option>
+            </select>
+          </div>
+          <div><label class="ui-label">Estado</label>
+            <select [(ngModel)]="userForm.status" name="status" class="ui-select">
+              <option value="ACTIVE">Activo</option>
+              <option value="INACTIVE">Inactivo</option>
+              <option value="LOCKED">Bloqueado</option>
+            </select>
+          </div>
+          <div class="flex gap-2 pt-2">
+            <button type="submit" class="flex-1 ui-btn-primary">Guardar</button>
+            <button type="button" (click)="cancelUserEdit()" class="ui-btn-ghost">Cancelar</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Users List -->
+      <div class="ui-surface p-5" [class.xl:col-span-2]="editingUserId === null" [class.xl:col-span-3]="editingUserId === null">
+        <p class="text-sm font-semibold mb-4">Usuarios ({{ filteredUsers.length }})</p>
+        <div class="ui-table-wrap">
+          <table class="ui-table">
+            <thead class="ui-thead">
+              <tr>
+                <th class="ui-th">Usuario</th>
+                <th class="ui-th">Nombre</th>
+                <th class="ui-th">Email</th>
+                <th class="ui-th">Rol</th>
+                <th class="ui-th">Estado</th>
+                <th class="ui-th">Último Acceso</th>
+                <th class="ui-th"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="ui-tr" *ngFor="let user of filteredUsers">
+                <td class="ui-td font-mono">{{ user.username }}</td>
+                <td class="ui-td">{{ user.fullName }}</td>
+                <td class="ui-td text-xs text-slate-400">{{ user.email }}</td>
+                <td class="ui-td"><span class="ui-badge text-purple-300 bg-purple-500/10 border-purple-500/20">{{ user.roleName }}</span></td>
+                <td class="ui-td"><span [ngClass]="getStatusBadge(user.status)">{{ user.status }}</span></td>
+                <td class="ui-td text-xs text-slate-400">{{ user.lastLogin || 'Nunca' }}</td>
+                <td class="ui-td">
+                  <div class="flex gap-1">
+                    <button (click)="editUser(user)" class="ui-btn-ghost text-xs">Editar</button>
+                    <button (click)="deleteUser(user.id)" class="ui-btn-danger text-xs">Eliminar</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROLES TAB -->
+  <div *ngIf="activeTab === 'ROLES'">
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <!-- Roles List -->
+      <div class="ui-surface p-5">
+        <p class="text-sm font-semibold mb-4">Roles del Sistema</p>
+        <div class="space-y-2">
+          <div *ngFor="let role of roles" (click)="selectRole(role)" class="ui-surface-inner p-3 cursor-pointer hover:bg-slate-800/40 transition" [class.ring-2]="selectedRole?.id === role.id" [class.ring-blue-500/30]="selectedRole?.id === role.id">
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-sm font-semibold text-slate-200">{{ role.name }}</p>
+              <span class="text-xs text-slate-400">{{ role.usersCount }} usuarios</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-2">{{ role.description }}</p>
+            <div class="flex flex-wrap gap-1">
+              <span *ngFor="let perm of role.permissions.slice(0, 3)" class="text-[10px] px-2 py-0.5 rounded bg-slate-900/60 text-slate-400">{{ perm }}</span>
+              <span *ngIf="role.permissions.length > 3" class="text-[10px] px-2 py-0.5 rounded bg-slate-900/60 text-slate-400">+{{ role.permissions.length - 3 }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Permissions Detail -->
+      <div class="ui-surface p-5">
+        <div *ngIf="!selectedRole" class="text-center py-10 text-slate-500 text-sm">Selecciona un rol para ver permisos</div>
+        <div *ngIf="selectedRole">
+          <div class="flex items-center justify-between mb-4">
+            <p class="text-sm font-semibold">Permisos: {{ selectedRole.name }}</p>
+          </div>
+          <div class="space-y-3">
+            <div *ngFor="let perm of rolePermissions" class="ui-surface-inner p-3">
+              <p class="text-sm font-medium text-slate-200 mb-2">{{ perm.module }}</p>
+              <div class="grid grid-cols-4 gap-2 text-xs">
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" [(ngModel)]="perm.permissions.view" class="rounded" />
+                  <span>Ver</span>
+                </label>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" [(ngModel)]="perm.permissions.create" class="rounded" />
+                  <span>Crear</span>
+                </label>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" [(ngModel)]="perm.permissions.edit" class="rounded" />
+                  <span>Editar</span>
+                </label>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" [(ngModel)]="perm.permissions.delete" class="rounded" />
+                  <span>Eliminar</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="flex gap-2 mt-4">
+            <button class="ui-btn-primary">Guardar Permisos</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

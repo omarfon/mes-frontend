@@ -1,0 +1,42 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Análisis de Paradas</h3>
+      <p class="ui-subtitle">Por motivo con diagrama de Pareto</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="ui-surface p-4">
+      <span class="text-xs text-slate-500">Total Downtime</span>
+      <p class="text-3xl font-bold text-red-400 mt-2">{{ totalDowntime }}</p>
+      <p class="text-xs text-slate-400 mt-1">minutos</p>
+    </div>
+    <div class="ui-surface p-4">
+      <span class="text-xs text-slate-500">Disponibilidad</span>
+      <p class="text-3xl font-bold text-amber-400 mt-2">{{ (1440 - totalDowntime) / 1440 * 100 | number:'1.1-1' }}%</p>
+    </div>
+    <div class="ui-surface p-4">
+      <span class="text-xs text-slate-500">Motivos</span>
+      <p class="text-3xl font-bold text-blue-400 mt-2">{{ reasons.length }}</p>
+    </div>
+  </div>
+
+  <div class="ui-surface p-5">
+    <p class="text-sm font-semibold mb-4">Diagrama de Pareto - Paradas por Motivo</p>
+    <div class="space-y-2">
+      <div *ngFor="let reason of reasons; let i = index" class="flex items-center gap-3">
+        <span class="text-xs text-slate-400 w-40 truncate">{{ reason.name }}</span>
+        <div class="flex-1 flex items-center gap-2">
+          <div class="flex-1 h-8 bg-slate-900/60 rounded overflow-hidden">
+            <div class="h-full flex items-center px-2 text-xs font-semibold text-white" [class.bg-red-500]="i === 0" [class.bg-orange-500]="i === 1" [class.bg-amber-500]="i >= 2" [style.width.%]="reason.percentage">
+              {{ reason.minutes }} min
+            </div>
+          </div>
+          <span class="text-sm font-semibold w-16 text-right">{{ reason.percentage }}%</span>
+          <span class="text-xs text-slate-500 w-20 text-right">{{ reason.cumulative }}% acum.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,166 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Calendario de Mantenimiento</h3>
+              <p class="ui-subtitle">PM (planes) + WO programadas. Vista semanal y agenda.</p>
+    </div>
+
+    <div class="flex gap-2">
+      <button class="ui-btn-ghost text-xs" (click)="prevWeek()">◀</button>
+      <button class="ui-btn-ghost text-xs" (click)="today()">Hoy</button>
+      <button class="ui-btn-ghost text-xs" (click)="nextWeek()">▶</button>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200">{{ error }}</div>
+  <div *ngIf="success" class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">{{ success }}</div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Crear Plan -->
+    <div class="ui-surface p-5">
+      <p class="text-sm font-semibold mb-3">Nuevo Plan Preventivo (rápido)</p>
+
+      <div class="space-y-3">
+        <div>
+          <label class="ui-label">Activo</label>
+          <select [(ngModel)]="form.assetCode" class="ui-select">
+            <option *ngFor="let a of ms.assets" [value]="a.code">{{ a.code }} · {{ a.name }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="ui-label">Nombre</label>
+          <input [(ngModel)]="form.name" class="ui-input" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="ui-label">Frecuencia</label>
+            <select [(ngModel)]="form.frequency" class="ui-select">
+              <option value="WEEKLY">WEEKLY</option>
+              <option value="MONTHLY">MONTHLY</option>
+              <option value="QUARTERLY">QUARTERLY</option>
+              <option value="SEMIANNUAL">SEMIANNUAL</option>
+              <option value="ANNUAL">ANNUAL</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Min estimados</label>
+            <input type="number" [(ngModel)]="form.estimatedMinutes" class="ui-input" />
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Próxima ejecución</label>
+          <input type="datetime-local" [(ngModel)]="form.nextAt" class="ui-input" />
+        </div>
+
+        <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+          <input type="checkbox" [(ngModel)]="form.active" /> Activo
+        </label>
+
+        <button class="ui-btn-primary w-full" (click)="createPlan()">Crear plan</button>
+
+        <div class="my-2 border-t border-slate-800/70"></div>
+
+        <p class="text-sm font-semibold mb-2">Planes</p>
+        <div class="space-y-2">
+          <div *ngFor="let p of ms.plans"
+               class="rounded-xl border border-slate-800/70 bg-slate-950/30 p-3">
+            <div class="text-xs text-slate-400">{{ p.code }}</div>
+            <div class="text-sm font-semibold text-slate-100 mt-1">{{ p.name }}</div>
+            <div class="text-xs text-slate-400 mt-1">{{ p.assetCode }} · {{ p.location }}</div>
+            <div class="mt-2 text-[11px] text-slate-300">
+              Next: <b class="text-slate-100">{{ p.nextAt }}</b> · {{ p.frequency }} · {{ p.estimatedMinutes }} min
+            </div>
+          </div>
+
+          <div *ngIf="ms.plans.length===0" class="text-sm text-slate-500 py-4 text-center">Sin planes.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Semana -->
+    <div class="ui-surface p-5 xl:col-span-2">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <p class="text-sm font-semibold">Semana</p>
+          <p class="text-xs text-slate-400 mt-1">Click en un día para ver su agenda.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-7 gap-2">
+        <button *ngFor="let d of weekDays()" (click)="pickDay(d)"
+          class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-3 hover:bg-slate-900/30 transition text-left">
+          <div class="text-xs text-slate-400">{{ d | date:'EEE' }}</div>
+          <div class="text-sm font-semibold text-slate-100 mt-1">{{ d | date:'dd/MM' }}</div>
+
+          <div class="mt-2 text-[11px] text-slate-300">
+            {{ itemsForDay(d).length }} evento(s)
+          </div>
+
+          <div class="mt-2 space-y-1">
+            <div *ngFor="let it of (itemsForDay(d) | slice:0:2)"
+                 class="text-[11px] truncate text-slate-300">
+              • {{ it.type }}: {{ it.title }}
+            </div>
+          </div>
+        </button>
+      </div>
+
+      <div class="my-4 border-t border-slate-800/70"></div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
+          <p class="text-sm font-semibold mb-2">Agenda del día</p>
+          <div class="text-xs text-slate-400 mb-3" *ngIf="selectedDayIso">Día: {{ selectedDayIso }}</div>
+
+          <div class="space-y-2" *ngIf="selectedDayIso">
+            <div *ngFor="let it of itemsForDay($any(selectedDayIso + 'T00:00:00'))"
+                 class="rounded-xl border border-slate-800/70 bg-slate-900/20 p-3">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <div class="text-xs text-slate-400">{{ it.at }}</div>
+                  <div class="text-sm font-semibold text-slate-100 mt-1">{{ it.title }}</div>
+                  <div class="text-[11px] text-slate-400 mt-1">{{ it.assetCode }} · {{ it.location }}</div>
+                </div>
+                <span [ngClass]="badgeType(it.type)">{{ it.type }}</span>
+              </div>
+            </div>
+
+            <div *ngIf="itemsWeek().length===0" class="text-sm text-slate-500 py-4 text-center">
+              Sin eventos esta semana.
+            </div>
+          </div>
+
+          <div *ngIf="!selectedDayIso" class="text-sm text-slate-500 py-6 text-center">
+            Selecciona un día.
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
+          <p class="text-sm font-semibold mb-2">Agenda semanal (PM + WO)</p>
+
+          <div class="space-y-2">
+            <div *ngFor="let it of itemsWeek()"
+                 class="rounded-xl border border-slate-800/70 bg-slate-900/20 p-3">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <div class="text-xs text-slate-400">{{ it.at }}</div>
+                  <div class="text-sm font-semibold text-slate-100 mt-1">{{ it.title }}</div>
+                  <div class="text-[11px] text-slate-400 mt-1">{{ it.assetCode }} · {{ it.location }}</div>
+                </div>
+                <span [ngClass]="badgeType(it.type)">{{ it.type }}</span>
+              </div>
+            </div>
+
+            <div *ngIf="itemsWeek().length===0" class="text-sm text-slate-500 py-6 text-center">
+              No hay eventos programados.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

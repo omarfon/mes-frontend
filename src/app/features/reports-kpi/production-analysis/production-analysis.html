@@ -1,0 +1,67 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Análisis de Producción</h3>
+      <p class="ui-subtitle">Por turno, máquina y producto</p>
+    </div>
+    <div class="flex gap-2">
+      <select [(ngModel)]="filterType" class="ui-select w-40">
+        <option value="SHIFT">Por Turno</option>
+        <option value="MACHINE">Por Máquina</option>
+        <option value="PRODUCT">Por Producto</option>
+      </select>
+      <input type="date" [(ngModel)]="filterDate" class="ui-input w-40" />
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="ui-surface p-4">
+      <span class="text-xs text-slate-500">Total Producido</span>
+      <p class="text-3xl font-bold text-green-400 mt-2">{{ totalProduced | number }}</p>
+      <p class="text-xs text-slate-400 mt-1">unidades</p>
+    </div>
+    <div class="ui-surface p-4">
+      <span class="text-xs text-slate-500">Tasa Promedio</span>
+      <p class="text-3xl font-bold text-blue-400 mt-2">{{ averageRate | number:'1.0-0' }}</p>
+      <p class="text-xs text-slate-400 mt-1">uds/hora</p>
+    </div>
+    <div class="ui-surface p-4">
+      <span class="text-xs text-slate-500">Eficiencia</span>
+      <p class="text-3xl font-bold text-purple-400 mt-2">{{ efficiency | number:'1.1-1' }}%</p>
+      <p class="text-xs text-slate-400 mt-1">vs objetivo</p>
+    </div>
+    <div class="ui-surface p-4">
+      <span class="text-xs text-slate-500">Scrap Rate</span>
+      <p class="text-3xl font-bold text-red-400 mt-2">{{ scrapRate | number:'1.1-1' }}%</p>
+      <p class="text-xs text-slate-400 mt-1">defectos</p>
+    </div>
+  </div>
+
+  <div class="ui-surface p-5">
+    <p class="text-sm font-semibold mb-4">Producción Detallada</p>
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead class="ui-thead">
+          <tr>
+            <th class="ui-th">{{ filterType === 'SHIFT' ? 'Turno' : filterType === 'MACHINE' ? 'Máquina' : 'Producto' }}</th>
+            <th class="ui-th text-right">Producido</th>
+            <th class="ui-th text-right">Defectos</th>
+            <th class="ui-th text-right">Tasa (uds/h)</th>
+            <th class="ui-th text-right">Eficiencia</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="ui-tr" *ngFor="let item of data">
+            <td class="ui-td font-mono">{{ item.name }}</td>
+            <td class="ui-td text-right font-semibold">{{ item.produced }}</td>
+            <td class="ui-td text-right text-red-400">{{ item.defects }}</td>
+            <td class="ui-td text-right">{{ item.rate }}</td>
+            <td class="ui-td text-right" [class.text-green-400]="item.efficiency >= 90" [class.text-amber-400]="item.efficiency < 90 && item.efficiency >= 80" [class.text-red-400]="item.efficiency < 80">
+              {{ item.efficiency }}%
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

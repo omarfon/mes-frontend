@@ -1,0 +1,199 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">OEE - Overall Equipment Effectiveness</h3>
+      <p class="ui-subtitle">Disponibilidad × Rendimiento × Calidad</p>
+    </div>
+    <div class="flex gap-2 items-center">
+      <select [(ngModel)]="filterMachine" class="ui-select w-40">
+        <option value="ALL">Todas máquinas</option>
+        <option *ngFor="let machine of uniqueMachines" [value]="machine">{{ machine }}</option>
+      </select>
+      <select [(ngModel)]="filterShift" class="ui-select w-36">
+        <option value="ALL">Todos turnos</option>
+        <option *ngFor="let shift of uniqueShifts" [value]="shift">{{ shift }}</option>
+      </select>
+      <input type="date" [(ngModel)]="filterDate" class="ui-input w-40" />
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="ui-surface p-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs text-slate-500">OEE Promedio</span>
+        <span class="pi pi-chart-line text-xs text-slate-500"></span>
+      </div>
+      <p class="text-3xl font-bold mb-1" [ngClass]="getOeeClass(averageOee)">{{ averageOee | number:'1.1-1' }}%</p>
+      <p class="text-xs text-slate-400">Target: 85%</p>
+      <div class="mt-2 h-1.5 bg-slate-900/60 rounded-full overflow-hidden">
+        <div class="h-full transition-all" [ngClass]="getBarColor(averageOee)" [style.width.%]="averageOee"></div>
+      </div>
+    </div>
+
+    <div class="ui-surface p-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs text-slate-500">Disponibilidad</span>
+        <span class="pi pi-clock text-xs text-slate-500"></span>
+      </div>
+      <p class="text-3xl font-bold mb-1" [ngClass]="getMetricClass(averageAvailability)">{{ averageAvailability | number:'1.1-1' }}%</p>
+      <p class="text-xs text-slate-400">Tiempo operativo / Tiempo planeado</p>
+      <div class="mt-2 h-1.5 bg-slate-900/60 rounded-full overflow-hidden">
+        <div class="h-full transition-all" [ngClass]="getBarColor(averageAvailability)" [style.width.%]="averageAvailability"></div>
+      </div>
+    </div>
+
+    <div class="ui-surface p-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs text-slate-500">Rendimiento</span>
+        <span class="pi pi-bolt text-xs text-slate-500"></span>
+      </div>
+      <p class="text-3xl font-bold mb-1" [ngClass]="getMetricClass(averagePerformance)">{{ averagePerformance | number:'1.1-1' }}%</p>
+      <p class="text-xs text-slate-400">Velocidad real / Velocidad teórica</p>
+      <div class="mt-2 h-1.5 bg-slate-900/60 rounded-full overflow-hidden">
+        <div class="h-full transition-all" [ngClass]="getBarColor(averagePerformance)" [style.width.%]="averagePerformance"></div>
+      </div>
+    </div>
+
+    <div class="ui-surface p-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs text-slate-500">Calidad</span>
+        <span class="pi pi-check-circle text-xs text-slate-500"></span>
+      </div>
+      <p class="text-3xl font-bold mb-1" [ngClass]="getMetricClass(averageQuality)">{{ averageQuality | number:'1.1-1' }}%</p>
+      <p class="text-xs text-slate-400">Unidades buenas / Total producido</p>
+      <div class="mt-2 h-1.5 bg-slate-900/60 rounded-full overflow-hidden">
+        <div class="h-full transition-all" [ngClass]="getBarColor(averageQuality)" [style.width.%]="averageQuality"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trend Chart -->
+  <div class="ui-surface p-5">
+    <p class="text-sm font-semibold mb-4">Tendencia OEE (Últimos 7 días)</p>
+    <div class="space-y-3">
+      <div *ngFor="let t of trend" class="flex items-center gap-3">
+        <span class="text-xs text-slate-400 w-24">{{ t.date }}</span>
+        <div class="flex-1 grid grid-cols-4 gap-2">
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="text-slate-500">OEE</span>
+              <span class="font-semibold" [ngClass]="getOeeClass(t.oee)">{{ t.oee }}%</span>
+            </div>
+            <div class="h-2 bg-slate-900/60 rounded-full overflow-hidden">
+              <div class="h-full transition-all" [ngClass]="getBarColor(t.oee)" [style.width.%]="t.oee"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="text-slate-500">Disp.</span>
+              <span class="font-semibold text-slate-300">{{ t.availability }}%</span>
+            </div>
+            <div class="h-2 bg-slate-900/60 rounded-full overflow-hidden">
+              <div class="h-full bg-blue-500 transition-all" [style.width.%]="t.availability"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="text-slate-500">Rend.</span>
+              <span class="font-semibold text-slate-300">{{ t.performance }}%</span>
+            </div>
+            <div class="h-2 bg-slate-900/60 rounded-full overflow-hidden">
+              <div class="h-full bg-purple-500 transition-all" [style.width.%]="t.performance"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="text-slate-500">Calidad</span>
+              <span class="font-semibold text-slate-300">{{ t.quality }}%</span>
+            </div>
+            <div class="h-2 bg-slate-900/60 rounded-full overflow-hidden">
+              <div class="h-full bg-green-500 transition-all" [style.width.%]="t.quality"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail Table -->
+  <div class="ui-surface p-5">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-sm font-semibold">Detalle por Máquina/Turno</p>
+      <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
+    </div>
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead class="ui-thead">
+          <tr>
+            <th class="ui-th">Máquina</th>
+            <th class="ui-th">Turno</th>
+            <th class="ui-th">Fecha</th>
+            <th class="ui-th text-right">Disponibilidad</th>
+            <th class="ui-th text-right">Rendimiento</th>
+            <th class="ui-th text-right">Calidad</th>
+            <th class="ui-th text-right">OEE</th>
+            <th class="ui-th text-right">Unidades</th>
+            <th class="ui-th"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="ui-tr" *ngFor="let data of filtered">
+            <td class="ui-td"><span class="font-mono text-sm">{{ data.machine }}</span></td>
+            <td class="ui-td"><span class="text-sm">{{ data.shift }}</span></td>
+            <td class="ui-td"><span class="text-xs text-slate-400">{{ data.date }}</span></td>
+            <td class="ui-td text-right">
+              <span class="text-sm font-semibold" [ngClass]="getMetricClass(data.availability)">{{ data.availability }}%</span>
+            </td>
+            <td class="ui-td text-right">
+              <span class="text-sm font-semibold" [ngClass]="getMetricClass(data.performance)">{{ data.performance }}%</span>
+            </td>
+            <td class="ui-td text-right">
+              <span class="text-sm font-semibold" [ngClass]="getMetricClass(data.quality)">{{ data.quality }}%</span>
+            </td>
+            <td class="ui-td text-right">
+              <span class="text-lg font-bold" [ngClass]="getOeeClass(data.oee)">{{ data.oee }}%</span>
+            </td>
+            <td class="ui-td text-right">
+              <span class="text-sm text-slate-300">{{ data.goodUnits }}/{{ data.totalUnits }}</span>
+            </td>
+            <td class="ui-td">
+              <button (click)="selectData(data)" class="ui-btn-ghost text-xs">Detalle</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Detail Modal (simplified as card) -->
+  <div *ngIf="selectedData" class="ui-surface p-5">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-sm font-semibold">Detalle: {{ selectedData.machine }} - {{ selectedData.shift }}</p>
+      <button (click)="selectedData = null" class="ui-btn-ghost text-xs">Cerrar</button>
+    </div>
+    <div class="grid grid-cols-3 gap-4">
+      <div class="ui-surface-inner p-3">
+        <p class="text-xs text-slate-500 mb-2">Disponibilidad</p>
+        <p class="text-xs text-slate-400 mb-1">Tiempo planeado: {{ selectedData.plannedTime }} min</p>
+        <p class="text-xs text-slate-400 mb-1">Tiempo parada: {{ selectedData.downtime }} min</p>
+        <p class="text-xs text-slate-400 mb-2">Tiempo operativo: {{ selectedData.plannedTime - selectedData.downtime }} min</p>
+        <p class="text-lg font-bold" [ngClass]="getMetricClass(selectedData.availability)">{{ selectedData.availability }}%</p>
+      </div>
+      <div class="ui-surface-inner p-3">
+        <p class="text-xs text-slate-500 mb-2">Rendimiento</p>
+        <p class="text-xs text-slate-400 mb-1">Ciclo objetivo: {{ selectedData.targetCycleTime }} seg</p>
+        <p class="text-xs text-slate-400 mb-1">Ciclo real: {{ selectedData.actualCycleTime }} seg</p>
+        <p class="text-xs text-slate-400 mb-2">Eficiencia: {{ (selectedData.targetCycleTime / selectedData.actualCycleTime * 100) | number:'1.1-1' }}%</p>
+        <p class="text-lg font-bold" [ngClass]="getMetricClass(selectedData.performance)">{{ selectedData.performance }}%</p>
+      </div>
+      <div class="ui-surface-inner p-3">
+        <p class="text-xs text-slate-500 mb-2">Calidad</p>
+        <p class="text-xs text-slate-400 mb-1">Total producido: {{ selectedData.totalUnits }}</p>
+        <p class="text-xs text-slate-400 mb-1">Unidades buenas: {{ selectedData.goodUnits }}</p>
+        <p class="text-xs text-slate-400 mb-2">Defectos: {{ selectedData.totalUnits - selectedData.goodUnits }}</p>
+        <p class="text-lg font-bold" [ngClass]="getMetricClass(selectedData.quality)">{{ selectedData.quality }}%</p>
+      </div>
+    </div>
+  </div>
+</div>

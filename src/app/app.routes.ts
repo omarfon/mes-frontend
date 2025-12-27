@@ -60,6 +60,22 @@ export const routes: Routes = [
         path: 'maintenance',
         loadChildren: () => import('./features/maintenance/maintenance.routes')
           .then(m => m.MAINTENANCE_ROUTES)
+      },{
+        path: 'inventory',
+        loadChildren: () => import('./features/inventory/inventory.routes')
+          .then(m => m.INVENTORY_ROUTES)
+      },{
+        path: 'reports-kpi',
+        loadChildren: () => import('./features/reports-kpi/reports-kpi.routes')
+          .then(m => m.REPORTS_KPI_ROUTES)
+      },{
+        path: 'admin',
+        loadChildren: () => import('./features/admin/admin.routes')
+          .then(m => m.ADMIN_ROUTES)
+      },{
+        path: 'integrations',
+        loadChildren: () => import('./features/integrations/integrations.routes')
+          .then(m => m.INTEGRATIONS_ROUTES)
       }
       
     ],

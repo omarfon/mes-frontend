@@ -1,0 +1,94 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Integración SCADA</h3>
+      <p class="ui-subtitle">Conectividad con PLCs, HMIs y sistemas de control</p>
+    </div>
+  </div>
+
+  <div class="flex gap-2 border-b border-slate-800/60">
+    <button (click)="activeTab = 'DEVICES'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'DEVICES'" [class.border-b-2]="activeTab === 'DEVICES'" [class.border-blue-500]="activeTab === 'DEVICES'" [class.text-slate-400]="activeTab !== 'DEVICES'">Dispositivos</button>
+    <button (click)="activeTab = 'TAGS'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'TAGS'" [class.border-b-2]="activeTab === 'TAGS'" [class.border-blue-500]="activeTab === 'TAGS'" [class.text-slate-400]="activeTab !== 'TAGS'">Tags</button>
+    <button (click)="activeTab = 'ALARMS'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'ALARMS'" [class.border-b-2]="activeTab === 'ALARMS'" [class.border-blue-500]="activeTab === 'ALARMS'" [class.text-slate-400]="activeTab !== 'ALARMS'">Alarmas</button>
+  </div>
+
+  <div *ngIf="activeTab === 'DEVICES'">
+    <button (click)="newDevice()" class="ui-btn-primary mb-4">Nuevo Dispositivo</button>
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="ui-surface p-5" *ngIf="editingDevice">
+        <p class="text-sm font-semibold mb-4">{{ editingDevice.id ? 'Editar' : 'Nuevo' }} Dispositivo</p>
+        <form (ngSubmit)="saveDevice()" class="space-y-3">
+          <div><label class="ui-label">Nombre</label><input [(ngModel)]="deviceForm.name" name="name" required class="ui-input" /></div>
+          <div><label class="ui-label">Tipo</label><select [(ngModel)]="deviceForm.type" name="type" class="ui-select"><option value="PLC">PLC</option><option value="HMI">HMI</option><option value="Sensor">Sensor</option><option value="Controller">Controller</option></select></div>
+          <div><label class="ui-label">Protocolo</label><select [(ngModel)]="deviceForm.protocol" name="protocol" class="ui-select"><option value="OPC-UA">OPC-UA</option><option value="Modbus">Modbus</option><option value="MQTT">MQTT</option><option value="S7">S7</option></select></div>
+          <div><label class="ui-label">IP</label><input [(ngModel)]="deviceForm.ip" name="ip" required class="ui-input" /></div>
+          <div class="flex gap-2"><button type="submit" class="flex-1 ui-btn-primary">Guardar</button><button type="button" (click)="cancelDevice()" class="ui-btn-ghost">Cancelar</button></div>
+        </form>
+      </div>
+      <div class="ui-surface p-5" [class.xl:col-span-2]="editingDevice" [class.xl:col-span-3]="!editingDevice">
+        <p class="text-sm font-semibold mb-4">Dispositivos ({{ devices.length }})</p>
+        <div class="space-y-2">
+          <div *ngFor="let dev of devices" class="ui-surface-inner p-3 flex items-center justify-between">
+            <div class="flex-1"><p class="text-sm font-medium text-slate-200">{{ dev.name }}</p><p class="text-xs text-slate-400">{{ dev.type }} - {{ dev.protocol }} - {{ dev.ip }}</p></div>
+            <div class="flex items-center gap-2"><span [ngClass]="getStatusClass(dev.status)">{{ dev.status }}</span><button (click)="editDevice(dev)" class="ui-btn-ghost text-xs">Editar</button><button (click)="deleteDevice(dev.id)" class="ui-btn-danger text-xs">Eliminar</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="activeTab === 'TAGS'">
+    <div class="flex gap-2 mb-4">
+      <select [(ngModel)]="filterTagDevice" class="ui-select w-48"><option value="ALL">Todos los dispositivos</option><option *ngFor="let dev of devices" [value]="dev.name">{{ dev.name }}</option></select>
+      <div class="flex-1"></div>
+      <button (click)="newTag()" class="ui-btn-primary">Nuevo Tag</button>
+    </div>
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="ui-surface p-5" *ngIf="editingTag">
+        <p class="text-sm font-semibold mb-4">{{ editingTag.id ? 'Editar' : 'Nuevo' }} Tag</p>
+        <form (ngSubmit)="saveTag()" class="space-y-3">
+          <div><label class="ui-label">Nombre</label><input [(ngModel)]="tagForm.name" name="name" required class="ui-input" /></div>
+          <div><label class="ui-label">Dispositivo</label><select [(ngModel)]="tagForm.device" name="device" class="ui-select"><option *ngFor="let dev of devices" [value]="dev.name">{{ dev.name }}</option></select></div>
+          <div><label class="ui-label">Dirección</label><input [(ngModel)]="tagForm.address" name="address" required class="ui-input" placeholder="DB1.DBD0" /></div>
+          <div><label class="ui-label">Tipo de Dato</label><select [(ngModel)]="tagForm.dataType" name="dataType" class="ui-select"><option value="INT">INT</option><option value="FLOAT">FLOAT</option><option value="BOOL">BOOL</option><option value="STRING">STRING</option></select></div>
+          <div class="flex gap-2"><button type="submit" class="flex-1 ui-btn-primary">Guardar</button><button type="button" (click)="cancelTag()" class="ui-btn-ghost">Cancelar</button></div>
+        </form>
+      </div>
+      <div class="ui-surface p-5" [class.xl:col-span-2]="editingTag" [class.xl:col-span-3]="!editingTag">
+        <p class="text-sm font-semibold mb-4">Tags ({{ filteredTags.length }})</p>
+        <div class="ui-table-wrap">
+          <table class="ui-table">
+            <thead class="ui-thead"><tr><th class="ui-th">Nombre</th><th class="ui-th">Dispositivo</th><th class="ui-th">Dirección</th><th class="ui-th">Tipo</th><th class="ui-th">Valor</th><th class="ui-th">Calidad</th><th class="ui-th"></th></tr></thead>
+            <tbody><tr class="ui-tr" *ngFor="let tag of filteredTags"><td class="ui-td font-mono text-xs">{{ tag.name }}</td><td class="ui-td text-xs">{{ tag.device }}</td><td class="ui-td font-mono text-xs">{{ tag.address }}</td><td class="ui-td text-xs">{{ tag.dataType }}</td><td class="ui-td font-medium">{{ tag.value }}</td><td class="ui-td"><span [ngClass]="getQualityClass(tag.quality)">{{ tag.quality }}</span></td><td class="ui-td"><button (click)="editTag(tag)" class="ui-btn-ghost text-xs">Editar</button><button (click)="deleteTag(tag.id)" class="ui-btn-danger text-xs">Eliminar</button></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="activeTab === 'ALARMS'">
+    <button (click)="newAlarm()" class="ui-btn-primary mb-4">Nueva Regla</button>
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="ui-surface p-5" *ngIf="editingAlarm">
+        <p class="text-sm font-semibold mb-4">{{ editingAlarm.id ? 'Editar' : 'Nueva' }} Regla</p>
+        <form (ngSubmit)="saveAlarm()" class="space-y-3">
+          <div><label class="ui-label">Tag</label><select [(ngModel)]="alarmForm.tagName" name="tagName" class="ui-select"><option *ngFor="let tag of tags" [value]="tag.name">{{ tag.name }}</option></select></div>
+          <div><label class="ui-label">Condición</label><select [(ngModel)]="alarmForm.condition" name="condition" class="ui-select"><option value=">">Mayor que (>)</option><option value="<">Menor que (<)</option><option value="=">Igual (=)</option><option value="!=">Diferente (!=)</option></select></div>
+          <div><label class="ui-label">Umbral</label><input type="number" [(ngModel)]="alarmForm.threshold" name="threshold" required class="ui-input" /></div>
+          <div><label class="ui-label">Severidad</label><select [(ngModel)]="alarmForm.severity" name="severity" class="ui-select"><option value="LOW">Baja</option><option value="MEDIUM">Media</option><option value="HIGH">Alta</option><option value="CRITICAL">Crítica</option></select></div>
+          <div class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="alarmForm.active" name="active" id="active" class="rounded" /><label for="active" class="text-sm">Activa</label></div>
+          <div class="flex gap-2"><button type="submit" class="flex-1 ui-btn-primary">Guardar</button><button type="button" (click)="cancelAlarm()" class="ui-btn-ghost">Cancelar</button></div>
+        </form>
+      </div>
+      <div class="ui-surface p-5" [class.xl:col-span-2]="editingAlarm" [class.xl:col-span-3]="!editingAlarm">
+        <p class="text-sm font-semibold mb-4">Reglas de Alarma ({{ alarmRules.length }})</p>
+        <div class="space-y-2">
+          <div *ngFor="let alarm of alarmRules" class="ui-surface-inner p-3 flex items-center justify-between">
+            <div class="flex-1"><p class="text-sm font-medium text-slate-200">{{ alarm.tagName }} {{ alarm.condition }} {{ alarm.threshold }}</p><p class="text-xs text-slate-400">Severidad: {{ alarm.severity }}</p></div>
+            <div class="flex items-center gap-2"><span [ngClass]="getSeverityClass(alarm.severity)">{{ alarm.severity }}</span><span class="ui-badge" [class.text-green-300]="alarm.active" [class.bg-green-500/10]="alarm.active">{{ alarm.active ? 'Activa' : 'Inactiva' }}</span><button (click)="editAlarm(alarm)" class="ui-btn-ghost text-xs">Editar</button><button (click)="deleteAlarm(alarm.id)" class="ui-btn-danger text-xs">Eliminar</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

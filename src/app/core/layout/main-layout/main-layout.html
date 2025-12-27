@@ -192,79 +192,201 @@
         </div>
 
         <!-- MANTENIMIENTO -->
-<button
-  type="button"
-  (click)="toggle('maintenance')"
-  class="w-full flex items-center justify-between rounded-xl px-3 py-2 text-sm border border-slate-800/70 bg-slate-900/30 hover:bg-slate-800/40 transition"
->
-  <span class="flex items-center gap-2">
-    <i class="pi pi-wrench text-xs text-slate-400"></i>
-    Mantenimiento
-  </span>
+        <button type="button" (click)="toggle('maintenance')"
+          class="w-full flex items-center justify-between rounded-xl px-3 py-2 text-sm border border-slate-800/70 bg-slate-900/30 hover:bg-slate-800/40 transition">
+          <span class="flex items-center gap-2">
+            <i class="pi pi-wrench text-xs text-slate-400"></i>
+            Mantenimiento
+          </span>
 
-  <i
-    class="pi pi-chevron-down text-xs text-slate-400 transition"
-    [class.rotate-180]="open.maintenance"
-  ></i>
-</button>
+          <i class="pi pi-chevron-down text-xs text-slate-400 transition" [class.rotate-180]="open.maintenance"></i>
+        </button>
 
-<div *ngIf="open.maintenance" class="mt-2 ml-2 space-y-1">
+        <div *ngIf="open.maintenance" class="mt-2 ml-2 space-y-1">
 
-  <a routerLink="/maintenance/dashboard"
-     routerLinkActive="bg-slate-800/60 text-white"
-     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
-    <i class="pi pi-chart-line mr-2 text-xs"></i> Dashboard
-  </a>
+          <a routerLink="/maintenance/dashboard" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-chart-line mr-2 text-xs"></i> Dashboard
+          </a>
 
-  <a routerLink="/maintenance/assets"
-     routerLinkActive="bg-slate-800/60 text-white"
-     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
-    <i class="pi pi-cog mr-2 text-xs"></i> Activos / Máquinas
-  </a>
+          <a routerLink="/maintenance/assets" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-cog mr-2 text-xs"></i> Activos / Máquinas
+          </a>
 
-  <a routerLink="/maintenance/components"
-     routerLinkActive="bg-slate-800/60 text-white"
-     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
-    <i class="pi pi-box mr-2 text-xs"></i> Componentes
-  </a>
+          <a routerLink="/maintenance/components" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-box mr-2 text-xs"></i> Componentes
+          </a>
 
-  <a routerLink="/maintenance/work-orders"
-     routerLinkActive="bg-slate-800/60 text-white"
-     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
-    <i class="pi pi-wrench mr-2 text-xs"></i> Órdenes de trabajo
-  </a>
+          <a routerLink="/maintenance/work-orders" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-wrench mr-2 text-xs"></i> Órdenes de trabajo
+          </a>
+          <a routerLink="/maintenance/downtime" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-stopwatch mr-2 text-xs"></i> Paradas (Downtime)
+          </a>
 
-  <a routerLink="/maintenance/preventive"
-     routerLinkActive="bg-slate-800/60 text-white"
-     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
-    <i class="pi pi-calendar mr-2 text-xs"></i> Mantenimiento Preventivo
-  </a>
+          <a routerLink="/maintenance/calendar" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-calendar mr-2 text-xs"></i> Calendario
+          </a>
 
-  <a routerLink="/maintenance/interventions"
-     routerLinkActive="bg-slate-800/60 text-white"
-     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
-    <i class="pi pi-cog mr-2 text-xs"></i> Intervenciones
-  </a>
+          <a routerLink="/maintenance/preventive" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-calendar mr-2 text-xs"></i> Mantenimiento Preventivo
+          </a>
 
-  <a routerLink="/maintenance/inventory"
-     routerLinkActive="bg-slate-800/60 text-white"
-     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
-    <i class="pi pi-box mr-2 text-xs"></i> Repuestos
-  </a>
+          <a routerLink="/maintenance/interventions" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-cog mr-2 text-xs"></i> Intervenciones
+          </a>
 
-  <a routerLink="/maintenance/history"
-     routerLinkActive="bg-slate-800/60 text-white"
-     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
-    <i class="pi pi-history mr-2 text-xs"></i> Historial
-  </a>
+          <a routerLink="/maintenance/inventory" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-box mr-2 text-xs"></i> Repuestos
+          </a>
 
-  <a routerLink="/maintenance/reports"
-     routerLinkActive="bg-slate-800/60 text-white"
-     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
-    <i class="pi pi-chart-bar mr-2 text-xs"></i> Reportes
-  </a>
+          <a routerLink="/maintenance/history" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-history mr-2 text-xs"></i> Historial
+          </a>
 
-</div>
+          <a routerLink="/maintenance/reports" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-chart-bar mr-2 text-xs"></i> Reportes
+          </a>
+
+        </div>
+
+        <!-- INVENTARIOS -->
+        <button type="button" (click)="toggle('inventory')"
+          class="w-full flex items-center justify-between rounded-xl px-3 py-2 text-sm border border-slate-800/70 bg-slate-900/30 hover:bg-slate-800/40 transition">
+          <span class="flex items-center gap-2">
+            <i class="pi pi-warehouse text-xs text-slate-400"></i>
+            Inventarios
+          </span>
+          <i class="pi pi-chevron-down text-xs text-slate-400 transition" [class.rotate-180]="open.inventory"></i>
+        </button>
+
+        <div *ngIf="open.inventory" class="mt-2 ml-2 space-y-1">
+          <a routerLink="/inventory/movements" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-arrows-h mr-2 text-xs"></i> Entradas/Salidas
+          </a>
+
+          <a routerLink="/inventory/kardex" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-list mr-2 text-xs"></i> Kardex
+          </a>
+
+          <a routerLink="/inventory/transfers" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-arrow-right-arrow-left mr-2 text-xs"></i> Transferencias
+          </a>
+
+          <a routerLink="/inventory/counts" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-check-square mr-2 text-xs"></i> Conteos Cíclicos
+          </a>
+        </div>
+
+        <!-- REPORTES Y KPIs -->
+        <button type="button" (click)="toggle('reportsKpi')"
+          class="w-full flex items-center justify-between rounded-xl px-3 py-2 text-sm border border-slate-800/70 bg-slate-900/30 hover:bg-slate-800/40 transition">
+          <span class="flex items-center gap-2">
+            <i class="pi pi-chart-bar text-xs text-slate-400"></i>
+            Reportes y KPIs
+          </span>
+          <i class="pi pi-chevron-down text-xs text-slate-400 transition" [class.rotate-180]="open.reportsKpi"></i>
+        </button>
+
+        <div *ngIf="open.reportsKpi" class="mt-2 ml-2 space-y-1">
+          <a routerLink="/reports-kpi/oee" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-chart-line mr-2 text-xs"></i> OEE
+          </a>
+
+          <a routerLink="/reports-kpi/production" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-chart-bar mr-2 text-xs"></i> Análisis Producción
+          </a>
+
+          <a routerLink="/reports-kpi/scrap" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-exclamation-triangle mr-2 text-xs"></i> Scrap/Merma
+          </a>
+
+          <a routerLink="/reports-kpi/downtime" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-ban mr-2 text-xs"></i> Paradas (Pareto)
+          </a>
+
+          <a routerLink="/reports-kpi/traceability" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-search mr-2 text-xs"></i> Trazabilidad/Auditoría
+          </a>
+        </div>
+
+        <!-- ADMINISTRACIÓN -->
+        <button type="button" (click)="toggle('admin')"
+          class="w-full flex items-center justify-between rounded-xl px-3 py-2 text-sm border border-slate-800/70 bg-slate-900/30 hover:bg-slate-800/40 transition">
+          <span class="flex items-center gap-2">
+            <i class="pi pi-shield text-xs text-slate-400"></i>
+            Administración
+          </span>
+          <i class="pi pi-chevron-down text-xs text-slate-400 transition" [class.rotate-180]="open.admin"></i>
+        </button>
+
+        <div *ngIf="open.admin" class="mt-2 ml-2 space-y-1">
+          <a routerLink="/admin/users-roles" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-users mr-2 text-xs"></i> Usuarios y Roles
+          </a>
+
+          <a routerLink="/admin/audit-logs" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-history mr-2 text-xs"></i> Auditoría
+          </a>
+
+          <a routerLink="/admin/system-params" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-cog mr-2 text-xs"></i> Parámetros del Sistema
+          </a>
+        </div>
+
+        <!-- INTEGRACIONES -->
+        <button type="button" (click)="toggle('integrations')"
+          class="w-full flex items-center justify-between rounded-xl px-3 py-2 text-sm border border-slate-800/70 bg-slate-900/30 hover:bg-slate-800/40 transition">
+          <span class="flex items-center gap-2">
+            <i class="pi pi-sitemap text-xs text-slate-400"></i>
+            Integraciones
+          </span>
+          <i class="pi pi-chevron-down text-xs text-slate-400 transition" [class.rotate-180]="open.integrations"></i>
+        </button>
+
+        <div *ngIf="open.integrations" class="mt-2 ml-2 space-y-1">
+          <a routerLink="/integrations/erp" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-database mr-2 text-xs"></i> ERP (SAP/Odoo)
+          </a>
+
+          <a routerLink="/integrations/scada" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-bolt mr-2 text-xs"></i> SCADA
+          </a>
+
+          <a routerLink="/integrations/cmms" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-wrench mr-2 text-xs"></i> CMMS Externo
+          </a>
+
+          <a routerLink="/integrations/messaging" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-comments mr-2 text-xs"></i> Messaging (Kafka/RabbitMQ)
+          </a>
+        </div>
 
         <button type="button" (click)="toggleMasterMenu()"
           class="w-full flex items-center gap-3 px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">

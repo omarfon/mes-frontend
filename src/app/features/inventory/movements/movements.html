@@ -1,0 +1,319 @@
+<div class="space-y-5">
+  <!-- Header -->
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Movimientos de Inventario</h3>
+      <p class="ui-subtitle">Entradas, salidas y ajustes de MP / WIP / PT</p>
+    </div>
+
+    <div class="flex gap-2 items-center flex-wrap">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9 w-64" placeholder="Buscar movimientos..." />
+      </div>
+      <input type="date" [(ngModel)]="filterDate" class="ui-input w-40" />
+      <select [(ngModel)]="filterType" class="ui-select w-40">
+        <option value="ALL">Todos los tipos</option>
+        <option value="RECEIPT">Entrada</option>
+        <option value="ISSUE">Salida</option>
+        <option value="ADJUSTMENT">Ajuste</option>
+        <option value="TRANSFER">Transferencia</option>
+        <option value="RETURN">Devolución</option>
+      </select>
+      <select [(ngModel)]="filterMaterialType" class="ui-select w-36">
+        <option value="ALL">Todos</option>
+        <option value="RM">MP</option>
+        <option value="WIP">WIP</option>
+        <option value="FG">PT</option>
+      </select>
+      <select [(ngModel)]="filterStatus" class="ui-select w-36">
+        <option value="ALL">Todos</option>
+        <option value="PENDING">Pendiente</option>
+        <option value="COMPLETED">Completado</option>
+        <option value="CANCELLED">Cancelado</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Form Column -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">{{ editingId ? 'Editar Movimiento' : 'Nuevo Movimiento' }}</p>
+        <span class="text-[11px] text-slate-500">Información del movimiento</span>
+      </div>
+
+      <form (ngSubmit)="submit()" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Código</label>
+            <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="MOV-2024-001" />
+          </div>
+          <div>
+            <label class="ui-label">Fecha</label>
+            <input type="date" [(ngModel)]="form.date" name="date" class="ui-input" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Tipo de Movimiento</label>
+            <select [(ngModel)]="form.type" name="type" class="ui-select">
+              <option value="RECEIPT">Entrada</option>
+              <option value="ISSUE">Salida</option>
+              <option value="ADJUSTMENT">Ajuste</option>
+              <option value="TRANSFER">Transferencia</option>
+              <option value="RETURN">Devolución</option>
+            </select>
+          </div>
+          <div>
+            <label class="ui-label">Estado</label>
+            <select [(ngModel)]="form.status" name="status" class="ui-select">
+              <option value="PENDING">Pendiente</option>
+              <option value="COMPLETED">Completado</option>
+              <option value="CANCELLED">Cancelado</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Código Material</label>
+          <input [(ngModel)]="form.materialCode" name="materialCode" required class="ui-input" placeholder="RM-001" />
+        </div>
+
+        <div>
+          <label class="ui-label">Nombre Material</label>
+          <input [(ngModel)]="form.materialName" name="materialName" class="ui-input" placeholder="Acero Inoxidable..." />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Tipo Material</label>
+            <select [(ngModel)]="form.materialType" name="materialType" class="ui-select">
+              <option value="RM">Materia Prima</option>
+              <option value="WIP">En Proceso</option>
+              <option value="FG">Producto Terminado</option>
+            </select>
+          </div>
+          <div>
+            <label class="ui-label">Lote</label>
+            <input [(ngModel)]="form.lotCode" name="lotCode" class="ui-input" placeholder="LOT-2024-123" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Ubicación Origen</label>
+            <input [(ngModel)]="form.locationFrom" name="locationFrom" class="ui-input" placeholder="A-01-01" />
+          </div>
+          <div>
+            <label class="ui-label">Ubicación Destino</label>
+            <input [(ngModel)]="form.locationTo" name="locationTo" class="ui-input" placeholder="A-01-02" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Cantidad</label>
+            <input type="number" [(ngModel)]="form.quantity" name="quantity" required class="ui-input" placeholder="100" />
+          </div>
+          <div>
+            <label class="ui-label">Unidad</label>
+            <input [(ngModel)]="form.uom" name="uom" class="ui-input" placeholder="kg, pcs, m..." />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Tipo Documento Ref.</label>
+            <select [(ngModel)]="form.referenceType" name="referenceType" class="ui-select">
+              <option [value]="undefined">-- Ninguno --</option>
+              <option value="PO">Orden de Compra</option>
+              <option value="WO">Orden de Trabajo</option>
+              <option value="SO">Orden de Venta</option>
+              <option value="TO">Transferencia</option>
+              <option value="ADJ">Ajuste</option>
+            </select>
+          </div>
+          <div>
+            <label class="ui-label">Documento Ref.</label>
+            <input [(ngModel)]="form.referenceDoc" name="referenceDoc" class="ui-input" placeholder="PO-2024-045" />
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Motivo/Razón</label>
+          <input [(ngModel)]="form.reason" name="reason" class="ui-input" placeholder="Recepción de MP..." />
+        </div>
+
+        <div>
+          <label class="ui-label">Notas</label>
+          <textarea [(ngModel)]="form.notes" name="notes" class="ui-input" rows="2" placeholder="Observaciones..."></textarea>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button type="submit" class="flex-1 ui-btn-primary">
+            {{ editingId ? 'Guardar Cambios' : 'Crear Movimiento' }}
+          </button>
+          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Movements List -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Listado de Movimientos</p>
+        <span class="text-[11px] text-slate-500">{{ filtered.length }} movimientos</span>
+      </div>
+
+      <div class="space-y-2 max-h-[700px] overflow-y-auto pr-2">
+        <div *ngFor="let mov of filtered"
+             (click)="selectMovement(mov)"
+             class="ui-surface-inner p-3 hover:bg-slate-800/40 transition cursor-pointer"
+             [ngClass]="{'ring-2 ring-blue-500/30': selectedMovement?.id === mov.id}">
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-mono text-xs font-semibold truncate">{{ mov.code }}</span>
+                <span class="text-xs" [ngClass]="getTypeBadge(mov.type)">{{ getTypeLabel(mov.type) }}</span>
+              </div>
+              <p class="text-xs text-slate-400 mb-1">{{ mov.date }}</p>
+            </div>
+            <span class="text-xs" [ngClass]="getStatusBadge(mov.status)">
+              {{ mov.status }}
+            </span>
+          </div>
+
+          <div class="space-y-1 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="pi pi-box text-[10px] text-slate-500"></span>
+              <span class="truncate text-slate-200">{{ mov.materialCode }}</span>
+              <span [ngClass]="getMaterialTypeBadge(mov.materialType)">{{ getMaterialTypeLabel(mov.materialType) }}</span>
+            </div>
+            <p class="text-slate-300 truncate ml-5">{{ mov.materialName }}</p>
+            <div class="flex items-center justify-between ml-5">
+              <span class="text-slate-400">Cantidad:</span>
+              <span class="font-semibold text-slate-200">{{ mov.quantity }} {{ mov.uom }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="filtered.length === 0" class="text-center py-10 text-slate-500 text-sm">
+          No se encontraron movimientos
+        </div>
+      </div>
+    </div>
+
+    <!-- Movement Detail Panel -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Detalle del Movimiento</p>
+        <div class="flex gap-2" *ngIf="selectedMovement">
+          <button (click)="editMovement(selectedMovement)" class="ui-btn-ghost text-xs">
+            <span class="pi pi-pencil text-[10px] mr-1"></span>
+            Editar
+          </button>
+          <button (click)="remove(selectedMovement.id)" class="ui-btn-danger text-xs">
+            <span class="pi pi-trash text-[10px] mr-1"></span>
+            Eliminar
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="!selectedMovement" class="text-center py-10 text-slate-500 text-sm">
+        Selecciona un movimiento para ver sus detalles
+      </div>
+
+      <div *ngIf="selectedMovement" class="space-y-4">
+        <!-- Basic Info Card -->
+        <div class="ui-surface-inner p-4">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-mono text-sm font-bold">{{ selectedMovement.code }}</span>
+                <span class="text-xs" [ngClass]="getTypeBadge(selectedMovement.type)">
+                  {{ getTypeLabel(selectedMovement.type) }}
+                </span>
+              </div>
+              <p class="text-xs text-slate-400">{{ selectedMovement.date }}</p>
+            </div>
+            <span class="text-xs" [ngClass]="getStatusBadge(selectedMovement.status)">
+              {{ selectedMovement.status }}
+            </span>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <div>
+              <span class="text-slate-500">Material</span>
+              <div class="flex items-center gap-2 mt-1">
+                <p class="text-slate-200 font-mono">{{ selectedMovement.materialCode }}</p>
+                <span [ngClass]="getMaterialTypeBadge(selectedMovement.materialType)">
+                  {{ getMaterialTypeLabel(selectedMovement.materialType) }}
+                </span>
+              </div>
+              <p class="text-slate-300 mt-0.5">{{ selectedMovement.materialName }}</p>
+            </div>
+
+            <div *ngIf="selectedMovement.lotCode">
+              <span class="text-slate-500">Lote</span>
+              <p class="text-slate-200 mt-0.5 font-mono">{{ selectedMovement.lotCode }}</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div *ngIf="selectedMovement.locationFrom">
+                <span class="text-slate-500">Ubicación Origen</span>
+                <p class="text-slate-200 mt-0.5 font-mono">{{ selectedMovement.locationFrom }}</p>
+              </div>
+              <div *ngIf="selectedMovement.locationTo">
+                <span class="text-slate-500">Ubicación Destino</span>
+                <p class="text-slate-200 mt-0.5 font-mono">{{ selectedMovement.locationTo }}</p>
+              </div>
+            </div>
+
+            <div>
+              <span class="text-slate-500">Cantidad</span>
+              <p class="text-slate-200 mt-0.5 text-lg font-semibold">{{ selectedMovement.quantity }} {{ selectedMovement.uom }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reference Info -->
+        <div class="ui-surface-inner p-4" *ngIf="selectedMovement.referenceDoc">
+          <p class="text-sm font-semibold mb-3">Referencia</p>
+          <div class="space-y-2 text-xs">
+            <div>
+              <span class="text-slate-500">Tipo Documento</span>
+              <p class="text-slate-200 mt-0.5">{{ getReferenceTypeLabel(selectedMovement.referenceType) }}</p>
+            </div>
+            <div>
+              <span class="text-slate-500">Número Documento</span>
+              <p class="text-slate-200 mt-0.5 font-mono">{{ selectedMovement.referenceDoc }}</p>
+            </div>
+            <div *ngIf="selectedMovement.reason">
+              <span class="text-slate-500">Motivo</span>
+              <p class="text-slate-200 mt-0.5">{{ selectedMovement.reason }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Info -->
+        <div class="ui-surface-inner p-4">
+          <p class="text-sm font-semibold mb-3">Información Adicional</p>
+          <div class="space-y-2 text-xs">
+            <div>
+              <span class="text-slate-500">Usuario</span>
+              <p class="text-slate-200 mt-0.5">{{ selectedMovement.username }}</p>
+            </div>
+            <div *ngIf="selectedMovement.notes">
+              <span class="text-slate-500">Notas</span>
+              <p class="text-slate-300 mt-0.5">{{ selectedMovement.notes }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,170 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Conteos Cíclicos</h3>
+      <p class="ui-subtitle">Control de inventario físico y variaciones</p>
+    </div>
+    <div class="flex gap-2 items-center">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9 w-64" placeholder="Buscar conteos..." />
+      </div>
+      <select [(ngModel)]="filterType" class="ui-select w-36">
+        <option value="ALL">Todos tipos</option>
+        <option value="FULL">Completo</option>
+        <option value="PARTIAL">Parcial</option>
+        <option value="SPOT">Aleatorio</option>
+      </select>
+      <select [(ngModel)]="filterStatus" class="ui-select w-36">
+        <option value="ALL">Todos estados</option>
+        <option value="PLANNED">Planeado</option>
+        <option value="IN_PROGRESS">En Progreso</option>
+        <option value="COMPLETED">Completado</option>
+        <option value="REVIEWED">Revisado</option>
+        <option value="ADJUSTED">Ajustado</option>
+      </select>
+      <select [(ngModel)]="filterZone" class="ui-select w-36">
+        <option value="ALL">Todas zonas</option>
+        <option *ngFor="let zone of uniqueZones" [value]="zone">{{ zone }}</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Conteos Programados</p>
+        <span class="text-[11px] text-slate-500">{{ filtered.length }} conteos</span>
+      </div>
+      <div class="space-y-2 max-h-[700px] overflow-y-auto pr-2">
+        <div *ngFor="let count of filtered" (click)="selectCount(count)" class="ui-surface-inner p-3 hover:bg-slate-800/40 transition cursor-pointer" [ngClass]="{'ring-2 ring-blue-500/30': selectedCount?.id === count.id}">
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-mono text-xs font-semibold">{{ count.code }}</span>
+                <span class="text-xs" [ngClass]="getTypeBadge(count.type)">{{ getTypeLabel(count.type) }}</span>
+              </div>
+              <p class="text-xs text-slate-400">{{ count.date }}</p>
+            </div>
+            <span class="text-xs" [ngClass]="getStatusBadge(count.status)">{{ getStatusLabel(count.status) }}</span>
+          </div>
+          <div class="space-y-1 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Zona/Ubicación:</span>
+              <span class="text-slate-200">{{ count.zone || count.location }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Contado por:</span>
+              <span class="text-slate-200">{{ count.countedBy }}</span>
+            </div>
+            <div class="flex items-center justify-between pt-2 border-t border-slate-800/60">
+              <span class="text-slate-500">Progreso:</span>
+              <span class="font-semibold text-slate-100">{{ count.itemsCounted }}/{{ count.totalItems }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Variaciones:</span>
+              <span class="font-semibold" [class.text-red-400]="count.variancesFound > 0" [class.text-green-400]="count.variancesFound === 0">
+                {{ count.variancesFound }}
+              </span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Exactitud:</span>
+              <span class="font-semibold" [class.text-green-400]="getAccuracy(count) === 100" [class.text-amber-400]="getAccuracy(count) < 100 && getAccuracy(count) >= 90" [class.text-red-400]="getAccuracy(count) < 90">
+                {{ getAccuracy(count) | number:'1.1-1' }}%
+              </span>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="filtered.length === 0" class="text-center py-10 text-slate-500 text-sm">Sin conteos</div>
+      </div>
+    </div>
+
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Detalle del Conteo</p>
+      </div>
+      <div *ngIf="!selectedCount" class="text-center py-10 text-slate-500 text-sm">Selecciona un conteo</div>
+      <div *ngIf="selectedCount" class="space-y-4">
+        <div class="ui-surface-inner p-4">
+          <div class="flex justify-between mb-3">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-mono text-sm font-bold">{{ selectedCount.code }}</span>
+                <span class="text-xs" [ngClass]="getTypeBadge(selectedCount.type)">{{ getTypeLabel(selectedCount.type) }}</span>
+              </div>
+              <p class="text-xs text-slate-400">{{ selectedCount.date }}</p>
+            </div>
+            <span class="text-xs" [ngClass]="getStatusBadge(selectedCount.status)">{{ getStatusLabel(selectedCount.status) }}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-xs mb-3">
+            <div><span class="text-slate-500">Zona</span><p class="text-slate-200 mt-0.5">{{ selectedCount.zone || 'N/A' }}</p></div>
+            <div><span class="text-slate-500">Ubicación</span><p class="text-slate-200 mt-0.5 font-mono">{{ selectedCount.location || 'N/A' }}</p></div>
+            <div><span class="text-slate-500">Contado por</span><p class="text-slate-200 mt-0.5">{{ selectedCount.countedBy }}</p></div>
+            <div *ngIf="selectedCount.verifiedBy"><span class="text-slate-500">Verificado por</span><p class="text-slate-200 mt-0.5">{{ selectedCount.verifiedBy }}</p></div>
+          </div>
+          <div class="grid grid-cols-3 gap-3 text-center">
+            <div class="p-2 rounded-lg bg-slate-900/40">
+              <p class="text-slate-500 text-xs mb-1">Items</p>
+              <p class="text-lg font-bold text-slate-100">{{ selectedCount.itemsCounted }}<span class="text-sm text-slate-400">/{{ selectedCount.totalItems }}</span></p>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-900/40">
+              <p class="text-slate-500 text-xs mb-1">Variaciones</p>
+              <p class="text-lg font-bold" [class.text-red-400]="selectedCount.variancesFound > 0" [class.text-green-400]="selectedCount.variancesFound === 0">{{ selectedCount.variancesFound }}</p>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-900/40">
+              <p class="text-slate-500 text-xs mb-1">Exactitud</p>
+              <p class="text-lg font-bold" [class.text-green-400]="getAccuracy(selectedCount) === 100" [class.text-amber-400]="getAccuracy(selectedCount) < 100 && getAccuracy(selectedCount) >= 90">
+                {{ getAccuracy(selectedCount) | number:'1.0-0' }}%
+              </p>
+            </div>
+          </div>
+          <div *ngIf="selectedCount.notes" class="mt-3 pt-3 border-t border-slate-800/60">
+            <span class="text-xs text-slate-500">Notas</span>
+            <p class="text-xs text-slate-300 mt-1">{{ selectedCount.notes }}</p>
+          </div>
+        </div>
+
+        <div class="ui-surface-inner overflow-hidden">
+          <div class="p-3 border-b border-slate-800/60">
+            <p class="text-sm font-semibold">Líneas de Conteo</p>
+          </div>
+          <div class="ui-table-wrap">
+            <table class="ui-table">
+              <thead class="ui-thead">
+                <tr>
+                  <th class="ui-th">Material</th>
+                  <th class="ui-th">Ubicación</th>
+                  <th class="ui-th text-right">Sistema</th>
+                  <th class="ui-th text-right">Contado</th>
+                  <th class="ui-th text-right">Variación</th>
+                  <th class="ui-th text-right">%</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="ui-tr" *ngFor="let line of selectedCount.lines">
+                  <td class="ui-td">
+                    <span class="font-mono text-xs">{{ line.materialCode }}</span>
+                    <p class="text-[11px] text-slate-400 truncate max-w-[150px]">{{ line.materialName }}</p>
+                  </td>
+                  <td class="ui-td"><span class="font-mono text-xs">{{ line.location }}</span></td>
+                  <td class="ui-td text-right"><span class="text-sm text-slate-300">{{ line.systemQty }} {{ line.uom }}</span></td>
+                  <td class="ui-td text-right"><span class="text-sm font-semibold text-slate-100">{{ line.countedQty }} {{ line.uom }}</span></td>
+                  <td class="ui-td text-right">
+                    <span class="text-sm font-semibold" [ngClass]="getVarianceBadge(line.variance)">
+                      {{ line.variance > 0 ? '+' : '' }}{{ line.variance }}
+                    </span>
+                  </td>
+                  <td class="ui-td text-right">
+                    <span class="text-xs" [ngClass]="getVarianceBadge(line.variance)">
+                      {{ line.variancePercent > 0 ? '+' : '' }}{{ line.variancePercent | number:'1.1-1' }}%
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,184 @@
+<div class="space-y-5">
+  <!-- Header -->
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Kardex de Inventario</h3>
+      <p class="ui-subtitle">Control de existencias y costos por lote/material</p>
+    </div>
+
+    <div class="flex gap-2 items-center">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9 w-64" placeholder="Buscar material o lote..." />
+      </div>
+      <select [(ngModel)]="filterMaterialType" class="ui-select w-40">
+        <option value="ALL">Todos</option>
+        <option value="RM">MP</option>
+        <option value="WIP">WIP</option>
+        <option value="FG">PT</option>
+      </select>
+      <select [(ngModel)]="filterLocation" class="ui-select w-40">
+        <option value="ALL">Todas ubicaciones</option>
+        <option *ngFor="let loc of uniqueLocations" [value]="loc">{{ loc }}</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+    <!-- Materials List -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Materiales con Movimientos</p>
+        <span class="text-[11px] text-slate-500">{{ filtered.length }} materiales</span>
+      </div>
+
+      <div class="space-y-2 max-h-[700px] overflow-y-auto pr-2">
+        <div *ngFor="let kardex of filtered"
+             (click)="selectKardex(kardex)"
+             class="ui-surface-inner p-3 hover:bg-slate-800/40 transition cursor-pointer"
+             [ngClass]="{'ring-2 ring-blue-500/30': selectedKardex?.materialCode === kardex.materialCode}">
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-mono text-xs font-semibold truncate">{{ kardex.materialCode }}</span>
+                <span [ngClass]="getMaterialTypeBadge(kardex.materialType)">
+                  {{ getMaterialTypeLabel(kardex.materialType) }}
+                </span>
+              </div>
+              <p class="text-sm text-slate-200 truncate">{{ kardex.materialName }}</p>
+            </div>
+          </div>
+
+          <div class="space-y-1 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Lote:</span>
+              <span class="font-mono text-slate-200">{{ kardex.lotCode || 'N/A' }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Ubicación:</span>
+              <span class="font-mono text-slate-200">{{ kardex.location }}</span>
+            </div>
+            <div class="flex items-center justify-between pt-2 border-t border-slate-800/60">
+              <span class="text-slate-500">Saldo:</span>
+              <span class="font-semibold text-slate-100">{{ kardex.currentBalance }} {{ kardex.uom }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Valor:</span>
+              <span class="font-semibold text-green-400">{{ formatCurrency(kardex.currentValue) }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Costo Promedio:</span>
+              <span class="text-slate-200">{{ formatCurrency(kardex.averageUnitCost) }}/{{ kardex.uom }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="filtered.length === 0" class="text-center py-10 text-slate-500 text-sm">
+          No se encontraron materiales
+        </div>
+      </div>
+    </div>
+
+    <!-- Kardex Detail with Records -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Detalle de Movimientos</p>
+        <span class="text-[11px] text-slate-500" *ngIf="selectedKardex">{{ selectedKardex.records.length }} registros</span>
+      </div>
+
+      <div *ngIf="!selectedKardex" class="text-center py-10 text-slate-500 text-sm">
+        Selecciona un material para ver su kardex
+      </div>
+
+      <div *ngIf="selectedKardex" class="space-y-4">
+        <!-- Material Summary -->
+        <div class="ui-surface-inner p-4">
+          <div class="mb-3">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="font-mono text-sm font-bold">{{ selectedKardex.materialCode }}</span>
+              <span [ngClass]="getMaterialTypeBadge(selectedKardex.materialType)">
+                {{ getMaterialTypeLabel(selectedKardex.materialType) }}
+              </span>
+            </div>
+            <h4 class="text-sm text-slate-200 mb-1">{{ selectedKardex.materialName }}</h4>
+            <p class="text-xs text-slate-400">Lote: {{ selectedKardex.lotCode || 'N/A' }} · Ubicación: {{ selectedKardex.location }}</p>
+          </div>
+
+          <div class="grid grid-cols-3 gap-3 text-xs">
+            <div class="text-center p-2 rounded-lg bg-slate-900/40">
+              <p class="text-slate-500 mb-1">Saldo Actual</p>
+              <p class="text-lg font-bold text-slate-100">{{ selectedKardex.currentBalance }}</p>
+              <p class="text-slate-400">{{ selectedKardex.uom }}</p>
+            </div>
+            <div class="text-center p-2 rounded-lg bg-slate-900/40">
+              <p class="text-slate-500 mb-1">Valor Total</p>
+              <p class="text-sm font-bold text-green-400">{{ formatCurrency(selectedKardex.currentValue) }}</p>
+            </div>
+            <div class="text-center p-2 rounded-lg bg-slate-900/40">
+              <p class="text-slate-500 mb-1">Costo Promedio</p>
+              <p class="text-sm font-bold text-blue-400">{{ formatCurrency(selectedKardex.averageUnitCost) }}</p>
+              <p class="text-slate-400">/{{ selectedKardex.uom }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Records Table -->
+        <div class="ui-surface-inner overflow-hidden">
+          <div class="ui-table-wrap">
+            <table class="ui-table">
+              <thead class="ui-thead">
+                <tr>
+                  <th class="ui-th">Fecha</th>
+                  <th class="ui-th">Movimiento</th>
+                  <th class="ui-th">Tipo</th>
+                  <th class="ui-th text-right">Entrada</th>
+                  <th class="ui-th text-right">Salida</th>
+                  <th class="ui-th text-right">Saldo</th>
+                  <th class="ui-th text-right">Costo Unit.</th>
+                  <th class="ui-th text-right">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="ui-tr" *ngFor="let record of selectedKardex.records">
+                  <td class="ui-td">
+                    <span class="text-xs">{{ record.date }}</span>
+                  </td>
+                  <td class="ui-td">
+                    <span class="font-mono text-xs">{{ record.movementCode }}</span>
+                    <p class="text-[11px] text-slate-500" *ngIf="record.documentRef">{{ record.documentRef }}</p>
+                  </td>
+                  <td class="ui-td">
+                    <span class="text-xs" [ngClass]="getMovementTypeBadge(record.type)">
+                      {{ getMovementTypeLabel(record.type) }}
+                    </span>
+                  </td>
+                  <td class="ui-td text-right">
+                    <span class="text-sm" [class.text-green-400]="record.quantityIn > 0" [class.font-semibold]="record.quantityIn > 0">
+                      {{ record.quantityIn > 0 ? record.quantityIn : '-' }}
+                    </span>
+                  </td>
+                  <td class="ui-td text-right">
+                    <span class="text-sm" [class.text-red-400]="record.quantityOut > 0" [class.font-semibold]="record.quantityOut > 0">
+                      {{ record.quantityOut > 0 ? record.quantityOut : '-' }}
+                    </span>
+                  </td>
+                  <td class="ui-td text-right">
+                    <span class="text-sm font-semibold text-slate-100">{{ record.balance }}</span>
+                  </td>
+                  <td class="ui-td text-right">
+                    <span class="text-xs text-slate-300">{{ formatCurrency(record.unitCost) }}</span>
+                  </td>
+                  <td class="ui-td text-right">
+                    <span class="text-sm font-medium" [class.text-green-400]="record.totalCost > 0" [class.text-red-400]="record.totalCost < 0">
+                      {{ formatCurrency(record.totalCost) }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

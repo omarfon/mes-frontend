@@ -34,6 +34,10 @@ toggleMasterMenu() {
       traceability: false, // 👈 añade esto
       quality: false, // 👈 añade esto
       maintenance: false, // 👈 añade esto
+      inventory: false, // 👈 añade esto
+      reportsKpi: false, // 👈 añade esto
+      admin: false, // 👈 añade esto
+      integrations: false, // 👈 añade esto
   };
 
   toggle(key: keyof typeof this.open) {

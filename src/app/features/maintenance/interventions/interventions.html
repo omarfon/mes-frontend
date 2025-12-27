@@ -1,1 +1,150 @@
-<p>interventions works!</p>
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Intervenciones</h3>
+      <p class="ui-subtitle">Ejecución técnica: tiempos, causa raíz, acciones y consumo de repuestos.</p>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200">{{ error }}</div>
+  <div *ngIf="success" class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">{{ success }}</div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Create -->
+    <div class="ui-surface p-5">
+      <p class="text-sm font-semibold mb-3">Nueva intervención</p>
+
+      <div class="space-y-3">
+        <div>
+          <label class="ui-label">Activo</label>
+          <select [(ngModel)]="form.assetCode" class="ui-select">
+            <option *ngFor="let a of ms.assets" [value]="a.code">{{ a.code }} · {{ a.name }}</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="ui-label">WO (opcional)</label><input [(ngModel)]="form.woId" class="ui-input" placeholder="WO-0001" /></div>
+          <div><label class="ui-label">Técnico</label><input [(ngModel)]="form.technician" class="ui-input" /></div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="ui-label">Estado</label>
+            <select [(ngModel)]="form.status" class="ui-select">
+              <option value="PLANNED">PLANNED</option>
+              <option value="IN_PROGRESS">IN_PROGRESS</option>
+              <option value="DONE">DONE</option>
+            </select>
+          </div>
+          <div><label class="ui-label">Downtime (min)</label><input type="number" [(ngModel)]="form.downtimeMinutes" class="ui-input" /></div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="ui-label">Inicio</label><input type="datetime-local" [(ngModel)]="form.startAt" class="ui-input" /></div>
+          <div><label class="ui-label">Fin</label><input type="datetime-local" [(ngModel)]="form.endAt" class="ui-input" /></div>
+        </div>
+
+        <div><label class="ui-label">Resumen</label><input [(ngModel)]="form.summary" class="ui-input" placeholder="Qué se hizo..." /></div>
+        <div><label class="ui-label">Causa raíz</label><input [(ngModel)]="form.rootCause" class="ui-input" placeholder="Por qué pasó..." /></div>
+        <div><label class="ui-label">Acciones</label><input [(ngModel)]="form.actions" class="ui-input" placeholder="Acciones correctivas..." /></div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="ui-label">Repuesto usado</label>
+            <select [(ngModel)]="form.usedSpareCode" class="ui-select">
+              <option *ngFor="let s of ms.spares" [value]="s.code">{{ s.code }} · {{ s.name }}</option>
+            </select>
+          </div>
+          <div><label class="ui-label">Qty</label><input type="number" [(ngModel)]="form.usedSpareQty" class="ui-input" /></div>
+        </div>
+
+        <div><label class="ui-label">Notas</label><input [(ngModel)]="form.notes" class="ui-input" /></div>
+
+        <button class="ui-btn-primary w-full" (click)="create()">Crear</button>
+
+        <div class="my-2 border-t border-slate-800/70"></div>
+        <label class="ui-label">Buscar</label>
+        <input [(ngModel)]="q" class="ui-input" placeholder="INT-0001, MAQ-001..." />
+      </div>
+    </div>
+
+    <!-- List -->
+    <div class="ui-surface p-5 xl:col-span-1">
+      <p class="text-sm font-semibold mb-3">Intervenciones</p>
+
+      <div class="space-y-2">
+        <button *ngFor="let i of list" (click)="open(i)"
+          class="w-full text-left rounded-xl border border-slate-800/70 bg-slate-950/30 p-3 hover:bg-slate-900/30 transition">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="text-sm font-semibold text-slate-100">{{ i.code }}</div>
+              <div class="text-xs text-slate-400 mt-1">{{ i.assetCode }} · {{ i.assetName }}</div>
+              <div class="text-[11px] text-slate-500 mt-1">{{ i.location }}</div>
+            </div>
+            <span [ngClass]="badge(i.status)">{{ i.status }}</span>
+          </div>
+          <div class="mt-2 text-[11px] text-slate-400">Tech: {{ i.technician }} · WO: {{ i.woId || '-' }}</div>
+        </button>
+
+        <div *ngIf="list.length===0" class="text-center text-slate-500 py-10">Sin intervenciones.</div>
+      </div>
+    </div>
+
+    <!-- Detail -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-sm font-semibold">Detalle</p>
+        <button class="ui-btn-ghost text-xs" (click)="selected=null" *ngIf="selected">Cerrar</button>
+      </div>
+      <div *ngIf="!selected" class="text-sm text-slate-500 py-10 text-center">Selecciona una intervención.</div>
+      
+      <div *ngIf="selected" class="space-y-4">
+          <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
+              <div class="flex items-start justify-between gap-2">
+                  <div>
+                      <div class="text-sm font-semibold text-slate-100">{{ selected.code }}</div>
+                      <div class="text-xs text-slate-400 mt-1">{{ selected.assetCode }} · {{ selected.assetName }}</div>
+                      <div class="text-[11px] text-slate-500 mt-1">{{ selected.location }}</div>
+                    </div>
+                    <span [ngClass]="badge(selected.status)">{{ selected.status }}</span>
+                </div>
+                
+                <div class="mt-3 text-xs text-slate-300 space-y-1">
+                    <div>Técnico: <b class="text-slate-100">{{ selected.technician }}</b></div>
+                    <div>WO: <b class="text-slate-100">{{ selected.woId || '—' }}</b></div>
+                    <div>Inicio: <b class="text-slate-100">{{ selected.startAt || '—' }}</b></div>
+                    <div>Fin: <b class="text-slate-100">{{ selected.endAt || '—' }}</b></div>
+                    <div>Downtime: <b class="text-slate-100">{{ selected.downtimeMinutes || 0 }} min</b></div>
+                </div>
+                
+                <div class="mt-3 grid grid-cols-3 gap-2">
+                    <button class="ui-btn-ghost text-xs" (click)="setStatus('PLANNED')">PLANNED</button>
+                    <button class="ui-btn-ghost text-xs" (click)="setStatus('IN_PROGRESS')">IN_PROGRESS</button>
+                    <button class="ui-btn-primary text-xs" (click)="setStatus('DONE')">DONE</button>
+                </div>
+                <button class="ui-btn-ghost text-xs w-full" (click)="goWo()" [disabled]="!selected.woId">
+            Ir a WO
+          </button>
+        </div>
+
+        <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4 space-y-2">
+          <div *ngIf="selected.summary"><b class="text-slate-100 text-xs">Resumen:</b> <span class="text-xs text-slate-300">{{ selected.summary }}</span></div>
+          <div *ngIf="selected.rootCause"><b class="text-slate-100 text-xs">Causa raíz:</b> <span class="text-xs text-slate-300">{{ selected.rootCause }}</span></div>
+          <div *ngIf="selected.actions"><b class="text-slate-100 text-xs">Acciones:</b> <span class="text-xs text-slate-300">{{ selected.actions }}</span></div>
+
+          <div>
+            <p class="text-sm font-semibold mt-2">Repuestos usados</p>
+            <div class="space-y-2 mt-2" *ngIf="selected.usedSpares.length">
+              <div *ngFor="let u of selected.usedSpares" class="rounded-xl border border-slate-800/70 bg-slate-900/20 p-3">
+                <div class="text-xs text-slate-200"><b>{{ u.spareCode }}</b> · Qty: {{ u.qty }}</div>
+              </div>
+            </div>
+            <div *ngIf="!selected.usedSpares.length" class="text-sm text-slate-500 py-2">Sin repuestos.</div>
+          </div>
+
+          <div *ngIf="selected.notes" class="text-xs text-slate-300 mt-2">Notas: {{ selected.notes }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

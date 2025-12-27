@@ -1,1 +1,49 @@
-<p>history works!</p>
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Historial por Activo</h3>
+      <p class="ui-subtitle">Vista unificada: WOs, paradas (DT) e intervenciones (INT).</p>
+    </div>
+  </div>
+
+  <div class="ui-surface p-5">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+      <div>
+        <label class="ui-label">Activo</label>
+        <select [(ngModel)]="assetCode" class="ui-select">
+          <option *ngFor="let a of assets" [value]="a.code">{{ a.code }} · {{ a.name }}</option>
+        </select>
+      </div>
+
+      <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
+        <div class="text-[11px] text-slate-400">WO</div>
+        <div class="text-lg font-semibold text-slate-100 mt-1">{{ data.wos.length }}</div>
+      </div>
+
+      <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
+        <div class="text-[11px] text-slate-400">Paradas</div>
+        <div class="text-lg font-semibold text-slate-100 mt-1">{{ data.dts.length }}</div>
+      </div>
+    </div>
+
+    <div class="my-4 border-t border-slate-800/70"></div>
+
+    <p class="text-sm font-semibold mb-3">Timeline</p>
+
+    <div class="space-y-2">
+      <div *ngFor="let r of data.rows"
+           class="rounded-xl border border-slate-800/70 bg-slate-950/30 p-3">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="text-[11px] text-slate-500">{{ r.at }}</div>
+            <div class="text-sm font-semibold text-slate-100 mt-1">{{ r.title }}</div>
+            <div class="text-xs text-slate-400 mt-1">{{ r.meta }}</div>
+          </div>
+          <span [ngClass]="badgeType(r.type)">{{ r.type }}</span>
+        </div>
+      </div>
+
+      <div *ngIf="data.rows.length===0" class="text-center text-slate-500 py-10">Sin historial.</div>
+    </div>
+  </div>
+</div>

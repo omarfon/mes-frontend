@@ -1,1 +1,289 @@
-<p>assets works!</p>
+<div class="space-y-5">
+  <!-- Header -->
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Activos</h3>
+      <p class="ui-subtitle">Registro de equipos, máquinas e infraestructura con historial de mantenimiento</p>
+    </div>
+
+    <div class="flex gap-2 items-center">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9 w-64" placeholder="Buscar activos..." />
+      </div>
+      <select [(ngModel)]="filterStatus" class="ui-select">
+        <option value="ALL">Todos los estados</option>
+        <option value="OPERATIONAL">Operacional</option>
+        <option value="MAINTENANCE">En Mantenimiento</option>
+        <option value="DOWN">Fuera de Servicio</option>
+        <option value="RETIRED">Retirado</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Form Column -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">{{ editingId ? 'Editar Activo' : 'Nuevo Activo' }}</p>
+        <span class="text-[11px] text-slate-500">Información básica</span>
+      </div>
+
+      <form (ngSubmit)="submit()" class="space-y-3">
+        <div>
+          <label class="ui-label">Código</label>
+          <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="MAQ-001" />
+        </div>
+
+        <div>
+          <label class="ui-label">Nombre</label>
+          <input [(ngModel)]="form.name" name="name" required class="ui-input" placeholder="Hiladora 01" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Categoría</label>
+            <select [(ngModel)]="form.category" name="category" class="ui-select">
+              <option value="MACHINERY">Maquinaria</option>
+              <option value="EQUIPMENT">Equipo</option>
+              <option value="TOOL">Herramienta</option>
+              <option value="VEHICLE">Vehículo</option>
+              <option value="INFRASTRUCTURE">Infraestructura</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Estado</label>
+            <select [(ngModel)]="form.status" name="status" class="ui-select">
+              <option value="OPERATIONAL">Operacional</option>
+              <option value="MAINTENANCE">Mantenimiento</option>
+              <option value="DOWN">Fuera de Servicio</option>
+              <option value="RETIRED">Retirado</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Fabricante</label>
+            <input [(ngModel)]="form.manufacturer" name="manufacturer" class="ui-input" placeholder="Siemens" />
+          </div>
+
+          <div>
+            <label class="ui-label">Modelo</label>
+            <input [(ngModel)]="form.model" name="model" class="ui-input" placeholder="XZ-2000" />
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Número de Serie</label>
+          <input [(ngModel)]="form.serialNumber" name="serialNumber" class="ui-input" placeholder="SN123456789" />
+        </div>
+
+        <div>
+          <label class="ui-label">Ubicación</label>
+          <input [(ngModel)]="form.location" name="location" class="ui-input" placeholder="Planta 1 - Línea A" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Fecha Instalación</label>
+            <input type="date" [(ngModel)]="form.installDate" name="installDate" class="ui-input" />
+          </div>
+
+          <div>
+            <label class="ui-label">Fin Garantía</label>
+            <input type="date" [(ngModel)]="form.warrantyEndDate" name="warrantyEndDate" class="ui-input" />
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Criticidad</label>
+          <select [(ngModel)]="form.criticality" name="criticality" class="ui-select">
+            <option value="LOW">Baja</option>
+            <option value="MEDIUM">Media</option>
+            <option value="HIGH">Alta</option>
+            <option value="CRITICAL">Crítica</option>
+          </select>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button type="submit" class="flex-1 ui-btn-primary">
+            {{ editingId ? 'Guardar Cambios' : 'Crear Activo' }}
+          </button>
+          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Assets List -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Listado de Activos</p>
+        <span class="text-[11px] text-slate-500">{{ filtered.length }} activos</span>
+      </div>
+
+      <div class="space-y-2 max-h-[600px] overflow-y-auto pr-2">
+        <div *ngFor="let asset of filtered"
+             (click)="select(asset)"
+             class="ui-surface-inner p-3 hover:bg-slate-800/40 transition cursor-pointer"
+             [ngClass]="{'ring-2 ring-blue-500/30': selected?.id === asset.id}">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-mono text-xs font-semibold">{{ asset.code }}</span>
+                <span class="text-xs" [ngClass]="getStatusBadge(asset.status)">{{ asset.status }}</span>
+              </div>
+              <p class="text-sm text-slate-200 mt-1 truncate">{{ asset.name }}</p>
+              <div class="flex items-center gap-3 text-xs text-slate-400 mt-2">
+                <span class="pi pi-tag text-[10px]"></span>
+                <span>{{ asset.category }}</span>
+                <span class="pi pi-map-marker text-[10px] ml-2"></span>
+                <span class="truncate">{{ asset.location }}</span>
+              </div>
+            </div>
+            <span class="text-xs" [ngClass]="getCriticalityBadge(asset.criticality)">
+              {{ asset.criticality }}
+            </span>
+          </div>
+        </div>
+
+        <div *ngIf="filtered.length === 0" class="text-center py-10 text-slate-500 text-sm">
+          No se encontraron activos
+        </div>
+      </div>
+    </div>
+
+    <!-- Asset Detail Panel -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Detalle del Activo</p>
+        <div class="flex gap-2" *ngIf="selected">
+          <button (click)="edit(selected)" class="ui-btn-ghost text-xs">
+            <span class="pi pi-pencil text-[10px] mr-1"></span>
+            Editar
+          </button>
+          <button (click)="remove(selected.id)" class="ui-btn-danger text-xs">
+            <span class="pi pi-trash text-[10px] mr-1"></span>
+            Eliminar
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="!selected" class="text-center py-10 text-slate-500 text-sm">
+        Selecciona un activo para ver sus detalles
+      </div>
+
+      <div *ngIf="selected" class="space-y-4">
+        <!-- Basic Info Card -->
+        <div class="ui-surface-inner p-4">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-mono text-base font-bold">{{ selected.code }}</span>
+                <span class="text-xs" [ngClass]="getStatusBadge(selected.status)">{{ selected.status }}</span>
+              </div>
+              <h4 class="text-sm text-slate-200">{{ selected.name }}</h4>
+            </div>
+            <span class="text-xs" [ngClass]="getCriticalityBadge(selected.criticality)">
+              {{ selected.criticality }}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <span class="text-slate-500">Categoría</span>
+              <p class="text-slate-200 mt-0.5">{{ selected.category }}</p>
+            </div>
+            <div>
+              <span class="text-slate-500">Ubicación</span>
+              <p class="text-slate-200 mt-0.5">{{ selected.location }}</p>
+            </div>
+            <div>
+              <span class="text-slate-500">Fabricante</span>
+              <p class="text-slate-200 mt-0.5">{{ selected.manufacturer || '-' }}</p>
+            </div>
+            <div>
+              <span class="text-slate-500">Modelo</span>
+              <p class="text-slate-200 mt-0.5">{{ selected.model || '-' }}</p>
+            </div>
+            <div>
+              <span class="text-slate-500">Nº Serie</span>
+              <p class="text-slate-200 mt-0.5 font-mono">{{ selected.serialNumber || '-' }}</p>
+            </div>
+            <div>
+              <span class="text-slate-500">Instalación</span>
+              <p class="text-slate-200 mt-0.5">{{ selected.installDate || '-' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Specifications -->
+        <div class="ui-surface-inner p-4">
+          <div class="flex items-center justify-between mb-3">
+            <p class="text-sm font-semibold">Especificaciones Técnicas</p>
+            <span class="text-[11px] text-slate-500">{{ getSpecKeys(selected.specifications).length }} items</span>
+          </div>
+
+          <div class="space-y-2 mb-3">
+            <div *ngFor="let key of getSpecKeys(selected.specifications)"
+                 class="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-900/40">
+              <span class="text-xs text-slate-400">{{ key }}</span>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-200">{{ selected.specifications![key] }}</span>
+                <button (click)="removeSpec(key)" class="text-rose-400 hover:text-rose-300">
+                  <span class="pi pi-times text-[10px]"></span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="grid grid-cols-2 gap-2">
+              <input [(ngModel)]="specKey" class="ui-input" placeholder="Propiedad..." />
+              <input [(ngModel)]="specValue" class="ui-input" placeholder="Valor..." />
+            </div>
+            <button (click)="addSpecification()" class="ui-btn-ghost text-xs w-full">
+              <span class="pi pi-plus text-[10px] mr-2"></span>
+              Agregar Especificación
+            </button>
+          </div>
+        </div>
+
+        <!-- Documents -->
+        <div class="ui-surface-inner p-4">
+          <div class="flex items-center justify-between mb-3">
+            <p class="text-sm font-semibold">Documentos</p>
+            <span class="text-[11px] text-slate-500">{{ selected.documents?.length || 0 }} archivos</span>
+          </div>
+
+          <div class="space-y-2 mb-3">
+            <div *ngFor="let doc of selected.documents; let i = index"
+                 class="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-900/40">
+              <div class="flex items-center gap-2 flex-1 min-w-0">
+                <span class="pi pi-file text-xs text-slate-400"></span>
+                <a [href]="doc.url" target="_blank" class="text-xs text-blue-400 hover:text-blue-300 truncate">
+                  {{ doc.name }}
+                </a>
+              </div>
+              <button (click)="removeDocument(i)" class="text-rose-400 hover:text-rose-300 ml-2">
+                <span class="pi pi-times text-[10px]"></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <input [(ngModel)]="docName" class="ui-input" placeholder="Nombre del documento..." />
+            <input [(ngModel)]="docUrl" class="ui-input" placeholder="URL o ruta..." />
+            <button (click)="addDocument()" class="ui-btn-ghost text-xs w-full">
+              <span class="pi pi-plus text-[10px] mr-2"></span>
+              Agregar Documento
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

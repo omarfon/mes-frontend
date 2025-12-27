@@ -1,0 +1,80 @@
+<div class="space-y-5">
+  <div class="ui-page-header"><div><h3 class="ui-title">Integración Messaging</h3><p class="ui-subtitle">Kafka, RabbitMQ y sistemas de mensajería</p></div></div>
+  <div class="flex gap-2 border-b border-slate-800/60">
+    <button (click)="activeTab = 'BROKERS'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'BROKERS'" [class.border-b-2]="activeTab === 'BROKERS'" [class.border-blue-500]="activeTab === 'BROKERS'" [class.text-slate-400]="activeTab !== 'BROKERS'">Brokers</button>
+    <button (click)="activeTab = 'TOPICS'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'TOPICS'" [class.border-b-2]="activeTab === 'TOPICS'" [class.border-blue-500]="activeTab === 'TOPICS'" [class.text-slate-400]="activeTab !== 'TOPICS'">Topics/Colas</button>
+    <button (click)="activeTab = 'FLOWS'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'FLOWS'" [class.border-b-2]="activeTab === 'FLOWS'" [class.border-blue-500]="activeTab === 'FLOWS'" [class.text-slate-400]="activeTab !== 'FLOWS'">Flujos</button>
+  </div>
+  <div *ngIf="activeTab === 'BROKERS'">
+    <button (click)="newBroker()" class="ui-btn-primary mb-4">Nuevo Broker</button>
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="ui-surface p-5" *ngIf="editingBroker">
+        <p class="text-sm font-semibold mb-4">{{ editingBroker.id ? 'Editar' : 'Nuevo' }} Broker</p>
+        <form (ngSubmit)="saveBroker()" class="space-y-3">
+          <div><label class="ui-label">Nombre</label><input [(ngModel)]="brokerForm.name" name="name" required class="ui-input" /></div>
+          <div><label class="ui-label">Tipo</label><select [(ngModel)]="brokerForm.type" name="type" class="ui-select"><option value="Kafka">Kafka</option><option value="RabbitMQ">RabbitMQ</option><option value="ActiveMQ">ActiveMQ</option></select></div>
+          <div><label class="ui-label">Host</label><input [(ngModel)]="brokerForm.host" name="host" required class="ui-input" /></div>
+          <div><label class="ui-label">Puerto</label><input type="number" [(ngModel)]="brokerForm.port" name="port" required class="ui-input" /></div>
+          <div class="flex gap-2"><button type="submit" class="flex-1 ui-btn-primary">Guardar</button><button type="button" (click)="cancelBroker()" class="ui-btn-ghost">Cancelar</button></div>
+        </form>
+      </div>
+      <div class="ui-surface p-5" [class.xl:col-span-2]="editingBroker" [class.xl:col-span-3]="!editingBroker">
+        <p class="text-sm font-semibold mb-4">Brokers ({{ brokers.length }})</p>
+        <div class="space-y-2">
+          <div *ngFor="let broker of brokers" class="ui-surface-inner p-3 flex items-center justify-between">
+            <div class="flex-1"><p class="text-sm font-medium text-slate-200">{{ broker.name }} <span class="text-slate-400">({{ broker.type }})</span></p><p class="text-xs text-slate-400 font-mono">{{ broker.host }}:{{ broker.port }}</p></div>
+            <div class="flex items-center gap-2"><span [ngClass]="getStatusClass(broker.status)">{{ broker.status }}</span><button (click)="editBroker(broker)" class="ui-btn-ghost text-xs">Editar</button><button (click)="deleteBroker(broker.id)" class="ui-btn-danger text-xs">Eliminar</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="activeTab === 'TOPICS'">
+    <button (click)="newTopic()" class="ui-btn-primary mb-4">Nuevo Topic/Cola</button>
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="ui-surface p-5" *ngIf="editingTopic">
+        <p class="text-sm font-semibold mb-4">{{ editingTopic.id ? 'Editar' : 'Nuevo' }} Topic/Cola</p>
+        <form (ngSubmit)="saveTopic()" class="space-y-3">
+          <div><label class="ui-label">Nombre</label><input [(ngModel)]="topicForm.name" name="name" required class="ui-input" placeholder="mes.production.orders" /></div>
+          <div><label class="ui-label">Tipo</label><select [(ngModel)]="topicForm.type" name="type" class="ui-select"><option value="TOPIC">Topic</option><option value="QUEUE">Queue</option></select></div>
+          <div><label class="ui-label">Broker</label><select [(ngModel)]="topicForm.broker" name="broker" class="ui-select"><option *ngFor="let b of brokers" [value]="b.name">{{ b.name }}</option></select></div>
+          <div class="flex gap-2"><button type="submit" class="flex-1 ui-btn-primary">Guardar</button><button type="button" (click)="cancelTopic()" class="ui-btn-ghost">Cancelar</button></div>
+        </form>
+      </div>
+      <div class="ui-surface p-5" [class.xl:col-span-2]="editingTopic" [class.xl:col-span-3]="!editingTopic">
+        <p class="text-sm font-semibold mb-4">Topics/Colas ({{ topicsQueues.length }})</p>
+        <div class="ui-table-wrap">
+          <table class="ui-table">
+            <thead class="ui-thead"><tr><th class="ui-th">Nombre</th><th class="ui-th">Tipo</th><th class="ui-th">Broker</th><th class="ui-th">Mensajes</th><th class="ui-th">Consumidores</th><th class="ui-th"></th></tr></thead>
+            <tbody><tr class="ui-tr" *ngFor="let topic of topicsQueues"><td class="ui-td font-mono text-xs">{{ topic.name }}</td><td class="ui-td"><span class="ui-badge">{{ topic.type }}</span></td><td class="ui-td text-xs">{{ topic.broker }}</td><td class="ui-td text-center">{{ topic.messageCount }}</td><td class="ui-td text-center">{{ topic.consumers }}</td><td class="ui-td"><button (click)="editTopic(topic)" class="ui-btn-ghost text-xs">Editar</button><button (click)="deleteTopic(topic.id)" class="ui-btn-danger text-xs">Eliminar</button></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="activeTab === 'FLOWS'">
+    <button (click)="newFlow()" class="ui-btn-primary mb-4">Nuevo Flujo</button>
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="ui-surface p-5" *ngIf="editingFlow">
+        <p class="text-sm font-semibold mb-4">{{ editingFlow.id ? 'Editar' : 'Nuevo' }} Flujo</p>
+        <form (ngSubmit)="saveFlow()" class="space-y-3">
+          <div><label class="ui-label">Nombre</label><input [(ngModel)]="flowForm.name" name="name" required class="ui-input" /></div>
+          <div><label class="ui-label">Origen</label><input [(ngModel)]="flowForm.source" name="source" required class="ui-input" /></div>
+          <div><label class="ui-label">Destino (Topic/Cola)</label><select [(ngModel)]="flowForm.destination" name="destination" class="ui-select"><option *ngFor="let t of topicsQueues" [value]="t.name">{{ t.name }}</option></select></div>
+          <div><label class="ui-label">Tipo de Mensaje</label><input [(ngModel)]="flowForm.messageType" name="messageType" required class="ui-input" placeholder="ProductionOrder" /></div>
+          <div class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="flowForm.active" name="active" id="active" class="rounded" /><label for="active" class="text-sm">Activo</label></div>
+          <div class="flex gap-2"><button type="submit" class="flex-1 ui-btn-primary">Guardar</button><button type="button" (click)="cancelFlow()" class="ui-btn-ghost">Cancelar</button></div>
+        </form>
+      </div>
+      <div class="ui-surface p-5" [class.xl:col-span-2]="editingFlow" [class.xl:col-span-3]="!editingFlow">
+        <p class="text-sm font-semibold mb-4">Flujos de Mensajes ({{ messageFlows.length }})</p>
+        <div class="space-y-2">
+          <div *ngFor="let flow of messageFlows" class="ui-surface-inner p-3">
+            <div class="flex items-start justify-between mb-2"><div class="flex-1"><p class="text-sm font-medium text-slate-200">{{ flow.name }}</p><div class="flex items-center gap-2 mt-1 text-xs"><span class="text-blue-300">{{ flow.source }}</span><i class="pi pi-arrow-right text-slate-500"></i><span class="text-green-300 font-mono">{{ flow.destination }}</span></div><p class="text-xs text-slate-400 mt-1">Tipo: {{ flow.messageType }}</p></div><span class="ui-badge" [class.text-green-300]="flow.active" [class.bg-green-500/10]="flow.active" [class.text-slate-400]="!flow.active" [class.bg-slate-500/10]="!flow.active">{{ flow.active ? 'Activo' : 'Inactivo' }}</span></div>
+            <div class="flex gap-2 justify-end"><button (click)="editFlow(flow)" class="ui-btn-ghost text-xs">Editar</button><button (click)="deleteFlow(flow.id)" class="ui-btn-danger text-xs">Eliminar</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

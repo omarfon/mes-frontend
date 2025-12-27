@@ -1,1 +1,370 @@
-<p>work-orders works!</p>
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Órdenes de Trabajo</h3>
+      <p class="ui-subtitle">Correctivo / Preventivo / Inspección. Kanban + detalle técnico.</p>
+    </div>
+
+    <div class="flex gap-2">
+      <button class="ui-btn-ghost text-xs" (click)="view='KANBAN'">Kanban</button>
+      <button class="ui-btn-ghost text-xs" (click)="view='LIST'">Lista</button>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  <div *ngIf="error" class="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200">
+    {{ error }}
+  </div>
+  <div *ngIf="success" class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+    {{ success }}
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Left: Create + Filters -->
+    <div class="ui-surface p-5">
+      <p class="text-sm font-semibold mb-3">Nueva WO</p>
+
+      <div class="space-y-3">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="ui-label">Tipo</label>
+            <select [(ngModel)]="form.type" class="ui-select">
+              <option value="CORRECTIVE">CORRECTIVE</option>
+              <option value="PREVENTIVE">PREVENTIVE</option>
+              <option value="INSPECTION">INSPECTION</option>
+              <option value="CALIBRATION">CALIBRATION</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Prioridad</label>
+            <select [(ngModel)]="form.priority" class="ui-select">
+              <option value="LOW">LOW</option>
+              <option value="MEDIUM">MEDIUM</option>
+              <option value="HIGH">HIGH</option>
+              <option value="CRITICAL">CRITICAL</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Activo</label>
+          <select [(ngModel)]="form.assetCode" class="ui-select">
+            <option *ngFor="let a of ms.assets" [value]="a.code">{{ a.code }} · {{ a.name }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="ui-label">Título</label>
+          <input [(ngModel)]="form.title" class="ui-input" placeholder="Falla / tarea..." />
+        </div>
+
+        <div>
+          <label class="ui-label">Descripción</label>
+          <input [(ngModel)]="form.description" class="ui-input" placeholder="Detalle..." />
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="ui-label">Solicitante</label>
+            <input [(ngModel)]="form.requestedBy" class="ui-input" placeholder="producción" />
+          </div>
+          <div>
+            <label class="ui-label">Asignado</label>
+            <input [(ngModel)]="form.assignedTo" class="ui-input" placeholder="técnico1" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="ui-label">Programada</label>
+            <input type="datetime-local" [(ngModel)]="form.scheduledAt" class="ui-input" />
+          </div>
+          <div>
+            <label class="ui-label">Vence</label>
+            <input type="datetime-local" [(ngModel)]="form.dueAt" class="ui-input" />
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Tags (coma)</label>
+          <input [(ngModel)]="form.tags" class="ui-input" placeholder="mecánico, eléctrico" />
+        </div>
+
+        <button class="ui-btn-primary w-full" (click)="create()">Crear</button>
+
+        <div class="my-3 border-t border-slate-800/70"></div>
+
+        <p class="text-sm font-semibold mb-2">Filtros</p>
+        <input [(ngModel)]="q" class="ui-input" placeholder="Buscar..." />
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="ui-label">Estado</label>
+            <select [(ngModel)]="filterStatus" class="ui-select">
+              <option value="ALL">ALL</option>
+              <option value="OPEN">OPEN</option>
+              <option value="PLANNED">PLANNED</option>
+              <option value="IN_PROGRESS">IN_PROGRESS</option>
+              <option value="ON_HOLD">ON_HOLD</option>
+              <option value="DONE">DONE</option>
+              <option value="CLOSED">CLOSED</option>
+              <option value="CANCELLED">CANCELLED</option>
+            </select>
+          </div>
+          <div>
+            <label class="ui-label">Prioridad</label>
+            <select [(ngModel)]="filterPriority" class="ui-select">
+              <option value="ALL">ALL</option>
+              <option value="LOW">LOW</option>
+              <option value="MEDIUM">MEDIUM</option>
+              <option value="HIGH">HIGH</option>
+              <option value="CRITICAL">CRITICAL</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Middle: Kanban/List -->
+    <div class="ui-surface p-5 xl:col-span-1" *ngIf="view==='LIST'">
+      <p class="text-sm font-semibold mb-3">Lista</p>
+      <div class="space-y-2">
+        <button *ngFor="let w of list" (click)="open(w)"
+          class="w-full text-left rounded-xl border border-slate-800/70 bg-slate-950/30 p-3 hover:bg-slate-900/30 transition">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="text-sm font-semibold text-slate-100">{{ w.code }} · {{ w.title }}</div>
+              <div class="text-xs text-slate-400 mt-1">{{ w.assetCode }} · {{ w.assetName }}</div>
+            </div>
+            <span [ngClass]="badgePriority(w.priority)">{{ w.priority }}</span>
+          </div>
+          <div class="mt-2 flex items-center justify-between">
+            <span [ngClass]="badgeStatus(w.status)">{{ w.status }}</span>
+            <span class="text-[11px] text-slate-500">{{ w.location }}</span>
+          </div>
+        </button>
+
+        <div *ngIf="list.length===0" class="text-center text-slate-500 py-10">Sin WOs</div>
+      </div>
+    </div>
+
+    <div class="ui-surface p-5 xl:col-span-1" *ngIf="view==='KANBAN'">
+      <p class="text-sm font-semibold mb-3">Kanban</p>
+
+      <div class="grid grid-cols-1 gap-3">
+        <!-- OPEN -->
+        <div>
+          <div class="text-xs text-slate-400 mb-2">OPEN</div>
+          <div class="space-y-2">
+            <button *ngFor="let w of byStatus('OPEN')" (click)="open(w)"
+              class="w-full text-left rounded-xl border border-slate-800/70 bg-slate-950/30 p-3 hover:bg-slate-900/30 transition">
+              <div class="flex items-start justify-between gap-2">
+                <div class="text-sm font-semibold text-slate-100">{{ w.code }}</div>
+                <span [ngClass]="badgePriority(w.priority)">{{ w.priority }}</span>
+              </div>
+              <div class="text-xs text-slate-300 mt-1">{{ w.title }}</div>
+              <div class="text-[11px] text-slate-500 mt-2">{{ w.assetCode }} · {{ w.location }}</div>
+            </button>
+            <div *ngIf="byStatus('OPEN').length===0" class="text-[11px] text-slate-600">Vacío</div>
+          </div>
+        </div>
+
+        <!-- IN_PROGRESS -->
+        <div>
+          <div class="text-xs text-slate-400 mb-2">IN_PROGRESS</div>
+          <div class="space-y-2">
+            <button *ngFor="let w of byStatus('IN_PROGRESS')" (click)="open(w)"
+              class="w-full text-left rounded-xl border border-slate-800/70 bg-slate-950/30 p-3 hover:bg-slate-900/30 transition">
+              <div class="flex items-start justify-between gap-2">
+                <div class="text-sm font-semibold text-slate-100">{{ w.code }}</div>
+                <span [ngClass]="badgePriority(w.priority)">{{ w.priority }}</span>
+              </div>
+              <div class="text-xs text-slate-300 mt-1">{{ w.title }}</div>
+              <div class="text-[11px] text-slate-500 mt-2">{{ w.assetCode }} · {{ w.location }}</div>
+            </button>
+            <div *ngIf="byStatus('IN_PROGRESS').length===0" class="text-[11px] text-slate-600">Vacío</div>
+          </div>
+        </div>
+
+        <!-- DONE/CLOSED -->
+        <div>
+          <div class="text-xs text-slate-400 mb-2">DONE</div>
+          <div class="space-y-2">
+            <button *ngFor="let w of byStatus('DONE')" (click)="open(w)"
+              class="w-full text-left rounded-xl border border-slate-800/70 bg-slate-950/30 p-3 hover:bg-slate-900/30 transition">
+              <div class="flex items-start justify-between gap-2">
+                <div class="text-sm font-semibold text-slate-100">{{ w.code }}</div>
+                <span [ngClass]="badgePriority(w.priority)">{{ w.priority }}</span>
+              </div>
+              <div class="text-xs text-slate-300 mt-1">{{ w.title }}</div>
+              <div class="text-[11px] text-slate-500 mt-2">{{ w.assetCode }} · {{ w.location }}</div>
+            </button>
+            <div *ngIf="byStatus('DONE').length===0" class="text-[11px] text-slate-600">Vacío</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Detail -->
+    <div class="ui-surface p-5 xl:col-span-1">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-sm font-semibold">Detalle</p>
+        <button class="ui-btn-ghost text-xs" (click)="selected=null" *ngIf="selected">Cerrar</button>
+      </div>
+
+      <div *ngIf="!selected" class="text-sm text-slate-500 py-10 text-center">
+        Selecciona una WO para ver el detalle.
+      </div>
+
+      <div *ngIf="selected" class="space-y-4">
+        <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="text-sm font-semibold text-slate-100">{{ selected.code }}</div>
+              <div class="text-xs text-slate-400 mt-1">{{ selected.title }}</div>
+            </div>
+            <span [ngClass]="badgePriority(selected.priority)">{{ selected.priority }}</span>
+          </div>
+
+          <div class="mt-2 text-xs text-slate-300">
+            <div>Activo: <b class="text-slate-100">{{ selected.assetCode }}</b> · {{ selected.assetName }}</div>
+            <div class="mt-1">Ubicación: <b class="text-slate-100">{{ selected.location }}</b></div>
+            <div class="mt-1">Asignado: <b class="text-slate-100">{{ selected.assignedTo || '-' }}</b></div>
+          </div>
+
+          <div class="mt-3 flex flex-wrap gap-2">
+            <span [ngClass]="badgeStatus(selected.status)">{{ selected.status }}</span>
+            <span class="ui-badge">{{ selected.type }}</span>
+          </div>
+
+          <div class="mt-3 grid grid-cols-3 gap-2">
+            <button class="ui-btn-ghost text-xs" (click)="setStatus(selected,'OPEN')">OPEN</button>
+            <button class="ui-btn-ghost text-xs" (click)="setStatus(selected,'IN_PROGRESS')">IN_PROGRESS</button>
+            <button class="ui-btn-primary text-xs" (click)="setStatus(selected,'DONE')">DONE</button>
+          </div>
+        </div>
+
+        <!-- Time logs -->
+        <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
+          <p class="text-sm font-semibold mb-2">Tiempos</p>
+
+          <div class="grid grid-cols-2 gap-2">
+            <input type="datetime-local" [(ngModel)]="logStart" class="ui-input" placeholder="Inicio" />
+            <input type="datetime-local" [(ngModel)]="logEnd" class="ui-input" placeholder="Fin" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 mt-2">
+            <input [(ngModel)]="logTech" class="ui-input" placeholder="Técnico" />
+            <input [(ngModel)]="logNote" class="ui-input" placeholder="Nota (opcional)" />
+          </div>
+
+          <button class="ui-btn-ghost text-xs mt-2 w-full" (click)="addLog()">+ Registrar tiempo</button>
+
+          <div class="mt-3 space-y-2" *ngIf="selected.timeLogs.length">
+            <div *ngFor="let l of selected.timeLogs"
+                 class="rounded-xl border border-slate-800/70 bg-slate-900/20 p-3">
+              <div class="flex items-center justify-between">
+                <div class="text-xs text-slate-200"><b>{{ l.technician }}</b></div>
+                <div class="text-[11px] text-slate-500">{{ l.minutes }} min</div>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-1">{{ l.startAt }} → {{ l.endAt || '...' }}</div>
+              <div class="text-xs text-slate-300 mt-2" *ngIf="l.note">{{ l.note }}</div>
+            </div>
+          </div>
+
+          <div *ngIf="!selected.timeLogs.length" class="text-sm text-slate-500 py-4 text-center">
+            Sin registros de tiempo.
+          </div>
+        </div>
+
+        <!-- Spares -->
+        <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
+          <p class="text-sm font-semibold mb-2">Repuestos</p>
+
+          <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
+  <p class="text-sm font-semibold mb-2">Repuestos (consumo real)</p>
+
+  <div class="grid grid-cols-2 gap-2">
+    <div>
+      <label class="ui-label">Repuesto</label>
+      <select [(ngModel)]="spareCode" class="ui-select">
+        <option *ngFor="let s of ms.spares" [value]="s.code">
+          {{ s.code }} · {{ s.name }} ({{ s.stock }} {{ s.uom }})
+        </option>
+      </select>
+    </div>
+
+    <div>
+      <label class="ui-label">Qty</label>
+      <input type="number" [(ngModel)]="spareQty" class="ui-input" />
+    </div>
+  </div>
+
+  <button class="ui-btn-ghost text-xs mt-2 w-full" (click)="addSpare()">
+    + Consumir repuesto (OUT)
+  </button>
+
+  <div class="mt-3 space-y-2" *ngIf="selected.spares.length">
+    <div *ngFor="let s of selected.spares"
+         class="rounded-xl border border-slate-800/70 bg-slate-900/20 p-3">
+      <div class="flex items-center justify-between">
+        <div class="text-xs text-slate-200"><b>{{ s.code }}</b> · {{ s.name }}</div>
+        <div class="text-[11px] text-slate-500">{{ s.qty }} {{ s.uom }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!selected.spares.length" class="text-sm text-slate-500 py-4 text-center">
+    Sin repuestos.
+  </div>
+</div>
+
+          <button class="ui-btn-ghost text-xs mt-2 w-full" (click)="addSpare()">+ Agregar repuesto</button>
+
+          <div class="mt-3 space-y-2" *ngIf="selected.spares.length">
+            <div *ngFor="let s of selected.spares"
+                 class="rounded-xl border border-slate-800/70 bg-slate-900/20 p-3">
+              <div class="flex items-center justify-between">
+                <div class="text-xs text-slate-200"><b>{{ s.code }}</b> · {{ s.name }}</div>
+                <div class="text-[11px] text-slate-500">{{ s.qty }} {{ s.uom }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!selected.spares.length" class="text-sm text-slate-500 py-4 text-center">
+            Sin repuestos.
+          </div>
+        </div>
+
+        <!-- Evidence -->
+        <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
+          <p class="text-sm font-semibold mb-2">Evidencias</p>
+
+          <div class="grid grid-cols-2 gap-2">
+            <input [(ngModel)]="evBy" class="ui-input" placeholder="técnico" />
+            <input [(ngModel)]="evNote" class="ui-input" placeholder="Nota evidencia..." />
+          </div>
+
+          <button class="ui-btn-ghost text-xs mt-2 w-full" (click)="addEvidence()">+ Registrar evidencia</button>
+
+          <div class="mt-3 space-y-2" *ngIf="selected.evidences.length">
+            <div *ngFor="let e of selected.evidences"
+                 class="rounded-xl border border-slate-800/70 bg-slate-900/20 p-3">
+              <div class="flex items-center justify-between">
+                <div class="text-xs text-slate-200"><b>{{ e.by }}</b></div>
+                <div class="text-[11px] text-slate-500">{{ e.at }}</div>
+              </div>
+              <div class="text-xs text-slate-300 mt-2">{{ e.note }}</div>
+            </div>
+          </div>
+
+          <div *ngIf="!selected.evidences.length" class="text-sm text-slate-500 py-4 text-center">
+            Sin evidencias.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+ 

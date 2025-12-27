@@ -1,0 +1,88 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Auditoría de Acciones</h3>
+      <p class="ui-subtitle">Log completo de acciones del sistema</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="ui-surface p-4">
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
+      <div class="md:col-span-2 relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9 w-full" placeholder="Buscar usuario o recurso..." />
+      </div>
+      <select [(ngModel)]="filterModule" class="ui-select">
+        <option *ngFor="let mod of modules" [value]="mod">{{ mod === 'ALL' ? 'Todos Módulos' : mod }}</option>
+      </select>
+      <select [(ngModel)]="filterAction" class="ui-select">
+        <option *ngFor="let act of actions" [value]="act">{{ act === 'ALL' ? 'Todas Acciones' : act }}</option>
+      </select>
+      <select [(ngModel)]="filterStatus" class="ui-select">
+        <option value="ALL">Todos</option>
+        <option value="SUCCESS">Exitosos</option>
+        <option value="FAILURE">Fallidos</option>
+      </select>
+      <button class="ui-btn-ghost">Exportar CSV</button>
+    </div>
+  </div>
+
+  <!-- Logs Table -->
+  <div class="ui-surface p-5">
+    <p class="text-sm font-semibold mb-4">Registros ({{ filteredLogs.length }})</p>
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead class="ui-thead">
+          <tr>
+            <th class="ui-th">Timestamp</th>
+            <th class="ui-th">Usuario</th>
+            <th class="ui-th">Módulo</th>
+            <th class="ui-th">Acción</th>
+            <th class="ui-th">Recurso</th>
+            <th class="ui-th">IP</th>
+            <th class="ui-th">Estado</th>
+            <th class="ui-th"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let log of filteredLogs">
+            <tr class="ui-tr cursor-pointer hover:bg-slate-900/40" (click)="selectLog(log)" [class.bg-slate-900/40]="selectedLog?.id === log.id">
+              <td class="ui-td text-xs font-mono">{{ log.timestamp }}</td>
+              <td class="ui-td font-medium">{{ log.user }}</td> 
+              <td class="ui-td"><span class="ui-badge">{{ log.module }}</span></td>
+              <td class="ui-td"><span [ngClass]="getActionBadge(log.action)">{{ log.action }}</span></td>
+              <td class="ui-td text-xs">{{ log.resource }}</td>
+              <td class="ui-td text-xs font-mono text-slate-400">{{ log.ip }}</td>
+              <td class="ui-td"><span [ngClass]="getStatusBadge(log.status)">{{ log.status }}</span></td>
+              <td class="ui-td text-center">
+                <span class="pi pi-chevron-right text-xs text-slate-400" *ngIf="selectedLog?.id !== log.id"></span>
+                <span class="pi pi-chevron-down text-xs text-slate-400" *ngIf="selectedLog?.id === log.id"></span>
+              </td>
+            </tr>
+            <tr *ngIf="selectedLog?.id === log.id && selectedLog" class="ui-tr">
+              <td colspan="8" class="ui-td">
+                <div class="bg-slate-950/60 p-4 rounded-lg text-sm space-y-2">
+                  <div class="grid grid-cols-2 gap-4">
+                    <div><span class="text-slate-400">ID:</span> <span class="font-mono">{{ selectedLog.id }}</span></div>
+                    <div><span class="text-slate-400">IP:</span> <span class="font-mono">{{ selectedLog.ip }}</span></div>
+                    <div><span class="text-slate-400">Usuario:</span> {{ selectedLog.user }}</div>
+                    <div><span class="text-slate-400">Módulo:</span> {{ selectedLog.module }}</div>
+                    <div><span class="text-slate-400">Acción:</span> {{ selectedLog.action }}</div>
+                    <div><span class="text-slate-400">Estado:</span> {{ selectedLog.status }}</div>
+                  </div>
+                  <div class="pt-2 border-t border-slate-800/60">
+                    <span class="text-slate-400">Recurso:</span> {{ selectedLog.resource }}
+                  </div>
+                  <div class="pt-2 border-t border-slate-800/60" *ngIf="selectedLog.details">
+                    <span class="text-slate-400">Detalles:</span> {{ selectedLog.details }}
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
