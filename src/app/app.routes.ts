@@ -32,13 +32,6 @@ export const routes: Routes = [
           import('./features/traceability/lots-list/lots-list').then(m => m.LotsListComponent),
       },
       {
-        path: 'quality/defects',
-        loadComponent: () =>
-          import('./features/quality/defect-catalog/defect-catalog').then(
-            m => m.DefectCatalog,
-          ),
-      },
-      {
       path: 'reports',
      loadComponent: () =>
         import('./features/reports/reports/reports').then(m => m.ReportsComponent),
@@ -60,6 +53,14 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/traceability/traceability.routes').then((m) => m.TRACEABILITY_ROUTES),
       },
+      {
+        path: 'quality',
+        loadChildren: () => import('./features/quality/quality.routes').then(m => m.QUALITY_ROUTES)
+      },{
+        path: 'maintenance',
+        loadChildren: () => import('./features/maintenance/maintenance.routes')
+          .then(m => m.MAINTENANCE_ROUTES)
+      }
       
     ],
   },

@@ -1,1 +1,181 @@
-<p>warehouse-map works!</p>
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Ubicaciones · Mapa</h3>
+      <p class="ui-subtitle">Vista por zonas y áreas, con ocupación (lotes/seriales) y detalle por ubicación.</p>
+    </div>
+  </div>
+
+  <!-- Controles -->
+  <div class="ui-surface p-5">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+      <div>
+        <label class="ui-label">Zona</label>
+        <select [(ngModel)]="zone" class="ui-select" (change)="selected=null">
+          <option *ngFor="let z of zones" [value]="z">{{ z }}</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="ui-label">Área</label>
+        <select [(ngModel)]="area" class="ui-select" (change)="selected=null">
+          <option *ngFor="let a of areas" [value]="a">{{ a }}</option>
+        </select>
+      </div>
+
+      <div class="md:col-span-2">
+        <label class="ui-label">Buscar ubicación</label>
+        <input [(ngModel)]="q" class="ui-input" placeholder="ALM-01/R1/N2, R1..." />
+      </div>
+
+      <div>
+        <label class="ui-label">Heatmap</label>
+        <select [(ngModel)]="heat" class="ui-select">
+          <option value="LOTS">Por lotes</option>
+          <option value="SERIALS">Por seriales</option>
+          <option value="NONE">Sin heat</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Mapa (grid de ubicaciones) -->
+    <div class="ui-surface p-5 xl:col-span-2">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <p class="text-sm font-semibold">Mapa · {{ zone }} / {{ area }}</p>
+          <p class="text-xs text-slate-400 mt-1">{{ locations.length }} ubicaciones</p>
+        </div>
+
+        <div class="text-[11px] text-slate-500">
+          Click en una tarjeta para ver detalle
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <button
+          *ngFor="let loc of locations"
+          (click)="open(loc)"
+          class="rounded-2xl border p-4 text-left transition hover:bg-slate-900/30"
+          [ngClass]="heatClass(loc)"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <div class="text-sm font-semibold text-slate-100">{{ loc.code }}</div>
+            <span *ngIf="selected?.code === loc.code"
+              class="text-[11px] px-2 py-1 rounded-full border border-slate-700/60 bg-slate-900/40 text-slate-200">
+              Seleccionado
+            </span>
+          </div>
+
+          <div class="text-xs text-slate-400 mt-1">
+            {{ loc.zone }} · {{ loc.area }} <span *ngIf="loc.rack">· {{ loc.rack }}</span> <span *ngIf="loc.level">· {{ loc.level }}</span>
+          </div>
+
+          <div class="mt-3 flex items-center gap-2 text-[11px] text-slate-300">
+            <span class="px-2 py-1 rounded-full border border-slate-700/60 bg-slate-950/40">
+              Lotes: <b class="text-slate-100">{{ occupancy(loc).lots }}</b>
+            </span>
+            <span class="px-2 py-1 rounded-full border border-slate-700/60 bg-slate-950/40">
+              Seriales: <b class="text-slate-100">{{ occupancy(loc).serials }}</b>
+            </span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Detalle -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Detalle</p>
+        <button class="ui-btn-ghost text-xs" (click)="selected=null" *ngIf="selected">Cerrar</button>
+      </div>
+
+      <div *ngIf="!selected" class="text-sm text-slate-500 py-10 text-center">
+        Selecciona una ubicación del mapa.
+      </div>
+
+      <div *ngIf="selected" class="space-y-4">
+        <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
+          <div class="text-sm font-semibold">{{ selected.code }}</div>
+          <div class="text-xs text-slate-400 mt-1">{{ selected.zone }} · {{ selected.area }}</div>
+
+          <div class="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+            <div class="px-3 py-2 rounded-xl border border-slate-800/70 bg-slate-900/20">
+              Lotes: <b class="text-slate-100">{{ lotsInSelected().length }}</b>
+            </div>
+            <div class="px-3 py-2 rounded-xl border border-slate-800/70 bg-slate-900/20">
+              Seriales: <b class="text-slate-100">{{ serialsInSelected().length }}</b>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acción rápida -->
+        <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
+          <p class="text-sm font-semibold mb-2">Mover lote aquí</p>
+          <div class="flex gap-2">
+            <input [(ngModel)]="moveLotCode" class="ui-input" placeholder="LOT-MP-0001" />
+            <button class="ui-btn-primary text-xs" (click)="moveLotHere()">Mover</button>
+          </div>
+          <div *ngIf="message" class="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+            {{ message }}
+          </div>
+          <div *ngIf="error" class="mt-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200">
+            {{ error }}
+          </div>
+        </div>
+
+        <!-- Lotes en ubicación -->
+        <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
+          <p class="text-sm font-semibold mb-2">Lotes en esta ubicación</p>
+
+          <div *ngIf="lotsInSelected().length === 0" class="text-sm text-slate-500 py-6 text-center">
+            No hay lotes aquí.
+          </div>
+
+          <div class="space-y-2" *ngIf="lotsInSelected().length > 0">
+            <div *ngFor="let l of lotsInSelected()"
+                 class="rounded-xl border border-slate-800/70 bg-slate-900/20 p-3">
+              <div class="flex items-start justify-between">
+                <div>
+                  <div class="text-sm font-semibold">{{ l.code }}</div>
+                  <div class="text-xs text-slate-400 mt-1">{{ l.description }} · {{ l.itemCode }}</div>
+                </div>
+                <span class="ui-badge">{{ l.status }}</span>
+              </div>
+              <div class="text-xs text-slate-300 mt-2">
+                {{ l.qty }} {{ l.uom }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Seriales en ubicación -->
+        <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
+          <p class="text-sm font-semibold mb-2">Seriales en esta ubicación</p>
+
+          <div *ngIf="serialsInSelected().length === 0" class="text-sm text-slate-500 py-6 text-center">
+            No hay seriales aquí.
+          </div>
+
+          <div class="space-y-2" *ngIf="serialsInSelected().length > 0">
+            <div *ngFor="let s of serialsInSelected()"
+                 class="rounded-xl border border-slate-800/70 bg-slate-900/20 p-3">
+              <div class="flex items-start justify-between">
+                <div>
+                  <div class="text-sm font-semibold">{{ s.serial }}</div>
+                  <div class="text-xs text-slate-400 mt-1">{{ s.unitType }} · {{ s.itemCode }}</div>
+                </div>
+                <span class="ui-badge">{{ s.status }}</span>
+              </div>
+              <div class="text-xs text-slate-300 mt-2">
+                {{ s.qty }} {{ s.uom }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>

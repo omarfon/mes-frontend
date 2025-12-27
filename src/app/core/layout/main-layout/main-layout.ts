@@ -24,14 +24,16 @@ export class MainLayout {
     // si prefieres directo:
     // location.href = '/auth/login';
   }
-  masterMenuOpen = true;
+  masterMenuOpen = false;
 
 toggleMasterMenu() {
   this.masterMenuOpen = !this.masterMenuOpen;
 }
  open = {
-    production: true, // ponlo true si quieres que inicie desplegado
-      traceability: true, // 👈 añade esto
+    production: false, // ponlo true si quieres que inicie desplegado
+      traceability: false, // 👈 añade esto
+      quality: false, // 👈 añade esto
+      maintenance: false, // 👈 añade esto
   };
 
   toggle(key: keyof typeof this.open) {

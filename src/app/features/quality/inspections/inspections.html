@@ -1,0 +1,161 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Inspecciones</h3>
+      <p class="ui-subtitle">Recepción, proceso y final. Registra defectos, calcula score y resultado.</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Lista -->
+    <div class="ui-surface p-5 xl:col-span-2">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Historial</p>
+        <input [(ngModel)]="q" class="ui-input w-72" placeholder="Buscar..." />
+      </div>
+
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead class="ui-thead">
+            <tr>
+              <th class="ui-th">Código</th>
+              <th class="ui-th">Tipo</th>
+              <th class="ui-th">Fecha</th>
+              <th class="ui-th">Ref</th>
+              <th class="ui-th">Resultado</th>
+              <th class="ui-th">Inspector</th>
+              <th class="ui-th w-28">Acción</th>
+            </tr>
+          </thead>
+          <tbody class="bg-slate-950/20">
+            <tr *ngFor="let i of list" class="ui-tr">
+              <td class="ui-td">{{ i.code }}</td>
+              <td class="ui-td"><span class="ui-badge">{{ i.type }}</span></td>
+              <td class="ui-td">{{ i.date }}</td>
+              <td class="ui-td">
+                <div class="text-xs text-slate-300">Lote: {{ i.lotCode || '-' }}</div>
+                <div class="text-xs text-slate-500 mt-1">Orden: {{ i.orderCode || '-' }}</div>
+              </td>
+              <td class="ui-td">
+                <span class="ui-badge"
+                      [class.ui-badge-ok]="i.result==='PASS'"
+                      [class.ui-badge-warn]="i.result==='HOLD'"
+                      [class.ui-badge-bad]="i.result==='FAIL'">
+                  {{ i.result }}
+                </span>
+              </td>
+              <td class="ui-td">{{ i.inspector }}</td>
+              <td class="ui-td"><button class="ui-btn-ghost text-xs" (click)="edit(i)">Editar</button></td>
+            </tr>
+
+            <tr *ngIf="list.length===0">
+              <td colspan="7" class="px-4 py-10 text-center text-slate-500">Sin inspecciones.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-sm font-semibold">{{ editing ? 'Editar' : 'Nueva' }} inspección</p>
+        <button class="ui-btn-ghost text-xs" (click)="new()">Nuevo</button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="ui-label">Código</label>
+          <input [(ngModel)]="form.code" class="ui-input" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Tipo</label>
+            <select [(ngModel)]="form.type" class="ui-select" (change)="recalc()">
+              <option value="INCOMING">INCOMING</option>
+              <option value="IN_PROCESS">IN_PROCESS</option>
+              <option value="FINAL">FINAL</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Fecha</label>
+            <input type="date" [(ngModel)]="form.date" class="ui-input" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Lote (opcional)</label>
+            <input [(ngModel)]="form.lotCode" class="ui-input" placeholder="LOT-..." />
+          </div>
+          <div>
+            <label class="ui-label">Serial (opcional)</label>
+            <input [(ngModel)]="form.serial" class="ui-input" placeholder="SER-..." />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="ui-label">Orden</label><input [(ngModel)]="form.orderCode" class="ui-input" /></div>
+          <div><label class="ui-label">Operación</label><input [(ngModel)]="form.operation" class="ui-input" /></div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="ui-label">Máquina</label><input [(ngModel)]="form.machineCode" class="ui-input" /></div>
+          <div><label class="ui-label">Muestra</label><input type="number" [(ngModel)]="form.sampleSize" class="ui-input" (input)="recalc()" /></div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-sm font-semibold">Hallazgos</p>
+            <span class="text-[11px] text-slate-500">Score: {{ score() }} · Resultado: <b class="text-slate-100">{{ form.result }}</b></span>
+          </div>
+
+          <div class="grid grid-cols-1 gap-2">
+            <select [(ngModel)]="findingDefectId" class="ui-select">
+              <option *ngFor="let d of qs.defects" [value]="d.id">
+                {{ d.code }} · {{ d.name }} · {{ qs.severityName(d.severityId) }}
+              </option>
+            </select>
+
+            <div class="grid grid-cols-2 gap-2">
+              <input type="number" min="1" [(ngModel)]="findingQty" class="ui-input" placeholder="Qty" />
+              <input [(ngModel)]="findingNote" class="ui-input" placeholder="Nota (opcional)" />
+            </div>
+
+            <button class="ui-btn-ghost text-xs" (click)="addFinding()">+ Agregar defecto</button>
+
+            <div class="mt-2 space-y-2" *ngIf="form.findings?.length">
+              <div *ngFor="let f of form.findings; let idx=index"
+                   class="rounded-xl border border-slate-800/70 bg-slate-900/20 p-3">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <div class="text-xs text-slate-200 font-semibold">{{ defectLabel(f.defectId) }}</div>
+                    <div class="text-[11px] text-slate-400 mt-1">Severidad: {{ severityLabel(f.defectId) }}</div>
+                    <div class="text-[11px] text-slate-400 mt-1" *ngIf="f.note">Nota: {{ f.note }}</div>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-sm font-semibold text-slate-100">{{ f.qty }}</div>
+                    <button class="ui-btn-danger text-xs mt-2" (click)="removeFinding(idx)">Quitar</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="!form.findings?.length" class="text-sm text-slate-500 py-4 text-center">
+              Aún no agregas hallazgos.
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Notas</label>
+          <input [(ngModel)]="form.notes" class="ui-input" placeholder="Observaciones..." />
+        </div>
+
+        <button class="ui-btn-primary w-full" (click)="save()">Guardar inspección</button>
+      </div>
+    </div>
+  </div>
+</div>

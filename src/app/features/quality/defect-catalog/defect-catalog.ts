@@ -6,6 +6,6 @@ import { Component } from '@angular/core';
   templateUrl: './defect-catalog.html',
   styleUrl: './defect-catalog.css',
 })
-export class DefectCatalog {
+export class DefectCatalogComponent {
 
 }

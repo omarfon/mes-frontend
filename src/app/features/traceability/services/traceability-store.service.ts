@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 
 export type LotType = 'MP' | 'WIP' | 'PT';
 export type LotStatus = 'AVAILABLE' | 'IN_PROCESS' | 'QUARANTINE' | 'BLOCKED' | 'CONSUMED' | 'CLOSED';
+export type SerialUnitType = 'PIECE' | 'BOX' | 'PALLET' | 'CONTAINER';
 
 export interface LotEvent {
   id: string;
@@ -81,11 +82,63 @@ export interface LotLink {
   note?: string;
 }
 
+export type SerialStatus = 'OK' | 'BLOCKED' | 'QUARANTINE' | 'SCRAPPED';
+
+export interface SerialEvent {
+  id: string;
+  at: string;
+  type: 'CREATED' | 'SCANNED' | 'MOVED' | 'PACKED' | 'UNPACKED' | 'BLOCKED' | 'UNBLOCKED' | 'QUARANTINED' | 'RELEASED' | 'NOTE';
+  by: string;
+  note?: string;
+  meta?: Record<string, string | number>;
+}
+
+export interface SerialUnit {
+  id: string;
+  serial: string;      // SER-...
+  lotCode: string;     // lote al que pertenece
+  itemCode: string;
+  uom: string;
+
+  // unidad (ej: bobina/rollo/caja)
+  unitType: 'BOBINA' | 'ROLLO' | 'CAJA' | 'PALLET' | 'OTRO';
+  qty: number;
+
+  status: SerialStatus;
+  location: string;
+
+  packedIn?: string;   // serial de caja/pallet contenedor
+  createdAt: string;   // YYYY-MM-DD
+  events: SerialEvent[];
+}
+
+export interface WarehouseLocation {
+  id: string;
+  code: string;       // ALM-01/R1/N2
+  zone: string;       // ALM-01
+  area: string;       // MP / WIP / PT / QC
+  rack?: string;      // R1
+  level?: string;     // N2
+  capacity?: number;  // opcional
+  notes?: string;
+}
+
+
 
 
 
 @Injectable({ providedIn: 'root' })
 export class TraceabilityStoreService {
+  createSerials(arg0: { lotCode: string; prefix: string; count: number; unitType: SerialUnitType; qtyPerUnit: number; location: string | undefined; by: string; }) {
+    throw new Error('Method not implemented.');
+  }
+  findSerial // ISO datetime
+    (arg0: string) {
+      throw new Error('Method not implemented.');
+  }
+  scanSerial(arg0: { serial: string; action: "MOVE" | "BLOCK" | "QUARANTINE" | "RELEASE" | "NOTE"; toLocation: string | undefined; note: string | undefined; by: string; }) {
+    throw new Error('Method not implemented.');
+  }
   lots: Lot[] = [
     {
       id: '1',
@@ -126,7 +179,11 @@ export class TraceabilityStoreService {
 
   movements: Movement[] = [];
   links: LotLink[] = [];
+serials: SerialUnit[] = [];
 
+  
+
+  
   findLotByCode(code: string) {
     return this.lots.find(l => l.code === code) ?? null;
   }
@@ -399,5 +456,50 @@ mergeLots(params: {
 
   return child;
 }
+
+
+
+serialsByLot(lotCode: string) {
+  return this.serials.filter(s => s.lotCode === lotCode);
+}
+
+
+locations: WarehouseLocation[] = [
+  { id: 'loc1', code: 'ALM-01/RECEP', zone: 'ALM-01', area: 'RECEP' },
+  { id: 'loc2', code: 'ALM-01/R1/N1', zone: 'ALM-01', area: 'MP', rack: 'R1', level: 'N1' },
+  { id: 'loc3', code: 'ALM-01/R1/N2', zone: 'ALM-01', area: 'MP', rack: 'R1', level: 'N2' },
+  { id: 'loc4', code: 'ALM-PT/R1/N1', zone: 'ALM-PT', area: 'PT', rack: 'R1', level: 'N1' },
+  { id: 'loc5', code: 'ALM-PT/QC', zone: 'ALM-PT', area: 'QC' },
+  { id: 'loc6', code: 'PLANTA/HIL-01', zone: 'PLANTA', area: 'PROD' },
+  { id: 'loc7', code: 'PLANTA/BOB-01', zone: 'PLANTA', area: 'PROD' },
+];
+
+getZones() {
+  return Array.from(new Set(this.locations.map(l => l.zone))).sort();
+}
+
+getAreas(zone?: string) {
+  const arr = zone ? this.locations.filter(l => l.zone === zone) : this.locations;
+  return Array.from(new Set(arr.map(l => l.area))).sort();
+}
+
+getLocations(zone?: string, area?: string) {
+  return this.locations.filter(l => {
+    if (zone && l.zone !== zone) return false;
+    if (area && l.area !== area) return false;
+    return true;
+  });
+}
+
+getLotsInLocation(locationCode: string) {
+  return this.lots.filter(l => l.location === locationCode);
+}
+
+getSerialsInLocation(locationCode: string) {
+  return this.serials.filter(s => s.location === locationCode);
+}
+
+
+
 
 }

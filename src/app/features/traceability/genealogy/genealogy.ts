@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TraceabilityStoreService, LotLink, Lot } from '../services/traceability-store';
+import { TraceabilityStoreService, LotLink, Lot } from '../services/traceability-store.service';
 
 @Component({
   standalone: true,

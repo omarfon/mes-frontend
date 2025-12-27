@@ -2,12 +2,8 @@
   <div class="flex h-full">
 
     <!-- SIDEBAR -->
-    <aside
-      class="h-full border-r border-slate-800/70 bg-slate-950/60 backdrop-blur
-             transition-all duration-200 ease-in-out"
-      [class.w-72]="!sidebarCollapsed"
-      [class.w-20]="sidebarCollapsed"
-    >
+    <aside class="h-full border-r border-slate-800/70 bg-slate-950/60 backdrop-blur
+             transition-all duration-200 ease-in-out" [class.w-72]="!sidebarCollapsed" [class.w-20]="sidebarCollapsed">
       <!-- Logo / Brand -->
       <div class="h-16 flex items-center justify-between px-4 border-b border-slate-800/70">
         <div class="flex items-center gap-3">
@@ -20,242 +16,325 @@
           </div>
         </div>
 
-        <button
-          type="button"
-          (click)="toggleSidebar()"
+        <button type="button" (click)="toggleSidebar()"
           class="h-9 w-9 rounded-xl hover:bg-slate-800/60 transition flex items-center justify-center"
-          aria-label="Toggle sidebar"
-        >
+          aria-label="Toggle sidebar">
           <span class="pi" [ngClass]="sidebarCollapsed ? 'pi-angle-right' : 'pi-angle-left'"></span>
         </button>
       </div>
 
       <!-- Nav -->
       <nav class="p-3 space-y-2 text-sm">
-        <a
-          routerLink="/dashboard"
-          routerLinkActive="bg-slate-800/60 border-slate-700"
-          class="group flex items-center gap-3 px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition"
-        >
+        <a routerLink="/dashboard" routerLinkActive="bg-slate-800/60 border-slate-700"
+          class="group flex items-center gap-3 px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition">
           <span class="pi pi-chart-bar text-slate-300"></span>
           <span *ngIf="!sidebarCollapsed">Dashboard</span>
         </a>
-        <button
-          type="button"
-          (click)="toggle('production')"
-          class="w-full flex items-center justify-between rounded-xl px-3 py-2 text-sm border border-slate-800/70 bg-slate-900/30 hover:bg-slate-800/40 transition"
-        >
+        <button type="button" (click)="toggle('production')"
+          class="w-full flex items-center justify-between rounded-xl px-3 py-2 text-sm border border-slate-800/70 bg-slate-900/30 hover:bg-slate-800/40 transition">
           <span class="flex items-center gap-2">
             <i class="pi pi-cog text-xs text-slate-400"></i>
             Producción
           </span>
 
-          <i
-              class="pi pi-chevron-down text-xs text-slate-400 transition"
-              [class.rotate-180]="open.production"
-            ></i>
-          </button>
+          <i class="pi pi-chevron-down text-xs text-slate-400 transition" [class.rotate-180]="open.production"></i>
+        </button>
 
-<div *ngIf="open.production" class="ml-10 mt-1 space-y-1">
-  <a
-    routerLink="/production/orders"
-    routerLinkActive="bg-slate-800/60 text-white"
-    class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm"
-  >
-    Órdenes
-  </a>
+        <div *ngIf="open.production" class="ml-10 mt-1 space-y-1">
+          <a routerLink="/production/orders" routerLinkActive="bg-slate-800/60 text-white"
+            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+            Órdenes
+          </a>
 
-  <a
-    routerLink="/production/dispatch"
-    routerLinkActive="bg-slate-800/60 text-white"
-    class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm"
-  >
-    Despacho
-  </a>
+          <a routerLink="/production/dispatch" routerLinkActive="bg-slate-800/60 text-white"
+            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+            Despacho
+          </a>
 
-  <a
-    routerLink="/production/execution"
-    routerLinkActive="bg-slate-800/60 text-white"
-    class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm"
-  >
-    Ejecución
-  </a>
+          <a routerLink="/production/execution" routerLinkActive="bg-slate-800/60 text-white"
+            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+            Ejecución
+          </a>
 
-  <a
-    routerLink="/production/wip"
-    routerLinkActive="bg-slate-800/60 text-white"
-    class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm"
-  >
-    WIP
-  </a>
-  <a
-    routerLink="/production/board"
-    routerLinkActive="bg-slate-800/60 text-white"
-    class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm"
-  >
-    Control Visual
-  </a>
-  <a
-    routerLink="/production/times"
-    routerLinkActive="bg-slate-800/60 text-white"
-    class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm"
-  >
-    Control tiempos
-  </a>
-</div>
+          <a routerLink="/production/wip" routerLinkActive="bg-slate-800/60 text-white"
+            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+            WIP
+          </a>
+          <a routerLink="/production/board" routerLinkActive="bg-slate-800/60 text-white"
+            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+            Control Visual
+          </a>
+          <a routerLink="/production/times" routerLinkActive="bg-slate-800/60 text-white"
+            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+            Control tiempos
+          </a>
+        </div>
 
-<!-- TRAZABILIDAD (grupo desplegable) -->
+        <!-- TRAZABILIDAD (grupo desplegable) -->
+        <button type="button" (click)="toggle('traceability')"
+          class="w-full flex items-center justify-between rounded-xl px-3 py-2 text-sm border border-slate-800/70 bg-slate-900/30 hover:bg-slate-800/40 transition">
+          <span class="flex items-center gap-2">
+            <i class="pi pi-share-alt text-xs text-slate-400"></i>
+            Trazabilidad
+          </span>
+
+          <i class="pi pi-chevron-down text-xs text-slate-400 transition" [class.rotate-180]="open.traceability"></i>
+        </button>
+
+        <div *ngIf="open.traceability " class="mt-2 ml-2 space-y-1">
+          <a routerLink="/traceability/lots" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Lotes</a>
+
+          <a routerLink="/traceability/movements" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Movimientos</a>
+
+          <a routerLink="/traceability/genealogy" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Genealogía</a>
+
+          <a routerLink="/traceability/serials" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Seriales /
+            Unidades</a>
+
+          <a routerLink="/traceability/quarantine" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Cuarentena /
+            Bloqueos</a>
+
+          <a routerLink="/traceability/warehouse-map" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Ubicaciones /
+            Mapa</a>
+
+          <a routerLink="/traceability/search" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Búsqueda
+            avanzada</a>
+
+          <a routerLink="/traceability/labels" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Etiquetas /
+            Impresión</a>
+
+          <a routerLink="/traceability/audit" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Auditoría /
+            Eventos</a>
+
+          <a routerLink="/traceability/integrations" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Integraciones</a>
+        </div>
+
+        <button type="button" (click)="toggle('quality')"
+          class="w-full flex items-center justify-between rounded-xl px-3 py-2 text-sm border border-slate-800/70 bg-slate-900/30 hover:bg-slate-800/40 transition">
+          <span class="flex items-center gap-2">
+            <i class="pi pi-share-alt text-xs text-slate-400"></i>
+            Calidad
+          </span>
+
+          <i class="pi pi-chevron-down text-xs text-slate-400 transition" [class.rotate-180]="open.quality"></i>
+        </button>
+
+        <div *ngIf="open.quality" class="mt-2 ml-2 space-y-1">
+          <a routerLink="/quality/defects" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Defectos</a>
+
+          <a routerLink="/quality/families" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">familias</a>
+
+          <a routerLink="/quality/inspections" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Inspecciones</a>
+
+          <a routerLink="/quality/severity" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Severidades</a>
+
+          <a routerLink="/quality/dashboard" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <span class="flex items-center gap-2">
+              <i class="pi pi-chart-line text-[11px] text-slate-400"></i>
+              Dashboard
+            </span>
+          </a>
+
+          <a routerLink="/quality/inspections" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <span class="flex items-center gap-2">
+              <i class="pi pi-search text-[11px] text-slate-400"></i>
+              Inspecciones
+            </span>
+          </a>
+
+          <div class="my-2 border-t border-slate-800/70"></div>
+
+          <p class="px-3 pt-1 text-[11px] text-slate-500 uppercase tracking-wide">Catálogos</p>
+
+          <a routerLink="/quality/defect-families" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <span class="flex items-center gap-2">
+              <i class="pi pi-sitemap text-[11px] text-slate-400"></i>
+              Familias de defectos
+            </span>
+          </a>
+
+          <a routerLink="/quality/severities" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <span class="flex items-center gap-2">
+              <i class="pi pi-exclamation-triangle text-[11px] text-slate-400"></i>
+              Severidades
+            </span>
+          </a>
+
+
+          <div class="my-2 border-t border-slate-800/70"></div>
+
+          <a routerLink="/quality/reports" routerLinkActive="bg-slate-800/60 text-white"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <span class="flex items-center gap-2">
+              <i class="pi pi-file text-[11px] text-slate-400"></i>
+              Reportes
+            </span>
+          </a>
+
+        </div>
+
+        <!-- MANTENIMIENTO -->
 <button
   type="button"
-  (click)="toggle('traceability')"
+  (click)="toggle('maintenance')"
   class="w-full flex items-center justify-between rounded-xl px-3 py-2 text-sm border border-slate-800/70 bg-slate-900/30 hover:bg-slate-800/40 transition"
 >
   <span class="flex items-center gap-2">
-    <i class="pi pi-share-alt text-xs text-slate-400"></i>
-    Trazabilidad
+    <i class="pi pi-wrench text-xs text-slate-400"></i>
+    Mantenimiento
   </span>
 
-  <i class="pi pi-chevron-down text-xs text-slate-400 transition"
-     [class.rotate-180]="open.traceability"></i>
+  <i
+    class="pi pi-chevron-down text-xs text-slate-400 transition"
+    [class.rotate-180]="open.maintenance"
+  ></i>
 </button>
 
-<div *ngIf="open.traceability" class="mt-2 ml-2 space-y-1">
-  <a routerLink="/traceability/lots" routerLinkActive="bg-slate-800/60 text-white"
-     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Lotes</a>
+<div *ngIf="open.maintenance" class="mt-2 ml-2 space-y-1">
 
-  <a routerLink="/traceability/movements" routerLinkActive="bg-slate-800/60 text-white"
-     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Movimientos</a>
+  <a routerLink="/maintenance/dashboard"
+     routerLinkActive="bg-slate-800/60 text-white"
+     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+    <i class="pi pi-chart-line mr-2 text-xs"></i> Dashboard
+  </a>
 
-  <a routerLink="/traceability/genealogy" routerLinkActive="bg-slate-800/60 text-white"
-     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Genealogía</a>
+  <a routerLink="/maintenance/assets"
+     routerLinkActive="bg-slate-800/60 text-white"
+     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+    <i class="pi pi-cog mr-2 text-xs"></i> Activos / Máquinas
+  </a>
 
-  <a routerLink="/traceability/serials" routerLinkActive="bg-slate-800/60 text-white"
-     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Seriales / Unidades</a>
+  <a routerLink="/maintenance/components"
+     routerLinkActive="bg-slate-800/60 text-white"
+     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+    <i class="pi pi-box mr-2 text-xs"></i> Componentes
+  </a>
 
-  <a routerLink="/traceability/quarantine" routerLinkActive="bg-slate-800/60 text-white"
-     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Cuarentena / Bloqueos</a>
+  <a routerLink="/maintenance/work-orders"
+     routerLinkActive="bg-slate-800/60 text-white"
+     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+    <i class="pi pi-wrench mr-2 text-xs"></i> Órdenes de trabajo
+  </a>
 
-  <a routerLink="/traceability/warehouse-map" routerLinkActive="bg-slate-800/60 text-white"
-     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Ubicaciones / Mapa</a>
+  <a routerLink="/maintenance/preventive"
+     routerLinkActive="bg-slate-800/60 text-white"
+     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+    <i class="pi pi-calendar mr-2 text-xs"></i> Mantenimiento Preventivo
+  </a>
 
-  <a routerLink="/traceability/search" routerLinkActive="bg-slate-800/60 text-white"
-     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Búsqueda avanzada</a>
+  <a routerLink="/maintenance/interventions"
+     routerLinkActive="bg-slate-800/60 text-white"
+     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+    <i class="pi pi-cog mr-2 text-xs"></i> Intervenciones
+  </a>
 
-  <a routerLink="/traceability/labels" routerLinkActive="bg-slate-800/60 text-white"
-     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Etiquetas / Impresión</a>
+  <a routerLink="/maintenance/inventory"
+     routerLinkActive="bg-slate-800/60 text-white"
+     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+    <i class="pi pi-box mr-2 text-xs"></i> Repuestos
+  </a>
 
-  <a routerLink="/traceability/audit" routerLinkActive="bg-slate-800/60 text-white"
-     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Auditoría / Eventos</a>
+  <a routerLink="/maintenance/history"
+     routerLinkActive="bg-slate-800/60 text-white"
+     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+    <i class="pi pi-history mr-2 text-xs"></i> Historial
+  </a>
 
-  <a routerLink="/traceability/integrations" routerLinkActive="bg-slate-800/60 text-white"
-     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Integraciones</a>
+  <a routerLink="/maintenance/reports"
+     routerLinkActive="bg-slate-800/60 text-white"
+     class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+    <i class="pi pi-chart-bar mr-2 text-xs"></i> Reportes
+  </a>
+
 </div>
 
-
-
-        <a
-          routerLink="/quality/defects"
-          routerLinkActive="bg-slate-800/60 border-slate-700"
-          class="group flex items-center gap-3 px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition"
-        >
-          <span class="pi pi-flag text-slate-300"></span>
-          <span *ngIf="!sidebarCollapsed">Calidad</span>
-        </a>
-        <!-- <a routerLink="/master-data/machines">Maestros</a>
-        <a
-          routerLink="/master-data/machines"
-          routerLinkActive="bg-slate-800/60 border-slate-700"
-          class="group flex items-center gap-3 px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition"
-        >
-          <span class="pi pi-cog text-slate-300"></span>
-          <span *ngIf="!sidebarCollapsed">Maestros</span>
-        </a> -->
-        <button
-          type="button"
-          (click)="toggleMasterMenu()"
-          class="w-full flex items-center gap-3 px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm"
-        >
+        <button type="button" (click)="toggleMasterMenu()"
+          class="w-full flex items-center gap-3 px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
           <span class="pi pi-database text-slate-300"></span>
           <span *ngIf="!sidebarCollapsed" class="flex-1 text-left">Maestros</span>
 
-          <span *ngIf="!sidebarCollapsed" class="pi"
-                [ngClass]="masterMenuOpen ? 'pi-chevron-up' : 'pi-chevron-down'">
+          <span *ngIf="!sidebarCollapsed" class="pi" [ngClass]="masterMenuOpen ? 'pi-chevron-up' : 'pi-chevron-down'">
           </span>
         </button>
 
-<div *ngIf="masterMenuOpen && !sidebarCollapsed" class="ml-10 mt-1 space-y-1">
-  <a routerLink="/master-data/machines" routerLinkActive="bg-slate-800/60 border-slate-700"
-     class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
-    Máquinas
-  </a>
-  <a routerLink="/master-data/materials" routerLinkActive="bg-slate-800/60 border-slate-700"
-     class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
-    Materiales
-  </a>
-  <a routerLink="/master-data/locations" routerLinkActive="bg-slate-800/60 border-slate-700"
-     class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
-    Ubicaciones
-  </a>
-  <a routerLink="/master-data/processes" routerLinkActive="bg-slate-800/60 border-slate-700"
-     class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
-    Procesos
-  </a>
-  <a routerLink="/master-data/uoms" routerLinkActive="bg-slate-800/60 border-slate-700"
-     class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
-    Unidades (UoM)
-  </a>
-  <a
-      routerLink="/master-data/products"
-      routerLinkActive="bg-slate-800/60 border-slate-700"
-      class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">Productos
-    </a>
+        <div *ngIf="masterMenuOpen && !sidebarCollapsed" class="ml-10 mt-1 space-y-1">
+          <a routerLink="/master-data/machines" routerLinkActive="bg-slate-800/60 border-slate-700"
+            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+            Máquinas
+          </a>
+          <a routerLink="/master-data/materials" routerLinkActive="bg-slate-800/60 border-slate-700"
+            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+            Materiales
+          </a>
+          <a routerLink="/master-data/locations" routerLinkActive="bg-slate-800/60 border-slate-700"
+            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+            Ubicaciones
+          </a>
+          <a routerLink="/master-data/processes" routerLinkActive="bg-slate-800/60 border-slate-700"
+            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+            Procesos
+          </a>
+          <a routerLink="/master-data/uoms" routerLinkActive="bg-slate-800/60 border-slate-700"
+            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+            Unidades (UoM)
+          </a>
+          <a routerLink="/master-data/products" routerLinkActive="bg-slate-800/60 border-slate-700"
+            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">Productos
+          </a>
 
-    <a
-      routerLink="/master-data/shifts"
-      routerLinkActive="bg-slate-800/60 border-slate-700"
-      class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">Turnos
-    </a>
+          <a routerLink="/master-data/shifts" routerLinkActive="bg-slate-800/60 border-slate-700"
+            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">Turnos
+          </a>
 
-    <a
-      routerLink="/master-data/operators"
-      routerLinkActive="bg-slate-800/60 border-slate-700"
-      [routerLinkActiveOptions]="{ exact: true }"
-      class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">Operadores
-    </a>
+          <a routerLink="/master-data/operators" routerLinkActive="bg-slate-800/60 border-slate-700"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">Operadores
+          </a>
 
-    <a
-      routerLink="/master-data/downtime-reasons"
-      routerLinkActive="bg-slate-800/60 border-slate-700"
-      [routerLinkActiveOptions]="{ exact: true }"
-      class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">Motivos de parada</a>
+          <a routerLink="/master-data/downtime-reasons" routerLinkActive="bg-slate-800/60 border-slate-700"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">Motivos
+            de parada</a>
 
-    <a
-      routerLink="/master-data/suppliers"
-      routerLinkActive="bg-slate-800/60 border-slate-700"
-      [routerLinkActiveOptions]="{ exact: true }"
-      class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">Proveedores</a>
-</div>
+          <a routerLink="/master-data/suppliers" routerLinkActive="bg-slate-800/60 border-slate-700"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">Proveedores</a>
+        </div>
 
-      <!-- Cuando el sidebar está colapsado, deja un link directo -->
-      <a *ngIf="sidebarCollapsed"
-        routerLink="/master-data/machines"
-        routerLinkActive="bg-slate-800/60 border-slate-700"
-        class="group flex items-center gap-3 px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
-        <span class="pi pi-database text-slate-300"></span>
-      </a>
+        <!-- Cuando el sidebar está colapsado, deja un link directo -->
+        <a *ngIf="sidebarCollapsed" routerLink="/master-data/machines"
+          routerLinkActive="bg-slate-800/60 border-slate-700"
+          class="group flex items-center gap-3 px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+          <span class="pi pi-database text-slate-300"></span>
+        </a>
 
-              <!-- Divider -->
-              <div class="my-4 h-px bg-slate-800/70"></div>
+        <!-- Divider -->
+        <div class="my-4 h-px bg-slate-800/70"></div>
 
-              <a
-                routerLink="/reports"
-                routerLinkActive="bg-slate-800/60 border-slate-700"
-                class="group flex items-center gap-3 px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition"
-              >
-                <span class="pi pi-file text-slate-300"></span>
-                <span *ngIf="!sidebarCollapsed">Reportes</span>
-              </a>
-            </nav>
+        <a routerLink="/reports" routerLinkActive="bg-slate-800/60 border-slate-700"
+          class="group flex items-center gap-3 px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition">
+          <span class="pi pi-file text-slate-300"></span>
+          <span *ngIf="!sidebarCollapsed">Reportes</span>
+        </a>
+      </nav>
 
       <!-- Footer Sidebar -->
       <div class="absolute bottom-0 left-0 right-0 p-3 border-t border-slate-800/70">
@@ -273,12 +352,9 @@
             </p>
           </div>
 
-          <button
-            type="button"
-            (click)="logout()"
+          <button type="button" (click)="logout()"
             class="ml-auto h-9 w-9 rounded-xl hover:bg-slate-800/60 transition flex items-center justify-center"
-            title="Cerrar sesión"
-          >
+            title="Cerrar sesión">
             <span class="pi pi-sign-out"></span>
           </button>
         </div>
@@ -306,35 +382,28 @@
           <div class="flex-1 max-w-xl">
             <div class="relative">
               <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
-              <input
-                type="text"
-                placeholder="Buscar lotes, órdenes, máquinas..."
-                class="w-full bg-slate-900/60 border border-slate-800/80 rounded-xl pl-9 pr-3 py-2 text-sm
-                       placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/60"
-              />
+              <input type="text" placeholder="Buscar lotes, órdenes, máquinas..." class="w-full bg-slate-900/60 border border-slate-800/80 rounded-xl pl-9 pr-3 py-2 text-sm
+                       placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/60" />
             </div>
           </div>
 
           <!-- Right: quick actions -->
           <div class="flex items-center gap-2">
-            <button
-              type="button"
+            <button type="button"
               class="h-10 w-10 rounded-xl border border-slate-800/80 bg-slate-900/50 hover:bg-slate-800/60 transition flex items-center justify-center"
-              title="Notificaciones"
-            >
+              title="Notificaciones">
               <span class="pi pi-bell text-slate-200"></span>
             </button>
 
-            <button
-              type="button"
+            <button type="button"
               class="h-10 w-10 rounded-xl border border-slate-800/80 bg-slate-900/50 hover:bg-slate-800/60 transition flex items-center justify-center"
-              title="Configuración"
-            >
+              title="Configuración">
               <span class="pi pi-sliders-h text-slate-200"></span>
             </button>
 
             <div class="hidden md:flex items-center gap-3 pl-3 border-l border-slate-800/70">
-              <div class="h-10 w-10 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center">
+              <div
+                class="h-10 w-10 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center">
                 <span class="pi pi-user text-blue-200"></span>
               </div>
               <div class="leading-tight">
@@ -350,12 +419,13 @@
 
         </div>
       </header>
-<!-- MAIN CONTENT -->
+      <!-- MAIN CONTENT -->
       <main class="flex-1 overflow-y-auto">
         <!-- Page wrapper -->
         <div class="p-6">
           <!-- Content surface -->
-          <div class="rounded-2xl border border-slate-800/70 bg-slate-950/40 backdrop-blur p-6 shadow-xl shadow-slate-950/30">
+          <div
+            class="rounded-2xl border border-slate-800/70 bg-slate-950/40 backdrop-blur p-6 shadow-xl shadow-slate-950/30">
             <router-outlet></router-outlet>
           </div>
 
@@ -366,10 +436,8 @@
           </div>
         </div>
       </main>
-      
+
     </div>
   </div>
 </div>
 <!-- Maestros con submenú -->
-
-
