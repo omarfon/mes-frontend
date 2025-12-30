@@ -1,8 +1,8 @@
 <div class="space-y-5">
   <div class="ui-page-header">
     <div>
-      <h3 class="ui-title">Maestro · Motivos de parada</h3>
-      <p class="ui-subtitle">Catálogo para OEE: mantenimiento, material, set-up, calidad, etc.</p>
+      <h3 class="ui-title">Maestro · Motivos de Parada</h3>
+      <p class="ui-subtitle">Catálogo para OEE: mantenimiento, material, calidad, etc.</p>
     </div>
 
     <div class="w-full max-w-sm">
@@ -17,47 +17,110 @@
     <div class="ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold">{{ editingId ? 'Editar motivo' : 'Nuevo motivo' }}</p>
-        <span class="text-[11px] text-slate-500">Campos mínimos</span>
+        <span class="text-[11px] text-slate-500">Campos completos</span>
       </div>
 
-      <form (ngSubmit)="submit()" class="space-y-4">
+      <!-- Mensajes de estado -->
+      <div *ngIf="error" class="mb-3 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
+        {{ error }}
+      </div>
+
+      <div *ngIf="loading" class="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+        Procesando...
+      </div>
+
+      <form #reasonForm="ngForm" (ngSubmit)="submit()" class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
         <div>
-          <label class="ui-label">Código</label>
-          <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="DT-XXX" />
+          <label class="ui-label">Código *</label>
+          <input [(ngModel)]="form.codigo" name="codigo" required class="ui-input" placeholder="MP001" />
         </div>
 
         <div>
-          <label class="ui-label">Nombre</label>
-          <input [(ngModel)]="form.name" name="name" required class="ui-input" placeholder="Falta de material" />
+          <label class="ui-label">Nombre *</label>
+          <input [(ngModel)]="form.nombre" name="nombre" required class="ui-input" placeholder="Falta de material" />
         </div>
 
         <div>
-          <label class="ui-label">Categoría</label>
-          <select [(ngModel)]="form.category" name="category" class="ui-select">
-            <option value="MAINTENANCE">Mantenimiento</option>
-            <option value="MATERIAL">Material</option>
-            <option value="SETUP">Set-up / Cambio</option>
-            <option value="QUALITY">Calidad</option>
-            <option value="OTHER">Otros</option>
-          </select>
+          <label class="ui-label">Descripción</label>
+          <textarea [(ngModel)]="form.descripcion" name="descripcion" rows="2" class="ui-input" placeholder="Descripción detallada..."></textarea>
         </div>
 
-        <div class="flex items-center justify-between gap-3">
-          <label class="inline-flex items-center gap-2 text-xs text-slate-300">
-            <input type="checkbox" [(ngModel)]="form.planned" name="planned"
-                   class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
-            Parada planificada
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Categoría *</label>
+            <select [(ngModel)]="form.categoria" name="categoria" required class="ui-select">
+              <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Tipo</label>
+            <select [(ngModel)]="form.tipo" name="tipo" class="ui-select">
+              <option *ngFor="let t of tipos" [value]="t">{{ t }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Color</label>
+            <input type="color" [(ngModel)]="form.color" name="color" class="ui-input h-10" />
+          </div>
+
+          <div>
+            <label class="ui-label">Icono/Emoji</label>
+            <input [(ngModel)]="form.icono" name="icono" class="ui-input" placeholder="⚠️" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Tiempo estándar (min)</label>
+            <input type="number" [(ngModel)]="form.tiempoEstandardMinutos" name="tiempoEstandardMinutos" min="0" class="ui-input" />
+          </div>
+
+          <div>
+            <label class="ui-label">Prioridad (1-5)</label>
+            <input type="number" [(ngModel)]="form.prioridad" name="prioridad" min="1" max="5" class="ui-input" />
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Departamento Responsable</label>
+          <input [(ngModel)]="form.departamentoResponsable" name="departamentoResponsable" class="ui-input" placeholder="Mantenimiento" />
+        </div>
+
+        <div class="space-y-2">
+          <label class="inline-flex items-center gap-2 text-xs text-slate-700">
+            <input type="checkbox" [(ngModel)]="form.requiereAprobacion" name="requiereAprobacion" class="h-4 w-4 rounded border-slate-300" />
+            Requiere aprobación
           </label>
 
-          <label class="inline-flex items-center gap-2 text-xs text-slate-300">
-            <input type="checkbox" [(ngModel)]="form.active" name="active"
-                   class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+          <label class="inline-flex items-center gap-2 text-xs text-slate-700">
+            <input type="checkbox" [(ngModel)]="form.requiereComentario" name="requiereComentario" class="h-4 w-4 rounded border-slate-300" />
+            Requiere comentario obligatorio
+          </label>
+
+          <label class="inline-flex items-center gap-2 text-xs text-slate-700">
+            <input type="checkbox" [(ngModel)]="form.requiereEvidencia" name="requiereEvidencia" class="h-4 w-4 rounded border-slate-300" />
+            Requiere evidencia
+          </label>
+
+          <label class="inline-flex items-center gap-2 text-xs text-slate-700">
+            <input type="checkbox" [(ngModel)]="form.impactaOEE" name="impactaOEE" class="h-4 w-4 rounded border-slate-300" />
+            Impacta en OEE
+          </label>
+
+          <label class="inline-flex items-center gap-2 text-xs text-slate-700">
+            <input type="checkbox" [(ngModel)]="form.activo" name="activo" class="h-4 w-4 rounded border-slate-300" />
             Activo
           </label>
         </div>
 
         <div class="flex gap-2 pt-1">
-          <button type="submit" class="flex-1 ui-btn-primary">{{ editingId ? 'Guardar' : 'Agregar' }}</button>
+          <button type="submit" [disabled]="loading" class="flex-1 ui-btn-primary">
+            {{ loading ? 'Procesando...' : (editingId ? 'Guardar' : 'Agregar') }}
+          </button>
           <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
         </div>
       </form>
@@ -74,44 +137,53 @@
           <thead class="ui-thead">
             <tr>
               <th class="ui-th">Código</th>
-              <th class="ui-th">Motivo</th>
+              <th class="ui-th">Nombre</th>
               <th class="ui-th">Categoría</th>
-              <th class="ui-th">Planificada</th>
+              <th class="ui-th">Tipo</th>
+              <th class="ui-th">OEE</th>
               <th class="ui-th">Estado</th>
               <th class="ui-th w-40">Acciones</th>
             </tr>
           </thead>
 
-          <tbody class="bg-slate-950/20">
+          <tbody>
             <tr *ngFor="let it of filtered" class="ui-tr">
-              <td class="ui-td">{{ it.code }}</td>
-              <td class="ui-td">{{ it.name }}</td>
-              <td class="ui-td">{{ it.category }}</td>
+              <td class="ui-td font-medium">
+                <span [style.color]="it.color">{{ it.icono }}</span>
+                {{ it.codigo }}
+              </td>
+              <td class="ui-td">{{ it.nombre }}</td>
               <td class="ui-td">
-                <span [ngClass]="it.planned ? 'ui-badge-warn' : 'ui-badge'">
-                  {{ it.planned ? 'Sí' : 'No' }}
+                <span class="text-xs">{{ it.categoria }}</span>
+              </td>
+              <td class="ui-td">
+                <span class="text-xs">{{ it.tipo || '-' }}</span>
+              </td>
+              <td class="ui-td">
+                <span class="ui-badge" [ngClass]="it.impactaOEE ? 'ui-badge-warn' : 'ui-badge'">
+                  {{ it.impactaOEE ? 'Sí' : 'No' }}
                 </span>
               </td>
               <td class="ui-td">
-                <span [ngClass]="it.active ? 'ui-badge-ok' : 'ui-badge-bad'">
-                  {{ it.active ? 'Activo' : 'Inactivo' }}
+                <span class="ui-badge" [ngClass]="it.activo ? 'ui-badge-ok' : 'ui-badge-bad'">
+                  {{ it.activo ? 'Activo' : 'Inactivo' }}
                 </span>
               </td>
               <td class="ui-td">
                 <div class="flex gap-2">
-                  <button (click)="edit(it)" class="ui-btn-ghost text-xs">Editar</button>
-                  <button (click)="remove(it.id)" class="ui-btn-danger text-xs">Eliminar</button>
+                  <button (click)="edit(it)" [disabled]="loading" class="ui-btn-ghost text-xs">Editar</button>
+                  <button (click)="remove(it.id)" [disabled]="loading" class="ui-btn-danger text-xs">Eliminar</button>
                 </div>
               </td>
             </tr>
-
             <tr *ngIf="filtered.length === 0">
-              <td colspan="6" class="px-4 py-10 text-center text-slate-500">No hay registros.</td>
+              <td colspan="7" class="px-4 py-10 text-center text-slate-500">
+                {{ loading ? 'Cargando motivos...' : 'No hay motivos de parada registrados.' }}
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
-
     </div>
   </div>
 </div>

@@ -29,7 +29,7 @@ export class AuthService {
   login(credentials: LoginRequest): Observable<LoginResponse> {
     console.log('AuthService: Iniciando login con', credentials);
     return this.http
-      .post<LoginResponse>(`${this.apiUrl}/auth/login`, credentials)
+      .post<LoginResponse>(`${this.apiUrl}${environment.endpoints.auth}/login`, credentials)
       .pipe(
         tap((res) => {
           localStorage.setItem('access_token', res.access_token);

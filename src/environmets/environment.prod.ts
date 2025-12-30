@@ -1,9 +1,9 @@
 export const environment = {
-  production: false,
-  apiUrl: 'http://localhost:3000/api',
+  production: true,
+  apiUrl: 'https://api-mes.tuempresa.com/api', // Cambia esto por la URL de tu servidor
   apiVersion: 'v1',
   timeout: 30000,
-  enableDebugLogs: true,
+  enableDebugLogs: false,
   endpoints: {
     auth: '/auth',
     production: '/production-orders',
