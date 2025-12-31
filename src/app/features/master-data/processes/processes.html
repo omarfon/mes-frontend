@@ -1,97 +1,178 @@
 <div class="space-y-5">
-  <div class="flex items-start justify-between gap-4">
+  <div class="ui-page-header">
     <div>
-      <h3 class="text-xl font-semibold">Maestro · Procesos</h3>
-      <p class="text-xs text-slate-400 mt-1">Define procesos y su orden de ejecución.</p>
+      <h3 class="ui-title">Maestro · Procesos</h3>
+      <p class="ui-subtitle">Define procesos y su orden de ejecución.</p>
     </div>
 
     <div class="w-full max-w-sm">
-      <input [(ngModel)]="q" class="w-full bg-slate-900/60 border border-slate-800/80 rounded-xl px-3 py-2 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/60"
-             placeholder="Buscar proceso..." />
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar proceso..." />
+      </div>
     </div>
   </div>
 
   <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-    <div class="rounded-2xl border border-slate-800/70 bg-slate-950/40 backdrop-blur p-5">
-      <p class="text-sm font-semibold mb-4">{{ editingId ? 'Editar proceso' : 'Nuevo proceso' }}</p>
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">{{ editingId ? 'Editar proceso' : 'Nuevo proceso' }}</p>
+        <span class="text-[11px] text-slate-500">Campos completos</span>
+      </div>
 
-      <form (ngSubmit)="submit()" class="space-y-4">
+      <!-- Mensajes de estado -->
+      <div *ngIf="error" class="mb-3 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
+        {{ error }}
+      </div>
+
+      <div *ngIf="loading" class="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+        Procesando...
+      </div>
+
+      <form #processForm="ngForm" (ngSubmit)="submit()" class="space-y-4">
         <div>
-          <label class="block text-xs text-slate-300 mb-1">Código</label>
-          <input [(ngModel)]="form.code" name="code" required class="w-full bg-slate-900/60 border border-slate-800/80 rounded-xl px-3 py-2 text-sm" placeholder="PR-HIL" />
+          <label class="ui-label">Código *</label>
+          <input [(ngModel)]="form.codigo" name="codigo" required class="ui-input" placeholder="PR-HIL" />
         </div>
 
         <div>
-          <label class="block text-xs text-slate-300 mb-1">Nombre</label>
-          <input [(ngModel)]="form.name" name="name" required class="w-full bg-slate-900/60 border border-slate-800/80 rounded-xl px-3 py-2 text-sm" placeholder="Hilado" />
+          <label class="ui-label">Nombre *</label>
+          <input [(ngModel)]="form.nombre" name="nombre" required class="ui-input" placeholder="Hilado" />
+        </div>
+
+        <div>
+          <label class="ui-label">Descripción</label>
+          <textarea [(ngModel)]="form.descripcion" name="descripcion" rows="2" class="ui-input" placeholder="Descripción del proceso"></textarea>
+        </div>
+
+        <div>
+          <label class="ui-label">Tipo *</label>
+          <select [(ngModel)]="form.tipo" name="tipo" required class="ui-select">
+            <option value="">Seleccionar tipo</option>
+            <option *ngFor="let t of tipos" [value]="t">{{ t }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="ui-label">Estado</label>
+          <select [(ngModel)]="form.estado" name="estado" class="ui-select">
+            <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="ui-label">Versión</label>
+          <input [(ngModel)]="form.version" name="version" class="ui-input" placeholder="1.0" />
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs text-slate-300 mb-1">Orden</label>
-            <input type="number" [(ngModel)]="form.order" name="order" min="1"
-                   class="w-full bg-slate-900/60 border border-slate-800/80 rounded-xl px-3 py-2 text-sm" />
+            <label class="ui-label">Tiempo Estándar (min)</label>
+            <input type="number" [(ngModel)]="form.tiempoEstandarMinutos" name="tiempoEstandarMinutos" min="0" class="ui-input" />
           </div>
 
-          <div class="flex items-end">
-            <label class="inline-flex items-center gap-2 text-xs text-slate-300">
-              <input type="checkbox" [(ngModel)]="form.active" name="active" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
-              Activo
-            </label>
+          <div>
+            <label class="ui-label">Tiempo Setup (min)</label>
+            <input type="number" [(ngModel)]="form.tiempoSetupMinutos" name="tiempoSetupMinutos" min="0" class="ui-input" />
           </div>
         </div>
 
+        <div>
+          <label class="ui-label">Instrucciones</label>
+          <textarea [(ngModel)]="form.instrucciones" name="instrucciones" rows="2" class="ui-input" placeholder="Instrucciones del proceso"></textarea>
+        </div>
+
+        <div>
+          <label class="ui-label">Requisitos de Calidad</label>
+          <textarea [(ngModel)]="form.requisitosCalidad" name="requisitosCalidad" rows="2" class="ui-input" placeholder="Requisitos de calidad"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Secuencia</label>
+            <input type="number" [(ngModel)]="form.secuencia" name="secuencia" min="0" class="ui-input" />
+          </div>
+
+          <div>
+            <label class="ui-label">Eficiencia Esperada (%)</label>
+            <input type="number" [(ngModel)]="form.eficienciaEsperada" name="eficienciaEsperada" min="0" max="100" class="ui-input" />
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Costo Estándar</label>
+          <input type="number" [(ngModel)]="form.costoEstandar" name="costoEstandar" min="0" step="0.01" class="ui-input" />
+        </div>
+
+        <div>
+          <label class="ui-label">Notas</label>
+          <textarea [(ngModel)]="form.notas" name="notas" rows="2" class="ui-input" placeholder="Notas adicionales"></textarea>
+        </div>
+
         <div class="flex gap-2 pt-1">
-          <button class="flex-1 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 transition text-sm font-medium">
-            {{ editingId ? 'Guardar' : 'Agregar' }}
+          <button type="submit" [disabled]="loading" class="flex-1 ui-btn-primary">
+            {{ loading ? 'Procesando...' : (editingId ? 'Guardar' : 'Agregar') }}
           </button>
-          <button *ngIf="editingId" type="button" (click)="cancelEdit()"
-                  class="px-4 py-2 rounded-xl border border-slate-800/80 bg-slate-900/40 hover:bg-slate-800/50 transition text-sm">
-            Cancelar
-          </button>
+          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
         </div>
       </form>
     </div>
 
-    <div class="xl:col-span-2 rounded-2xl border border-slate-800/70 bg-slate-950/40 backdrop-blur p-5">
+    <div class="xl:col-span-2 ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold">Listado</p>
         <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
       </div>
 
-      <div class="overflow-x-auto rounded-xl border border-slate-800/70">
-        <table class="w-full text-sm">
-          <thead class="bg-slate-900/50 text-slate-200">
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead class="ui-thead">
             <tr>
-              <th class="text-left px-4 py-3">Código</th>
-              <th class="text-left px-4 py-3">Nombre</th>
-              <th class="text-left px-4 py-3">Orden</th>
-              <th class="text-left px-4 py-3">Estado</th>
-              <th class="text-left px-4 py-3 w-40">Acciones</th>
+              <th class="ui-th">Código</th>
+              <th class="ui-th">Nombre</th>
+              <th class="ui-th">Tipo</th>
+              <th class="ui-th">Estado</th>
+              <th class="ui-th">Secuencia</th>
+              <th class="ui-th">Tiempos</th>
+              <th class="ui-th w-40">Acciones</th>
             </tr>
           </thead>
-          <tbody class="bg-slate-950/20">
-            <tr *ngFor="let it of filtered" class="border-t border-slate-800/60 hover:bg-slate-900/30">
-              <td class="px-4 py-3">{{ it.code }}</td>
-              <td class="px-4 py-3">{{ it.name }}</td>
-              <td class="px-4 py-3">{{ it.order }}</td>
-              <td class="px-4 py-3">
-                <span class="px-2 py-1 rounded-lg text-xs border"
-                      [ngClass]="it.active ? 'bg-emerald-500/15 border-emerald-500/25 text-emerald-200'
-                                           : 'bg-rose-500/15 border-rose-500/25 text-rose-200'">
-                  {{ it.active ? 'Activo' : 'Inactivo' }}
+          <tbody>
+            <tr *ngFor="let it of filtered" class="ui-tr">
+              <td class="ui-td font-medium">{{ it.codigo }}</td>
+              <td class="ui-td">{{ it.nombre }}</td>
+              <td class="ui-td">{{ it.tipo }}</td>
+              <td class="ui-td">
+                <span class="ui-badge"
+                      [ngClass]="{
+                        'ui-badge-ok': it.estado === 'ACTIVO',
+                        'ui-badge-bad': it.estado === 'INACTIVO',
+                        'ui-badge-warn': it.estado === 'EN_REVISION',
+                        'ui-badge-danger': it.estado === 'OBSOLETO'
+                      }">
+                  {{ it.estado }}
                 </span>
               </td>
-              <td class="px-4 py-3">
+              <td class="ui-td">{{ it.secuencia || '-' }}</td>
+              <td class="ui-td text-xs">
+                <div *ngIf="it.tiempoEstandarMinutos || it.tiempoSetupMinutos">
+                  <div *ngIf="it.tiempoEstandarMinutos">Est: {{ it.tiempoEstandarMinutos }}min</div>
+                  <div *ngIf="it.tiempoSetupMinutos">Setup: {{ it.tiempoSetupMinutos }}min</div>
+                </div>
+                <span *ngIf="!it.tiempoEstandarMinutos && !it.tiempoSetupMinutos">-</span>
+              </td>
+              <td class="ui-td">
                 <div class="flex gap-2">
-                  <button (click)="edit(it)" class="px-3 py-2 text-xs rounded-xl border border-slate-800/80 bg-slate-900/40 hover:bg-slate-800/50 transition">Editar</button>
-                  <button (click)="remove(it.id)" class="px-3 py-2 text-xs rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/15 transition text-rose-200">Eliminar</button>
+                  <button (click)="edit(it)" [disabled]="loading" class="ui-btn-ghost text-xs">Editar</button>
+                  <button (click)="remove(it.id!)" [disabled]="loading" class="ui-btn-danger text-xs">Eliminar</button>
                 </div>
               </td>
             </tr>
 
             <tr *ngIf="filtered.length === 0">
-              <td colspan="5" class="px-4 py-10 text-center text-slate-500">No hay registros.</td>
+              <td colspan="7" class="px-4 py-10 text-center text-slate-500">
+                {{ loading ? 'Cargando procesos...' : 'No hay procesos registrados.' }}
+              </td>
             </tr>
           </tbody>
         </table>

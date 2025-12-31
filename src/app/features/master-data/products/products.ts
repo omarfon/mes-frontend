@@ -10,7 +10,7 @@ interface Product {
   name: string;
   type: ProductType;
   uom: string;
-  spec: string; // especificación breve
+  spec: string;
   active: boolean;
 }
 
@@ -78,3 +78,4 @@ export class ProductsComponent {
     this.form = { code: '', name: '', type: 'YARN', uom: 'kg', spec: '', active: true };
   }
 }
+

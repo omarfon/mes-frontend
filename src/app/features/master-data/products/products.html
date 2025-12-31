@@ -54,9 +54,8 @@
           <input [(ngModel)]="form.spec" name="spec" class="ui-input" placeholder="Ej: 180 g/m², Algodón peinado..." />
         </div>
 
-        <label class="inline-flex items-center gap-2 text-xs text-slate-300">
-          <input type="checkbox" [(ngModel)]="form.active" name="active"
-                 class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+        <label class="inline-flex items-center gap-2 text-xs text-slate-700">
+          <input type="checkbox" [(ngModel)]="form.active" name="active" class="h-4 w-4 rounded border-slate-300" />
           Activo
         </label>
 
@@ -91,15 +90,15 @@
             </tr>
           </thead>
 
-          <tbody class="bg-slate-950/20">
+          <tbody>
             <tr *ngFor="let it of filtered" class="ui-tr">
-              <td class="ui-td">{{ it.code }}</td>
+              <td class="ui-td font-medium">{{ it.code }}</td>
               <td class="ui-td">{{ it.name }}</td>
               <td class="ui-td">{{ it.type }}</td>
               <td class="ui-td">{{ it.uom }}</td>
               <td class="ui-td">{{ it.spec || '-' }}</td>
               <td class="ui-td">
-                <span [ngClass]="it.active ? 'ui-badge-ok' : 'ui-badge-bad'">
+                <span class="ui-badge" [ngClass]="it.active ? 'ui-badge-ok' : 'ui-badge-bad'">
                   {{ it.active ? 'Activo' : 'Inactivo' }}
                 </span>
               </td>
@@ -110,14 +109,14 @@
                 </div>
               </td>
             </tr>
-
             <tr *ngIf="filtered.length === 0">
-              <td colspan="7" class="px-4 py-10 text-center text-slate-500">No hay registros.</td>
+              <td colspan="7" class="px-4 py-10 text-center text-slate-500">
+                No hay productos registrados.
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
-
     </div>
   </div>
 </div>

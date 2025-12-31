@@ -28,15 +28,24 @@ export const PRODUCTION_ROUTES: Routes = [
         loadComponent: () =>
           import('./wip/wip').then((m) => m.WipComponent),
       },
-      { path: '', pathMatch: 'full', redirectTo: 'orders' 
-
-      },
       {
         path: 'board',
         loadComponent: () => import('./board/board').then(m => m.BoardComponent),
       },
-      { path: 'times', loadComponent: () => import('./times/times').then(m => m.TimesComponent) },
-
+      { 
+        path: 'times', 
+        loadComponent: () => import('./times/times').then(m => m.TimesComponent) 
+      },
+      {
+        path: 'control-visual',
+        loadComponent: () => import('./control-visual/control-visual').then(m => m.ControlVisualComponent),
+      },
+      { 
+        path: '', 
+        pathMatch: 'full', 
+        redirectTo: 'orders' 
+      },
     ],
   },
 ];
+

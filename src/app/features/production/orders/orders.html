@@ -17,50 +17,102 @@
     <div class="ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold">{{ editingId ? 'Editar orden' : 'Nueva orden' }}</p>
-        <span class="text-[11px] text-slate-500">MVP</span>
+        <span class="text-[11px] text-slate-500">Campos completos</span>
       </div>
 
-      <form (ngSubmit)="submit()" class="space-y-4">
+      <!-- Mensajes de estado -->
+      <div *ngIf="error" class="mb-3 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
+        {{ error }}
+      </div>
+
+      <div *ngIf="loading" class="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+        Procesando...
+      </div>
+
+      <form #ordenForm="ngForm" (ngSubmit)="submit()" class="space-y-4">
         <div>
-          <label class="ui-label">Código</label>
-          <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="OP-0003" />
+          <label class="ui-label">Número de Orden *</label>
+          <input [(ngModel)]="form.numeroOrden" name="numeroOrden" required class="ui-input" placeholder="OP-2025-001" />
         </div>
 
         <div>
-          <label class="ui-label">Producto</label>
-          <input [(ngModel)]="form.productCode" name="productCode" required class="ui-input" placeholder="PRD-HIL-20" />
+          <label class="ui-label">Producto ID</label>
+          <input [(ngModel)]="form.productoId" name="productoId" class="ui-input" placeholder="UUID del producto (opcional)" />
+          <p class="text-[10px] text-slate-500 mt-1">Se autogenera desde el código si no se proporciona</p>
+        </div>
+
+        <div>
+          <label class="ui-label">Código Producto</label>
+          <input [(ngModel)]="form.productoCodigo" name="productoCodigo" class="ui-input" placeholder="PRD-001" />
+          <p class="text-[10px] text-slate-500 mt-1">Requerido si no se proporciona Producto ID</p>
+        </div>
+
+        <div>
+          <label class="ui-label">Nombre Producto</label>
+          <input [(ngModel)]="form.productoNombre" name="productoNombre" class="ui-input" placeholder="Nombre del producto" />
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="ui-label">Cantidad</label>
-            <input type="number" [(ngModel)]="form.plannedQty" name="plannedQty" min="0" class="ui-input" />
+            <label class="ui-label">Cantidad *</label>
+            <input type="number" [(ngModel)]="form.cantidadPlanificada" name="cantidadPlanificada" min="0" required class="ui-input" />
           </div>
           <div>
-            <label class="ui-label">UoM</label>
-            <input [(ngModel)]="form.uom" name="uom" class="ui-input" placeholder="kg" />
+            <label class="ui-label">Unidad *</label>
+            <input [(ngModel)]="form.unidadMedida" name="unidadMedida" required class="ui-input" placeholder="UND" />
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="ui-label">Vence</label>
-            <input type="date" [(ngModel)]="form.dueDate" name="dueDate" class="ui-input" />
-          </div>
           <div>
             <label class="ui-label">Estado</label>
-            <select [(ngModel)]="form.status" name="status" class="ui-select">
-              <option value="DRAFT">Borrador</option>
-              <option value="RELEASED">Liberada</option>
-              <option value="IN_PROGRESS">En proceso</option>
-              <option value="COMPLETED">Cerrada</option>
-              <option value="CANCELLED">Cancelada</option>
+            <select [(ngModel)]="form.estado" name="estado" class="ui-select">
+              <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="ui-label">Prioridad</label>
+            <select [(ngModel)]="form.prioridad" name="prioridad" class="ui-select">
+              <option *ngFor="let p of prioridades" [value]="p">{{ p }}</option>
             </select>
           </div>
         </div>
 
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Inicio Planificado</label>
+            <input type="datetime-local" [(ngModel)]="form.fechaInicioPlanificada" name="fechaInicioPlanificada" class="ui-input" />
+          </div>
+          <div>
+            <label class="ui-label">Fin Planificado</label>
+            <input type="datetime-local" [(ngModel)]="form.fechaFinPlanificada" name="fechaFinPlanificada" class="ui-input" />
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Lote</label>
+          <input [(ngModel)]="form.lote" name="lote" class="ui-input" placeholder="Número de lote" />
+        </div>
+
+        <div>
+          <label class="ui-label">Cliente</label>
+          <input [(ngModel)]="form.cliente" name="cliente" class="ui-input" placeholder="Nombre del cliente" />
+        </div>
+
+        <div>
+          <label class="ui-label">Pedido Cliente</label>
+          <input [(ngModel)]="form.pedidoCliente" name="pedidoCliente" class="ui-input" placeholder="Número pedido" />
+        </div>
+
+        <div>
+          <label class="ui-label">Notas</label>
+          <textarea [(ngModel)]="form.notas" name="notas" rows="2" class="ui-input" placeholder="Instrucciones o notas"></textarea>
+        </div>
+
         <div class="flex gap-2 pt-1">
-          <button type="submit" class="flex-1 ui-btn-primary">{{ editingId ? 'Guardar' : 'Agregar' }}</button>
+          <button type="submit" [disabled]="loading" class="flex-1 ui-btn-primary">
+            {{ loading ? 'Procesando...' : (editingId ? 'Guardar' : 'Agregar') }}
+          </button>
           <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
         </div>
       </form>
@@ -76,37 +128,45 @@
         <table class="ui-table">
           <thead class="ui-thead">
             <tr>
-              <th class="ui-th">Código</th>
+              <th class="ui-th">Número</th>
               <th class="ui-th">Producto</th>
-              <th class="ui-th">Plan</th>
-              <th class="ui-th">Vence</th>
+              <th class="ui-th">Cantidad</th>
+              <th class="ui-th">Cliente</th>
+              <th class="ui-th">Prioridad</th>
               <th class="ui-th">Estado</th>
               <th class="ui-th w-40">Acciones</th>
             </tr>
           </thead>
-          <tbody class="bg-slate-950/20">
+          <tbody>
             <tr *ngFor="let it of filtered" class="ui-tr">
-              <td class="ui-td">{{ it.code }}</td>
-              <td class="ui-td">{{ it.productCode }}</td>
-              <td class="ui-td">{{ it.plannedQty }} {{ it.uom }}</td>
-              <td class="ui-td">{{ it.dueDate || '-' }}</td>
+              <td class="ui-td font-medium">{{ it.numeroOrden }}</td>
               <td class="ui-td">
-                <span [ngClass]="badgeClass(it.status)">{{ it.status }}</span>
+                <div>{{ it.productoNombre || '-' }}</div>
+                <div class="text-xs text-slate-500">{{ it.productoCodigo }}</div>
+              </td>
+              <td class="ui-td">{{ it.cantidadPlanificada }} {{ it.unidadMedida }}</td>
+              <td class="ui-td">{{ it.cliente || '-' }}</td>
+              <td class="ui-td">
+                <span [ngClass]="prioridadClass(it.prioridad)">{{ it.prioridad || 'NORMAL' }}</span>
+              </td>
+              <td class="ui-td">
+                <span class="ui-badge" [ngClass]="badgeClass(it.estado)">{{ it.estado }}</span>
               </td>
               <td class="ui-td">
                 <div class="flex gap-2">
-                  <button (click)="edit(it)" class="ui-btn-ghost text-xs">Editar</button>
-                  <button (click)="remove(it.id)" class="ui-btn-danger text-xs">Eliminar</button>
+                  <button (click)="edit(it)" [disabled]="loading" class="ui-btn-ghost text-xs">Editar</button>
+                  <button (click)="remove(it.id)" [disabled]="loading" class="ui-btn-danger text-xs">Eliminar</button>
                 </div>
               </td>
             </tr>
             <tr *ngIf="filtered.length === 0">
-              <td colspan="6" class="px-4 py-10 text-center text-slate-500">No hay órdenes.</td>
+              <td colspan="7" class="px-4 py-10 text-center text-slate-500">
+                {{ loading ? 'Cargando órdenes...' : 'No hay órdenes registradas.' }}
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
-
     </div>
   </div>
 </div>

@@ -17,39 +17,60 @@
     <div class="ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold">{{ editingId ? 'Editar turno' : 'Nuevo turno' }}</p>
-        <span class="text-[11px] text-slate-500">Campos mínimos</span>
+        <span class="text-[11px] text-slate-500">Campos requeridos</span>
       </div>
 
-      <form (ngSubmit)="submit()" class="space-y-4">
+      <!-- Mensajes de estado -->
+      <div *ngIf="error" class="mb-3 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
+        {{ error }}
+      </div>
+
+      <div *ngIf="loading" class="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+        Procesando...
+      </div>
+
+      <form #shiftForm="ngForm" (ngSubmit)="submit()" class="space-y-4">
         <div>
-          <label class="ui-label">Código</label>
+          <label class="ui-label">Código *</label>
           <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="A" />
         </div>
 
         <div>
-          <label class="ui-label">Nombre</label>
+          <label class="ui-label">Nombre *</label>
           <input [(ngModel)]="form.name" name="name" required class="ui-input" placeholder="Turno A" />
+        </div>
+
+        <div>
+          <label class="ui-label">Descripción</label>
+          <input [(ngModel)]="form.description" name="description" class="ui-input" placeholder="Descripción del turno..." />
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="ui-label">Inicio</label>
-            <input type="time" [(ngModel)]="form.start" name="start" class="ui-input" />
+            <label class="ui-label">Hora Inicio *</label>
+            <input type="time" [(ngModel)]="form.startTime" name="startTime" required class="ui-input" />
           </div>
           <div>
-            <label class="ui-label">Fin</label>
-            <input type="time" [(ngModel)]="form.end" name="end" class="ui-input" />
+            <label class="ui-label">Hora Fin *</label>
+            <input type="time" [(ngModel)]="form.endTime" name="endTime" required class="ui-input" />
           </div>
         </div>
 
-        <label class="inline-flex items-center gap-2 text-xs text-slate-300">
-          <input type="checkbox" [(ngModel)]="form.active" name="active"
-                 class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
-          Activo
+        <div>
+          <label class="ui-label">Descanso (minutos)</label>
+          <input type="number" [(ngModel)]="form.breakMinutes" name="breakMinutes" min="0" class="ui-input" placeholder="30" />
+        </div>
+
+        <label class="inline-flex items-center gap-2 text-xs text-slate-700">
+          <input type="checkbox" [(ngModel)]="form.crossesMidnight" name="crossesMidnight"
+                 class="h-4 w-4 rounded border-slate-300" />
+          Cruza medianoche
         </label>
 
         <div class="flex gap-2 pt-1">
-          <button type="submit" class="flex-1 ui-btn-primary">{{ editingId ? 'Guardar' : 'Agregar' }}</button>
+          <button type="submit" [disabled]="loading" class="flex-1 ui-btn-primary">
+            {{ loading ? 'Procesando...' : (editingId ? 'Guardar' : 'Agregar') }}
+          </button>
           <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
         </div>
       </form>
@@ -67,37 +88,38 @@
             <tr>
               <th class="ui-th">Código</th>
               <th class="ui-th">Nombre</th>
-              <th class="ui-th">Inicio</th>
-              <th class="ui-th">Fin</th>
-              <th class="ui-th">Estado</th>
+              <th class="ui-th">Horario</th>
+              <th class="ui-th">Descanso</th>
+              <th class="ui-th">Medianoche</th>
               <th class="ui-th w-40">Acciones</th>
             </tr>
           </thead>
-          <tbody class="bg-slate-950/20">
+          <tbody>
             <tr *ngFor="let it of filtered" class="ui-tr">
-              <td class="ui-td">{{ it.code }}</td>
+              <td class="ui-td font-medium">{{ it.code }}</td>
               <td class="ui-td">{{ it.name }}</td>
-              <td class="ui-td">{{ it.start }}</td>
-              <td class="ui-td">{{ it.end }}</td>
+              <td class="ui-td">{{ it.startTime }} - {{ it.endTime }}</td>
+              <td class="ui-td">{{ it.breakMinutes || 0 }} min</td>
               <td class="ui-td">
-                <span [ngClass]="it.active ? 'ui-badge-ok' : 'ui-badge-bad'">
-                  {{ it.active ? 'Activo' : 'Inactivo' }}
+                <span class="ui-badge" [ngClass]="it.crossesMidnight ? 'ui-badge-warn' : 'ui-badge'">
+                  {{ it.crossesMidnight ? 'Sí' : 'No' }}
                 </span>
               </td>
               <td class="ui-td">
                 <div class="flex gap-2">
-                  <button (click)="edit(it)" class="ui-btn-ghost text-xs">Editar</button>
-                  <button (click)="remove(it.id)" class="ui-btn-danger text-xs">Eliminar</button>
+                  <button (click)="edit(it)" [disabled]="loading" class="ui-btn-ghost text-xs">Editar</button>
+                  <button (click)="remove(it.id)" [disabled]="loading" class="ui-btn-danger text-xs">Eliminar</button>
                 </div>
               </td>
             </tr>
             <tr *ngIf="filtered.length === 0">
-              <td colspan="6" class="px-4 py-10 text-center text-slate-500">No hay registros.</td>
+              <td colspan="6" class="px-4 py-10 text-center text-slate-500">
+                {{ loading ? 'Cargando turnos...' : 'No hay turnos registrados.' }}
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
-
     </div>
   </div>
 </div>

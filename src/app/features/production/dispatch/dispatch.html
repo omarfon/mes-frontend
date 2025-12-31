@@ -1,8 +1,8 @@
 <div class="space-y-5">
   <div class="ui-page-header">
     <div>
-      <h3 class="ui-title">Despacho / Consumo</h3>
-      <p class="ui-subtitle">Registra entrega/consumo de materiales por orden.</p>
+      <h3 class="ui-title">Despacho / Entregas</h3>
+      <p class="ui-subtitle">Gestiona despachos y entregas de productos.</p>
     </div>
 
     <div class="w-full max-w-sm">
@@ -17,43 +17,117 @@
     <div class="ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold">{{ editingId ? 'Editar despacho' : 'Nuevo despacho' }}</p>
-        <span class="text-[11px] text-slate-500">MVP</span>
+        <span class="text-[11px] text-slate-500">Campos completos</span>
       </div>
 
-      <form (ngSubmit)="submit()" class="space-y-4">
+      <!-- Mensajes de estado -->
+      <div *ngIf="error" class="mb-3 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
+        {{ error }}
+      </div>
+
+      <div *ngIf="loading" class="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+        Procesando...
+      </div>
+
+      <form #despachoForm="ngForm" (ngSubmit)="submit()" class="space-y-4">
         <div>
-          <label class="ui-label">Orden</label>
-          <input [(ngModel)]="form.orderCode" name="orderCode" required class="ui-input" placeholder="OP-0001" />
+          <label class="ui-label">Número Despacho *</label>
+          <input [(ngModel)]="form.numeroDespacho" name="numeroDespacho" required class="ui-input" placeholder="DESP-2025-001" />
         </div>
 
         <div>
-          <label class="ui-label">Material</label>
-          <input [(ngModel)]="form.materialCode" name="materialCode" required class="ui-input" placeholder="MAT-ALG" />
+          <label class="ui-label">Destino / Cliente *</label>
+          <input [(ngModel)]="form.destino" name="destino" required class="ui-input" placeholder="Nombre del cliente" />
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="ui-label">Cantidad</label>
-            <input type="number" [(ngModel)]="form.qty" name="qty" min="0" class="ui-input" />
+            <label class="ui-label">Tipo</label>
+            <select [(ngModel)]="form.tipo" name="tipo" class="ui-select">
+              <option *ngFor="let t of tipos" [value]="t">{{ t }}</option>
+            </select>
           </div>
           <div>
-            <label class="ui-label">UoM</label>
-            <input [(ngModel)]="form.uom" name="uom" class="ui-input" placeholder="kg" />
+            <label class="ui-label">Estado</label>
+            <select [(ngModel)]="form.estado" name="estado" class="ui-select">
+              <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
+            </select>
           </div>
         </div>
 
         <div>
-          <label class="ui-label">Ubicación</label>
-          <input [(ngModel)]="form.location" name="location" class="ui-input" placeholder="ALM-01" />
+          <label class="ui-label">Orden ID (Opcional)</label>
+          <input [(ngModel)]="form.ordenId" name="ordenId" class="ui-input" placeholder="UUID de la orden" />
         </div>
 
         <div>
-          <label class="ui-label">Fecha</label>
-          <input type="date" [(ngModel)]="form.issuedAt" name="issuedAt" class="ui-input" />
+          <label class="ui-label">Dirección</label>
+          <input [(ngModel)]="form.direccion" name="direccion" class="ui-input" placeholder="Dirección de entrega" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Contacto</label>
+            <input [(ngModel)]="form.contacto" name="contacto" class="ui-input" placeholder="Nombre contacto" />
+          </div>
+          <div>
+            <label class="ui-label">Teléfono</label>
+            <input [(ngModel)]="form.telefono" name="telefono" class="ui-input" placeholder="123456789" />
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Fecha Programada</label>
+          <input type="datetime-local" [(ngModel)]="form.fechaProgramada" name="fechaProgramada" class="ui-input" />
+        </div>
+
+        <div>
+          <label class="ui-label">Items (JSON Array) *</label>
+          <textarea [(ngModel)]="form.items" name="items" rows="3" class="ui-input font-mono text-xs" placeholder='[{"producto":"PRD-001","cantidad":100,"lote":"L-001"}]'></textarea>
+          <p class="text-[10px] text-slate-500 mt-1">Formato JSON: array de objetos con producto, cantidad, etc.</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Peso Total (kg)</label>
+            <input type="number" [(ngModel)]="form.pesoTotal" name="pesoTotal" step="0.01" class="ui-input" />
+          </div>
+          <div>
+            <label class="ui-label">Volumen (m³)</label>
+            <input type="number" [(ngModel)]="form.volumenTotal" name="volumenTotal" step="0.01" class="ui-input" />
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Transportista</label>
+          <input [(ngModel)]="form.transportista" name="transportista" class="ui-input" placeholder="Nombre transportista" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Número Guía</label>
+            <input [(ngModel)]="form.numeroGuia" name="numeroGuia" class="ui-input" placeholder="GU-001" />
+          </div>
+          <div>
+            <label class="ui-label">Vehículo/Placa</label>
+            <input [(ngModel)]="form.vehiculo" name="vehiculo" class="ui-input" placeholder="ABC-123" />
+          </div>
+        </div>
+
+        <div>
+          <label class="ui-label">Conductor</label>
+          <input [(ngModel)]="form.conductor" name="conductor" class="ui-input" placeholder="Nombre conductor" />
+        </div>
+
+        <div>
+          <label class="ui-label">Observaciones</label>
+          <textarea [(ngModel)]="form.observaciones" name="observaciones" rows="2" class="ui-input" placeholder="Notas adicionales"></textarea>
         </div>
 
         <div class="flex gap-2 pt-1">
-          <button type="submit" class="flex-1 ui-btn-primary">{{ editingId ? 'Guardar' : 'Agregar' }}</button>
+          <button type="submit" [disabled]="loading" class="flex-1 ui-btn-primary">
+            {{ loading ? 'Procesando...' : (editingId ? 'Guardar' : 'Agregar') }}
+          </button>
           <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
         </div>
       </form>
@@ -61,7 +135,7 @@
 
     <div class="xl:col-span-2 ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">Movimientos</p>
+        <p class="text-sm font-semibold">Despachos</p>
         <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
       </div>
 
@@ -69,35 +143,43 @@
         <table class="ui-table">
           <thead class="ui-thead">
             <tr>
-              <th class="ui-th">Orden</th>
-              <th class="ui-th">Material</th>
-              <th class="ui-th">Cantidad</th>
-              <th class="ui-th">Ubicación</th>
-              <th class="ui-th">Fecha</th>
+              <th class="ui-th">Número</th>
+              <th class="ui-th">Destino</th>
+              <th class="ui-th">Tipo</th>
+              <th class="ui-th">Transportista</th>
+              <th class="ui-th">Fecha Prog.</th>
+              <th class="ui-th">Estado</th>
               <th class="ui-th w-40">Acciones</th>
             </tr>
           </thead>
-          <tbody class="bg-slate-950/20">
+          <tbody>
             <tr *ngFor="let it of filtered" class="ui-tr">
-              <td class="ui-td">{{ it.orderCode }}</td>
-              <td class="ui-td">{{ it.materialCode }}</td>
-              <td class="ui-td">{{ it.qty }} {{ it.uom }}</td>
-              <td class="ui-td">{{ it.location || '-' }}</td>
-              <td class="ui-td">{{ it.issuedAt || '-' }}</td>
+              <td class="ui-td font-medium">{{ it.numeroDespacho }}</td>
+              <td class="ui-td">
+                <div>{{ it.destino }}</div>
+                <div class="text-xs text-slate-500">{{ it.contacto || '-' }}</div>
+              </td>
+              <td class="ui-td">{{ it.tipo || '-' }}</td>
+              <td class="ui-td">{{ it.transportista || '-' }}</td>
+              <td class="ui-td text-xs">{{ it.fechaProgramada ? (it.fechaProgramada | date:'short') : '-' }}</td>
+              <td class="ui-td">
+                <span class="ui-badge" [ngClass]="badgeClass(it.estado)">{{ it.estado }}</span>
+              </td>
               <td class="ui-td">
                 <div class="flex gap-2">
-                  <button (click)="edit(it)" class="ui-btn-ghost text-xs">Editar</button>
-                  <button (click)="remove(it.id)" class="ui-btn-danger text-xs">Eliminar</button>
+                  <button (click)="edit(it)" [disabled]="loading" class="ui-btn-ghost text-xs">Editar</button>
+                  <button (click)="remove(it.id)" [disabled]="loading" class="ui-btn-danger text-xs">Eliminar</button>
                 </div>
               </td>
             </tr>
             <tr *ngIf="filtered.length === 0">
-              <td colspan="6" class="px-4 py-10 text-center text-slate-500">No hay movimientos.</td>
+              <td colspan="7" class="px-4 py-10 text-center text-slate-500">
+                {{ loading ? 'Cargando despachos...' : 'No hay despachos registrados.' }}
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
-
     </div>
   </div>
 </div>
