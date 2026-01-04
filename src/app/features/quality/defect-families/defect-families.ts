@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { QualityStoreService, DefectFamily } from '../services/quality-store.service';
+import { QualityStoreService } from '../services/quality-store.service';
+import { DefectFamily } from '../../../shared/models/quality.model';
 
 @Component({
   standalone: true,
@@ -50,6 +51,8 @@ export class DefectFamiliesComponent {
         name: this.form.name!,
         description: this.form.description ?? '',
         isActive: !!this.form.isActive,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
     } else {
       const idx = this.qs.families.findIndex(x => x.id === this.editing!.id);
@@ -66,3 +69,7 @@ export class DefectFamiliesComponent {
     this.new();
   }
 }
+
+// En quality-store.service.ts, después de las importaciones existentes (alrededor de la línea 11)
+// Re-exportar los tipos para que estén disponibles para otros módulos
+export type { DefectFamily, Defect, Severity } from '../../../shared/models/quality.model';

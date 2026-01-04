@@ -1,0 +1,360 @@
+<div class="h-screen bg-slate-950 text-slate-100 flex flex-col overflow-hidden">
+  <!-- HEADER: Selector de máquina + Estado grande + Timer -->
+  <div class="border-b border-slate-800/70 bg-slate-900/50 px-6 py-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <select [(ngModel)]="selectedAssetId" (ngModelChange)="onAssetChange()" 
+          class="ui-select text-lg font-semibold min-w-[280px]">
+          <option *ngFor="let asset of availableAssets" [value]="asset.id">
+            {{ asset.name }}
+          </option>
+        </select>
+        
+        <div [ngClass]="getStateClass(assetStatus.state)" 
+          class="px-6 py-3 rounded-xl border-2 font-bold text-2xl animate-pulse">
+          {{ getStateLabel(assetStatus.state) }}
+        </div>
+        
+        <div class="text-center">
+          <p class="text-xs text-slate-400 mb-1">Tiempo en estado</p>
+          <p class="text-2xl font-mono font-bold text-slate-200">
+            {{ formatElapsedTime(assetStatus.stateElapsedSeconds) }}
+          </p>
+        </div>
+      </div>
+
+      <div class="text-right">
+        <p class="text-xs text-slate-400">Última actualización</p>
+        <p class="text-sm font-mono text-slate-300">{{ assetStatus.lastSeen }}</p>
+        <p class="text-xs text-red-400 mt-1" *ngIf="assetStatus.activeAlarmsCount > 0">
+          <span class="pi pi-bell mr-1"></span>{{ assetStatus.activeAlarmsCount }} alarmas activas
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENIDO: 3 columnas -->
+  <div class="flex-1 grid grid-cols-12 gap-4 p-4 overflow-hidden">
+    
+    <!-- COLUMNA IZQUIERDA: WIP Actual + Acciones (4 cols) -->
+    <div class="col-span-4 space-y-4 overflow-y-auto">
+      
+      <!-- WIP Actual -->
+      <div class="ui-surface p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-semibold">📦 Unidad en Proceso</h3>
+          <button (click)="openStartWip()" *ngIf="!activeWip" class="ui-btn-primary text-xs px-3 py-1">
+            <span class="pi pi-plus text-[10px] mr-1"></span>Iniciar WIP
+          </button>
+        </div>
+
+        <div *ngIf="activeWip" class="space-y-3">
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div><p class="text-slate-400">Orden</p><p class="text-slate-200 font-mono font-semibold">{{ activeWip.workOrderId }}</p></div>
+            <div *ngIf="activeWip.lotId"><p class="text-slate-400">Lote</p><p class="text-slate-200 font-mono font-semibold">{{ activeWip.lotId }}</p></div>
+            <div *ngIf="activeWip.pieceId"><p class="text-slate-400">Pieza</p><p class="text-slate-200 font-mono font-semibold">{{ activeWip.pieceId }}</p></div>
+            <div><p class="text-slate-400">Operación</p><p class="text-slate-200">{{ activeWip.operationName }}</p></div>
+          </div>
+
+          <div class="border-t border-slate-800/60 pt-3">
+            <p class="text-xs text-slate-400 mb-2">Progreso</p>
+            <div class="bg-slate-800/40 rounded-full h-6 overflow-hidden mb-2">
+              <div class="bg-gradient-to-r from-blue-500 to-green-500 h-full flex items-center justify-center text-xs font-semibold transition-all"
+                [style.width.%]="getProgressPercentage()">
+                {{ getProgressPercentage() }}%
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-xs">
+              <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-2 text-center">
+                <p class="text-green-400 text-xl font-bold">{{ activeWip.goodCount }}</p>
+                <p class="text-slate-400">Buenas</p>
+              </div>
+              <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-2 text-center">
+                <p class="text-red-400 text-xl font-bold">{{ activeWip.scrapCount }}</p>
+                <p class="text-slate-400">Scrap</p>
+              </div>
+              <div class="bg-blue-500/10 border border-blue-500/30 rounded-lg p-2 text-center">
+                <p class="text-blue-400 text-xl font-bold">{{ activeWip.targetQty }}</p>
+                <p class="text-slate-400">Objetivo</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t border-slate-800/60 pt-3 grid grid-cols-3 gap-3 text-xs">
+            <div class="text-center">
+              <p class="text-slate-400">Tiempo Ciclo</p>
+              <p class="text-slate-200 font-semibold">{{ activeWip.cycleTimeCurrent }}s</p>
+            </div>
+            <div class="text-center">
+              <p class="text-slate-400">Promedio</p>
+              <p class="text-slate-200 font-semibold">{{ activeWip.cycleTimeAverage }}s</p>
+            </div>
+            <div class="text-center">
+              <p class="text-slate-400">Eficiencia</p>
+              <p class="text-green-400 font-bold">{{ activeWip.efficiency }}%</p>
+            </div>
+          </div>
+
+          <div class="border-t border-slate-800/60 pt-3">
+            <p class="text-xs text-slate-400 mb-1">Tiempo transcurrido</p>
+            <p class="text-2xl font-mono font-bold text-blue-400">{{ formatElapsedTime(activeWip.elapsedSeconds) }}</p>
+          </div>
+        </div>
+
+        <div *ngIf="!activeWip" class="text-center py-8">
+          <span class="pi pi-inbox text-4xl text-slate-600 block mb-3"></span>
+          <p class="text-slate-400 text-sm">No hay unidad en proceso</p>
+        </div>
+      </div>
+
+      <!-- Parada Activa -->
+      <div class="ui-surface p-5" *ngIf="activeDowntime">
+        <h3 class="text-sm font-semibold text-orange-400 mb-3">⚠️ Parada Activa</h3>
+        <div class="space-y-2 text-xs">
+          <div><p class="text-slate-400">Motivo</p><p class="text-slate-200 font-semibold">{{ activeDowntime.reasonName }}</p></div>
+          <div><p class="text-slate-400">Código</p><p class="text-slate-200 font-mono">{{ activeDowntime.reasonCode }}</p></div>
+          <div><p class="text-slate-400">Duración</p><p class="text-orange-400 text-xl font-bold">{{ formatElapsedTime(activeDowntime.elapsedSeconds) }}</p></div>
+          <div><p class="text-slate-400">Tipo</p><span class="ui-badge text-purple-300 bg-purple-500/10">{{ activeDowntime.trigger }}</span></div>
+        </div>
+      </div>
+
+      <!-- Panel de Acciones Rápidas -->
+      <div class="ui-surface p-5">
+        <h3 class="text-sm font-semibold mb-4">⚡ Acciones Rápidas</h3>
+        <div class="grid grid-cols-2 gap-2">
+          <button (click)="pauseWip()" [disabled]="!activeWip" class="ui-btn-ghost text-xs py-2">
+            <span class="pi pi-pause mr-1"></span>Pausar
+          </button>
+          <button (click)="resumeWip()" [disabled]="!activeWip" class="ui-btn-ghost text-xs py-2">
+            <span class="pi pi-play mr-1"></span>Reanudar
+          </button>
+          <button (click)="completeWip()" [disabled]="!activeWip" class="ui-btn-primary text-xs py-2">
+            <span class="pi pi-check mr-1"></span>Finalizar
+          </button>
+          <button (click)="openRegisterScrap()" [disabled]="!activeWip" class="ui-btn-danger text-xs py-2">
+            <span class="pi pi-times mr-1"></span>Scrap
+          </button>
+          <button (click)="openStartDowntime()" [disabled]="!!activeDowntime" class="ui-btn-ghost text-xs py-2 col-span-2">
+            <span class="pi pi-bolt mr-1"></span>Iniciar Parada
+          </button>
+          <button (click)="endDowntime()" [disabled]="!activeDowntime" class="ui-btn-primary text-xs py-2 col-span-2">
+            <span class="pi pi-check-circle mr-1"></span>Cerrar Parada
+          </button>
+          <button (click)="openCallMaintenance()" class="ui-btn-ghost text-xs py-2 col-span-2">
+            <span class="pi pi-wrench mr-1"></span>Llamar Mantenimiento
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMNA CENTRAL: Telemetría en Vivo (5 cols) -->
+    <div class="col-span-5 space-y-4 overflow-y-auto">
+      
+      <!-- Alarmas Activas -->
+      <div class="ui-surface p-4" *ngIf="assetStatus.alarms.length > 0">
+        <h3 class="text-sm font-semibold text-red-400 mb-3">🚨 Alarmas Activas</h3>
+        <div class="space-y-2">
+          <div *ngFor="let alarm of assetStatus.alarms" 
+            class="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <p class="text-sm font-semibold text-red-300">{{ alarm.code }}</p>
+                <p class="text-xs text-slate-300 mt-1">{{ alarm.description }}</p>
+              </div>
+              <span class="ui-badge text-red-300 bg-red-500/10 text-[10px]">{{ alarm.severity }}</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-2">Desde: {{ alarm.startedAt }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Variables de Telemetría -->
+      <div class="ui-surface p-5">
+        <h3 class="text-sm font-semibold mb-4">📊 Variables en Tiempo Real</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <div *ngFor="let variable of telemetryVariables" 
+            class="ui-surface-inner p-3 border-l-2"
+            [class.border-green-500]="!isVariableInWarning(variable) && variable.quality === 'GOOD'"
+            [class.border-orange-500]="isVariableInWarning(variable)"
+            [class.border-red-500]="variable.quality === 'DISCONNECTED'">
+            <div class="flex items-start justify-between mb-2">
+              <p class="text-xs text-slate-400">{{ variable.label }}</p>
+              <span [ngClass]="getQualityClass(variable.quality)">
+                <i class="pi text-xs" [ngClass]="getQualityIcon(variable.quality)"></i>
+              </span>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <p class="text-2xl font-bold" 
+                [class.text-green-400]="!isVariableInWarning(variable)"
+                [class.text-orange-400]="isVariableInWarning(variable)">
+                {{ variable.value }}
+              </p>
+              <p class="text-sm text-slate-400">{{ variable.unit }}</p>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-1">Actualizado: {{ variable.lastUpdate }}</p>
+            
+            <!-- Mini Tendencia -->
+            <div class="mt-2 h-8 flex items-end gap-[2px]" *ngIf="variable.trend && variable.trend.length > 0">
+              <div *ngFor="let value of variable.trend" 
+                class="flex-1 bg-blue-500/30 rounded-t"
+                [style.height.%]="(value / (variable.max || 100)) * 100"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMNA DERECHA: Feed de Eventos (3 cols) -->
+    <div class="col-span-3 overflow-y-auto">
+      <div class="ui-surface p-5 h-full">
+        <h3 class="text-sm font-semibold mb-4">📋 Eventos Recientes</h3>
+        <div class="space-y-3">
+          <div *ngFor="let event of recentHistory" 
+            class="border-l-2 pl-3 py-2"
+            [class.border-blue-500]="event.severity === 'INFO'"
+            [class.border-yellow-500]="event.severity === 'WARNING'"
+            [class.border-red-500]="event.severity === 'ERROR'">
+            <div class="flex items-start gap-2">
+              <span [ngClass]="getSeverityClass(event.severity)">
+                <i class="pi text-xs" [ngClass]="getSeverityIcon(event.severity)"></i>
+              </span>
+              <div class="flex-1">
+                <p class="text-xs text-slate-200">{{ event.description }}</p>
+                <p class="text-[10px] text-slate-500 mt-1">{{ event.timestamp }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALES -->
+
+<!-- Modal: Iniciar WIP -->
+<div *ngIf="showStartWipModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+  <div class="ui-surface p-6 max-w-md w-full mx-4">
+    <h3 class="text-lg font-semibold mb-4">Iniciar WIP</h3>
+    <div class="space-y-3">
+      <div>
+        <label class="ui-label">Orden de Producción *</label>
+        <input [(ngModel)]="startWipForm.workOrderId" class="ui-input" placeholder="OP-XXXX" />
+      </div>
+      <div>
+        <label class="ui-label">Lote</label>
+        <input [(ngModel)]="startWipForm.lotId" class="ui-input" placeholder="LOT-XXXX" />
+      </div>
+      <div>
+        <label class="ui-label">Pieza</label>
+        <input [(ngModel)]="startWipForm.pieceId" class="ui-input" placeholder="PC-XXXX" />
+      </div>
+      <div>
+        <label class="ui-label">Operación *</label>
+        <input [(ngModel)]="startWipForm.operationId" class="ui-input" placeholder="OP-XXX" />
+      </div>
+      <div>
+        <label class="ui-label">Cantidad Objetivo *</label>
+        <input type="number" [(ngModel)]="startWipForm.targetQty" class="ui-input" />
+      </div>
+    </div>
+    <div class="flex gap-2 mt-6">
+      <button (click)="showStartWipModal = false" class="ui-btn-ghost flex-1">Cancelar</button>
+      <button (click)="startWip()" class="ui-btn-primary flex-1">Iniciar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Registrar Scrap -->
+<div *ngIf="showScrapModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+  <div class="ui-surface p-6 max-w-md w-full mx-4">
+    <h3 class="text-lg font-semibold mb-4">Registrar Scrap</h3>
+    <div class="space-y-3">
+      <div>
+        <label class="ui-label">Cantidad *</label>
+        <input type="number" [(ngModel)]="scrapForm.quantity" class="ui-input" min="1" />
+      </div>
+      <div>
+        <label class="ui-label">Motivo *</label>
+        <select [(ngModel)]="scrapForm.reasonCode" class="ui-select">
+          <option value="">Seleccionar...</option>
+          <option value="DEF_VISUAL">Defecto Visual</option>
+          <option value="DEF_DIMEN">Defecto Dimensional</option>
+          <option value="MATERIAL">Defecto de Material</option>
+          <option value="PROCESS">Error de Proceso</option>
+        </select>
+      </div>
+      <div>
+        <label class="ui-label">Notas</label>
+        <textarea [(ngModel)]="scrapForm.notes" class="ui-input" rows="3"></textarea>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-6">
+      <button (click)="showScrapModal = false" class="ui-btn-ghost flex-1">Cancelar</button>
+      <button (click)="registerScrap()" class="ui-btn-danger flex-1">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Iniciar Parada -->
+<div *ngIf="showDowntimeModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+  <div class="ui-surface p-6 max-w-md w-full mx-4">
+    <h3 class="text-lg font-semibold mb-4">Iniciar Parada</h3>
+    <div class="space-y-3">
+      <div>
+        <label class="ui-label">Motivo *</label>
+        <select [(ngModel)]="downtimeForm.reasonCode" class="ui-select">
+          <option value="">Seleccionar...</option>
+          <option value="SETUP">Preparación/Setup</option>
+          <option value="TOOLING">Cambio Herramienta</option>
+          <option value="MATERIAL">Falta Material</option>
+          <option value="MECH_FAULT">Falla Mecánica</option>
+          <option value="ELEC_FAULT">Falla Eléctrica</option>
+          <option value="QUALITY">Problema Calidad</option>
+        </select>
+      </div>
+      <div>
+        <label class="ui-label">Notas</label>
+        <textarea [(ngModel)]="downtimeForm.notes" class="ui-input" rows="3"></textarea>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-6">
+      <button (click)="showDowntimeModal = false" class="ui-btn-ghost flex-1">Cancelar</button>
+      <button (click)="startDowntime()" class="ui-btn-primary flex-1">Iniciar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Llamar Mantenimiento -->
+<div *ngIf="showMaintenanceModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+  <div class="ui-surface p-6 max-w-md w-full mx-4">
+    <h3 class="text-lg font-semibold mb-4">Llamar Mantenimiento</h3>
+    <div class="space-y-3">
+      <div>
+        <label class="ui-label">Tipo *</label>
+        <select [(ngModel)]="maintenanceForm.type" class="ui-select">
+          <option value="PREVENTIVE">Preventivo</option>
+          <option value="CORRECTIVE">Correctivo</option>
+          <option value="EMERGENCY">Emergencia</option>
+        </select>
+      </div>
+      <div>
+        <label class="ui-label">Prioridad *</label>
+        <select [(ngModel)]="maintenanceForm.priority" class="ui-select">
+          <option value="LOW">Baja</option>
+          <option value="MEDIUM">Media</option>
+          <option value="HIGH">Alta</option>
+          <option value="CRITICAL">Crítica</option>
+        </select>
+      </div>
+      <div>
+        <label class="ui-label">Descripción *</label>
+        <textarea [(ngModel)]="maintenanceForm.description" class="ui-input" rows="4" placeholder="Describa el problema..."></textarea>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-6">
+      <button (click)="showMaintenanceModal = false" class="ui-btn-ghost flex-1">Cancelar</button>
+      <button (click)="callMaintenance()" class="ui-btn-primary flex-1">Enviar Solicitud</button>
+    </div>
+  </div>
+</div>

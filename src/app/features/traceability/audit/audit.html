@@ -1,1 +1,155 @@
-<p>audit works!</p>
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Auditoría del Sistema</h3>
+      <p class="ui-subtitle">Registro completo de acciones y eventos del sistema.</p>
+    </div>
+
+    <div class="w-full max-w-sm">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar..." />
+      </div>
+    </div>
+  </div>
+
+ <!-- Mensajes de error/carga -->
+<div *ngIf="success" class="ui-surface p-4 border-l-4 border-green-500/60 bg-green-500/5">
+  <p class="text-sm text-green-400">✅ {{ success }}</p>
+</div>
+
+<div *ngIf="error" class="ui-surface p-4 border-l-4 border-red-500/60 bg-red-500/5">
+  <p class="text-sm text-red-400">{{ error }}</p>
+</div>
+
+  <!-- Filtros -->
+  <div class="ui-surface p-4">
+    <div class="flex items-center gap-4">
+      <div class="flex-1">
+        <select [(ngModel)]="filterEntityType" class="ui-select">
+          <option value="">Todos los tipos de entidad</option>
+          <option *ngFor="let type of entityTypes" [value]="type">{{ type }}</option>
+        </select>
+      </div>
+      <div class="flex-1">
+        <select [(ngModel)]="filterAction" class="ui-select">
+          <option value="">Todas las acciones</option>
+          <option *ngFor="let action of actions" [value]="action">
+            {{ getActionLabel(action) }}
+          </option>
+        </select>
+      </div>
+      <div class="flex-1">
+        <select [(ngModel)]="filterModule" class="ui-select">
+          <option value="">Todos los módulos</option>
+          <option *ngFor="let module of modules" [value]="module">{{ module }}</option>
+        </select>
+      </div>
+      <button (click)="clearFilters()" class="ui-btn">
+        <span class="pi pi-filter-slash text-xs mr-2"></span>
+        Limpiar
+      </button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Form -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Registrar Auditoría</p>
+        <span class="text-[11px] text-slate-500">Backend</span>
+      </div>
+
+      <form (ngSubmit)="submit()" class="space-y-4">
+        <!-- Acción (requerido) -->
+        <div>
+          <label class="ui-label">Acción <span class="text-red-400">*</span></label>
+          <select [(ngModel)]="form.action" name="action" required class="ui-select">
+            <option *ngFor="let action of actions" [value]="action">
+              {{ getActionLabel(action) }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Tipo de Entidad (requerido) -->
+        <div>
+          <label class="ui-label">Tipo de Entidad <span class="text-red-400">*</span></label>
+          <select [(ngModel)]="form.entityType" name="entityType" required class="ui-select">
+            <option value="">-- Selecciona tipo --</option>
+            <option *ngFor="let type of entityTypes" [value]="type">{{ type }}</option>
+          </select>
+        </div>
+
+           <div>
+          <label class="ui-label">ID de Entidad <span class="text-red-400">*</span></label>
+          <input [(ngModel)]="form.entityId" name="entityId" required class="ui-input" placeholder="Código o identificador (ej: LOT-001)" />
+        </div>
+
+        <!-- Módulo (opcional) -->
+        <div>
+          <label class="ui-label">Módulo</label>
+          <select [(ngModel)]="form.module" name="module" class="ui-select">
+            <option value="">-- Selecciona módulo --</option>
+            <option *ngFor="let module of modules" [value]="module">{{ module }}</option>
+          </select>
+        </div>
+
+        <!-- Descripción (opcional) -->
+        <div>
+          <label class="ui-label">Descripción</label>
+          <textarea [(ngModel)]="form.description" name="description" class="ui-input min-h-[80px]" placeholder="Descripción de la acción..."></textarea>
+        </div>
+
+        <!-- Botones -->
+        <button type="submit" class="ui-btn-primary w-full">
+          Registrar Auditoría
+        </button>
+      </form>
+    </div>
+
+    <!-- Lista -->
+    <div class="xl:col-span-2 ui-surface">
+      <div class="p-5 border-b border-slate-700/50">
+        <p class="text-sm font-semibold">Registros de Auditoría ({{ filtered.length }})</p>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Acción</th>
+              <th>Módulo</th>
+              <th>Entidad</th>
+              <th>ID Entidad</th>
+              <th>Usuario</th>
+              <th>Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="filtered.length === 0">
+              <td colspan="7" class="text-center text-slate-500 py-8">
+                {{ loading ? 'Cargando...' : 'No hay registros de auditoría' }}
+              </td>
+            </tr>
+            <tr *ngFor="let item of filtered">
+              <td class="text-xs">{{ formatDate(item.createdAt) }}</td>
+              <td>
+                <span [class]="getActionBadge(item.action)">
+                  {{ getActionLabel(item.action) }}
+                </span>
+              </td>
+              <td class="text-xs">
+                <span class="ui-badge">{{ item.module || '-' }}</span>
+              </td>
+              <td class="text-xs font-mono">{{ item.entityType }}</td>
+              <td class="text-xs font-mono">{{ item.entityId.slice(0, 8) }}...</td>
+              <td class="text-xs">{{ item.userName || 'Sistema' }}</td>
+              <td class="text-xs">{{ item.description || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

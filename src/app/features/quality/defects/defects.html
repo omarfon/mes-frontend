@@ -7,10 +7,54 @@
   </div>
 
   <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Form primero -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-sm font-semibold">{{ editing ? 'Editar' : 'Nuevo' }} defecto</p>
+        <button class="ui-btn-ghost text-xs" (click)="new()">Reset</button>
+      </div>
+
+      <div *ngIf="error" class="mb-3 p-2 bg-red-500/20 border border-red-500 rounded text-xs text-red-300">
+        {{ error }}
+      </div>
+
+      <div class="space-y-3">
+        <div><label class="ui-label">Código</label><input [(ngModel)]="form.code" class="ui-input" /></div>
+        <div><label class="ui-label">Nombre</label><input [(ngModel)]="form.name" class="ui-input" /></div>
+
+        <div>
+          <label class="ui-label">Familia</label>
+          <select [(ngModel)]="form.familyId" class="ui-select">
+            <option *ngFor="let f of (families$ | async)" [value]="f.id">{{ f.code }} · {{ f.name }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="ui-label">Severidad</label>
+          <select [(ngModel)]="form.severityId" class="ui-select">
+            <option *ngFor="let s of (severities$ | async)" [value]="s.id">
+              {{ s.code }} · {{ s.name }} ({{ s.level }} · {{ s.points }} pts)
+            </option>
+          </select>
+        </div>
+
+        <div><label class="ui-label">Descripción</label><input [(ngModel)]="form.description" class="ui-input" /></div>
+
+        <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+          <input type="checkbox" [(ngModel)]="form.isActive" /> Activo
+        </label>
+
+        <button class="ui-btn-primary w-full" (click)="save()" [disabled]="loading">
+          {{ loading ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Listado a la derecha -->
     <div class="ui-surface p-5 xl:col-span-2">
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold">Listado</p>
-        <input [(ngModel)]="q" class="ui-input w-72" placeholder="Buscar..." />
+        <input [(ngModel)]="q" (ngModelChange)="filterList()" class="ui-input w-72" placeholder="Buscar..." />
       </div>
 
       <div class="ui-table-wrap">
@@ -26,7 +70,7 @@
             </tr>
           </thead>
           <tbody class="bg-slate-950/20">
-            <tr *ngFor="let d of list" class="ui-tr">
+            <tr *ngFor="let d of (list$ | async)" class="ui-tr">
               <td class="ui-td">{{ d.code }}</td>
               <td class="ui-td">
                 <div class="font-medium text-slate-100">{{ d.name }}</div>
@@ -39,51 +83,23 @@
                   {{ d.isActive ? 'ACTIVO' : 'INACTIVO' }}
                 </span>
               </td>
-              <td class="ui-td"><button class="ui-btn-ghost text-xs" (click)="edit(d)">Editar</button></td>
+              <td class="ui-td">
+                <button class="ui-btn-ghost text-xs" (click)="edit(d)">Editar</button>
+              </td>
             </tr>
 
-            <tr *ngIf="list.length === 0">
+            <tr *ngIf="(list$ | async)?.length === 0">
               <td colspan="6" class="px-4 py-10 text-center text-slate-500">Sin resultados.</td>
             </tr>
           </tbody>
         </table>
       </div>
-    </div>
 
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-3">
-        <p class="text-sm font-semibold">{{ editing ? 'Editar' : 'Nuevo' }} defecto</p>
-        <button class="ui-btn-ghost text-xs" (click)="new()">Reset</button>
-      </div>
-
-      <div class="space-y-3">
-        <div><label class="ui-label">Código</label><input [(ngModel)]="form.code" class="ui-input" /></div>
-        <div><label class="ui-label">Nombre</label><input [(ngModel)]="form.name" class="ui-input" /></div>
-
-
-        <div>
-          <label class="ui-label">Familia</label>
-          <select [(ngModel)]="form.familyId" class="ui-select">
-            <option *ngFor="let f of qs.families" [value]="f.id">{{ f.code }} · {{ f.name }}</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="ui-label">Severidad</label>
-          <select [(ngModel)]="form.severityId" class="ui-select">
-            <option *ngFor="let s of qs.severities" [value]="s.id">
-              {{ s.code }} · {{ s.name }} ({{ s.level }} · {{ s.points }} pts)
-            </option>
-          </select>
-        </div>
-
-        <div><label class="ui-label">Descripción</label><input [(ngModel)]="form.description" class="ui-input" /></div>
-
-        <label class="inline-flex items-center gap-2 text-xs text-slate-300">
-          <input type="checkbox" [(ngModel)]="form.isActive" /> Activo
-        </label>
-
-        <button class="ui-btn-primary w-full" (click)="save()">Guardar</button>
+      <!-- Controles de paginación -->
+      <div class="flex justify-between items-center mt-4">
+        <button class="ui-btn-secondary" (click)="prevPage()" [disabled]="currentPage === 0">Anterior</button>
+        <span class="text-sm text-slate-400">Página {{ currentPage + 1 }}</span>
+        <button class="ui-btn-secondary" (click)="nextPage()" [disabled]="((list$ | async)?.length || 0) < pageSize">Siguiente</button>
       </div>
     </div>
   </div>

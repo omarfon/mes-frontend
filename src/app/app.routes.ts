@@ -46,7 +46,7 @@ export const routes: Routes = [
         {
       path: 'production',
       loadChildren: () =>
-        import('./features/production/productions.routes').then((m) => m.PRODUCTION_ROUTES),
+        import('./features/production/production.routes').then((m) => m.PRODUCTION_ROUTES),
         },
       {
         path: 'traceability',

@@ -50,10 +50,24 @@ export class ErrorInterceptor implements HttpInterceptor {
         switch (error.status) {
           case 401:
             // No autenticado - redirigir al login
-            console.error('Sesión expirada o no autenticado');
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('current_user');
-            this.router.navigate(['/auth/login']);
+            // EXCEPCIÓN: No redirigir si es un endpoint que aún no está implementado
+            const skipRedirectUrls = [
+              '/traceability/serials',
+              '/quality/defects',
+              '/quality/defect-families',
+              '/quality/severities'
+            ];
+            const shouldSkipRedirect = skipRedirectUrls.some(url => error.url?.includes(url));
+            
+            if (!shouldSkipRedirect) {
+              console.error('Sesión expirada o no autenticado');
+              // Restaurando la eliminación del token en caso de error
+              localStorage.removeItem('access_token');
+              localStorage.removeItem('current_user');
+              this.router.navigate(['/auth/login']);
+            } else {
+              console.log('ℹ️ Endpoint no implementado o requiere configuración:', error.url);
+            }
             break;
 
           case 403:

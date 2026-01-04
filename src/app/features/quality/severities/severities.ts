@@ -16,7 +16,7 @@ export class SeveritiesComponent {
   form: Partial<Severity> = {
     code: '',
     name: '',
-    level: 'LOW',
+    level: 'LOW' as SeverityLevel,
     points: 1,
     isActive: true,
   };
@@ -35,7 +35,7 @@ export class SeveritiesComponent {
 
   new() {
     this.editing = null;
-    this.form = { code: '', name: '', level: 'LOW', points: 1, isActive: true };
+    this.form = { code: '', name: '', level: 'LOW' as SeverityLevel, points: 1, isActive: true };
   }
 
   edit(s: Severity) {
@@ -50,9 +50,12 @@ export class SeveritiesComponent {
       id: this.editing?.id ?? this.qs.newId('sev'),
       code: this.form.code!,
       name: this.form.name!,
-      level: this.form.level as SeverityLevel,
+      level: this.form.level,
       points: Number(this.form.points || 0),
+      description: this.form.description,
       isActive: !!this.form.isActive,
+      createdAt: this.editing?.createdAt ?? new Date(),
+      updatedAt: new Date(),
     };
 
     if (!this.editing) this.qs.severities.unshift(payload);

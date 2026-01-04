@@ -5,16 +5,17 @@ import { tap } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environmets/environments';
 
-interface LoginRequest {
-  username: string;
+export interface LoginRequest {
+  email: string;
   password: string;
 }
 
-interface LoginResponse {
+export interface LoginResponse {
   access_token: string;
   user: {
     id: number;
-    username: string;
+    email: string;
+    username?: string;
     role?: string;
     // lo que devuelva tu backend
   };
@@ -32,6 +33,7 @@ export class AuthService {
       .post<LoginResponse>(`${this.apiUrl}${environment.endpoints.auth}/login`, credentials)
       .pipe(
         tap((res) => {
+          // Restaurando el almacenamiento del token
           localStorage.setItem('access_token', res.access_token);
           localStorage.setItem('current_user', JSON.stringify(res.user));
         }),

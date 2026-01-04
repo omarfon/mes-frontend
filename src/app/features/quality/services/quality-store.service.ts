@@ -1,131 +1,342 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { QualityApiService } from '../api/quality.api.service';
+import { 
+  Defect, 
+  DefectFamily, 
+  Severity, 
+  CreateDefectDto,
+  UpdateDefectDto,
+  DefectStatus,
+  SeverityLevel,
+  Inspection,
+  CreateInspectionDto,
+  UpdateInspectionDto
+} from '../../../shared/models/quality.model';
+import { BehaviorSubject, Observable, tap, catchError, of, throwError } from 'rxjs';
 
-export type SeverityLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-
-export interface DefectFamily {
-  id: string;
-  code: string;
-  name: string;
-  description?: string;
-  isActive: boolean;
-}
-
-export interface Severity {
-  id: string;
-  code: string;
-  name: string;
-  level: SeverityLevel;
-  points: number;       // ponderación
-  colorTag?: string;    // opcional UI
-  isActive: boolean;
-}
-
-export interface Defect {
-  id: string;
-  code: string;
-  name: string;
+export interface DefectsByFamilyStats {
   familyId: string;
+  familyName: string;
+  count: number;
+}
+
+export interface DefectsBySeverityStats {
   severityId: string;
-  description?: string;
-  isActive: boolean;
-}
-
-export type InspectionType = 'INCOMING' | 'IN_PROCESS' | 'FINAL';
-export type InspectionResult = 'PASS' | 'FAIL' | 'HOLD';
-
-export interface InspectionFinding {
-  defectId: string;
-  qty: number;
-  note?: string;
-}
-
-export interface Inspection {
-  id: string;
-  code: string;               // INSP-...
-  type: InspectionType;
-  date: string;               // YYYY-MM-DD
-  shift?: string;
-
-  // Referencias MES (lo conectamos luego)
-  lotCode?: string;
-  serial?: string;
-  orderCode?: string;
-  operation?: string;
-  machineCode?: string;
-
-  sampleSize: number;
-  findings: InspectionFinding[];
-  result: InspectionResult;
-  inspector: string;
-  notes?: string;
+  severityName: string;
+  count: number;
 }
 
 @Injectable({ providedIn: 'root' })
 export class QualityStoreService {
-  families: DefectFamily[] = [
-    { id: 'f1', code: 'FAM-VIS', name: 'Visual', description: 'Defectos visuales/estéticos', isActive: true },
-    { id: 'f2', code: 'FAM-DIM', name: 'Dimensional', description: 'Medidas/tolerancias', isActive: true },
-    { id: 'f3', code: 'FAM-COL', name: 'Color', description: 'Variación/tono', isActive: true },
-  ];
+  private api = inject(QualityApiService);
+  
+  // BehaviorSubjects para estado reactivo
+  private defectsSubject = new BehaviorSubject<Defect[]>([]);
+  private familiesSubject = new BehaviorSubject<DefectFamily[]>([]);
+  private severitiesSubject = new BehaviorSubject<Severity[]>([]);
+  private inspectionsSubject = new BehaviorSubject<Inspection[]>([]);
+  
+  // Observables públicos
+  defects$ = this.defectsSubject.asObservable();
+  families$ = this.familiesSubject.asObservable();
+  severities$ = this.severitiesSubject.asObservable();
+  inspections$ = this.inspectionsSubject.asObservable();
+  
+  // Getters para acceso síncrono (compatibilidad con código existente)
+  get defects(): Defect[] { return this.defectsSubject.value; }
+  get families(): DefectFamily[] { return this.familiesSubject.value; }
+  get severities(): Severity[] { return this.severitiesSubject.value; }
+  get inspections() { return this.inspectionsSubject.value; }
 
-  severities: Severity[] = [
-    { id: 's1', code: 'SEV-L', name: 'Leve', level: 'LOW', points: 1, isActive: true },
-    { id: 's2', code: 'SEV-M', name: 'Media', level: 'MEDIUM', points: 3, isActive: true },
-    { id: 's3', code: 'SEV-H', name: 'Alta', level: 'HIGH', points: 7, isActive: true },
-    { id: 's4', code: 'SEV-C', name: 'Crítica', level: 'CRITICAL', points: 15, isActive: true },
-  ];
+  // Estadísticas
+  private defectsByFamilySubject = new BehaviorSubject<DefectsByFamilyStats[]>([]);
+  private defectsBySeveritySubject = new BehaviorSubject<DefectsBySeverityStats[]>([]);
 
-  defects: Defect[] = [
-    { id: 'd1', code: 'DEF-MAN', name: 'Mancha', familyId: 'f1', severityId: 's2', isActive: true },
-    { id: 'd2', code: 'DEF-ROT', name: 'Rotura', familyId: 'f1', severityId: 's3', isActive: true },
-    { id: 'd3', code: 'DEF-TON', name: 'Tono fuera de estándar', familyId: 'f3', severityId: 's3', isActive: true },
-    { id: 'd4', code: 'DEF-MED', name: 'Medida fuera de tolerancia', familyId: 'f2', severityId: 's4', isActive: true },
-  ];
+  // Observables públicos para estadísticas
+  defectsByFamily$ = this.defectsByFamilySubject.asObservable();
+  defectsBySeverity$ = this.defectsBySeveritySubject.asObservable();
 
-  inspections: Inspection[] = [
-    {
-      id: 'i1',
-      code: 'INSP-0001',
-      type: 'INCOMING',
-      date: '2025-12-23',
-      lotCode: 'LOT-MP-0001',
-      sampleSize: 30,
-      findings: [{ defectId: 'd1', qty: 2 }],
-      result: 'PASS',
-      inspector: 'calidad',
-      notes: 'Recepción OK',
-    },
-  ];
+  // Getters para estadísticas
+  get defectsByFamilyStats(): DefectsByFamilyStats[] { return this.defectsByFamilySubject.value; }
+  get defectsBySeverityStats(): DefectsBySeverityStats[] { return this.defectsBySeveritySubject.value; }
 
-  // helpers
-  familyName(id: string) { return this.families.find(f => f.id === id)?.name ?? '-'; }
-  severityName(id: string) { return this.severities.find(s => s.id === id)?.name ?? '-'; }
-  defectById(id: string) { return this.defects.find(d => d.id === id) ?? null; }
-  severityById(id: string) { return this.severities.find(s => s.id === id) ?? null; }
+  constructor() {
+    console.log('🚀 QualityStoreService iniciado');
+    
+    // Cargar datos desde backend - NO usar mock como fallback
+    this.loadDefects().subscribe({
+      next: (data) => {
+        console.log('✅ Defectos cargados desde BD:', data.length);
+      },
+      error: (err) => {
+        console.warn('⚠️ No se pudieron cargar defectos desde BD:', err.message);
+        // NO llamar a useMockDefects() - dejar array vacío
+      }
+    });
+    
+    this.loadFamilies().subscribe({
+      next: (data) => {
+        console.log('✅ Familias cargadas desde BD:', data.length);
+      },
+      error: (err) => {
+        console.warn('⚠️ No se pudieron cargar familias desde BD:', err.message);
+        // NO llamar a useMockFamilies() - dejar array vacío
+      }
+    });
+    
+    this.loadSeverities().subscribe({
+      next: (data) => {
+        console.log('✅ Severidades cargadas desde BD:', data.length);
+      },
+      error: (err) => {
+        console.warn('⚠️ No se pudieron cargar severidades desde BD:', err.message);
+        // NO llamar a useMockSeverities() - dejar array vacío
+      }
+    });
+    
+    this.loadDefectsByFamily().subscribe({
+      next: (data) => console.log('✅ Estadísticas por familia:', data.length),
+      error: () => {}
+    });
 
-  newId(prefix: string) { return `${prefix}-${crypto.randomUUID?.() ?? String(Date.now())}`; }
-
-  computeInspectionScore(ins: Inspection) {
-    // score = sum(qty * points)
-    return ins.findings.reduce((acc, f) => {
-      const def = this.defectById(f.defectId);
-      const sev = def ? this.severityById(def.severityId) : null;
-      return acc + (f.qty * (sev?.points ?? 0));
-    }, 0);
+    this.loadDefectsBySeverity().subscribe({
+      next: (data) => console.log('✅ Estadísticas por severidad:', data.length),
+      error: () => {}
+    });
+    
+    this.loadInspections().subscribe({
+      next: (data) => {
+        console.log('✅ Inspecciones cargadas desde BD:', data.length);
+      },
+      error: (err: any) => {
+        console.warn('⚠️ No se pudieron cargar inspecciones desde BD:', err.message);
+      }
+    });
+    
+    console.log('🏁 Constructor finalizado');
   }
 
-  computeInspectionResult(ins: Inspection): InspectionResult {
-    // regla simple pro: si hay crítica => HOLD, si score > X => FAIL
-    const hasCritical = ins.findings.some(f => {
-      const def = this.defectById(f.defectId);
-      const sev = def ? this.severityById(def.severityId) : null;
-      return sev?.level === 'CRITICAL' && f.qty > 0;
-    });
-    if (hasCritical) return 'HOLD';
+  // ===== CARGA DE DATOS =====
+  
+  loadAllData(): void {
+    this.loadDefects().subscribe();
+    this.loadFamilies().subscribe();
+    this.loadSeverities().subscribe();
+    this.loadDefectsByFamily().subscribe();
+    this.loadDefectsBySeverity().subscribe();
+    this.loadInspections().subscribe();
+  }
 
-    const score = this.computeInspectionScore(ins);
-    if (score >= 20) return 'FAIL';
-    if (score > 0) return 'PASS';
-    return 'PASS';
+  loadDefects(): Observable<Defect[]> {
+    console.log('🔄 Intentando cargar defectos desde backend...');
+    // Agregar logs para depuración
+    console.log('🔍 DefectsSubject actual:', this.defectsSubject.value);
+    return this.api.getDefects().pipe(
+      tap(defects => {
+        console.log('✅ Defectos cargados desde backend:', defects.length);
+        this.defectsSubject.next(defects);
+        console.log('🔍 DefectsSubject actualizado:', this.defectsSubject.value);
+      }),
+      catchError(err => {
+        console.error('❌ Error cargando defectos desde backend:', err);
+        console.error('   Status:', err.status);
+        console.error('   URL:', err.url);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  loadFamilies(): Observable<DefectFamily[]> {
+    console.log('🔄 Intentando cargar familias desde backend...');
+    return this.api.getDefectFamilies().pipe(
+      tap(response => {
+        console.log('📦 Respuesta RAW de familias:', response);
+        console.log('📦 Tipo de respuesta:', typeof response);
+        console.log('📦 Es array?:', Array.isArray(response));
+        
+        // Verificar si la respuesta tiene estructura {data: []}
+        const families = (response as any)?.data || response;
+        console.log('✅ Familias procesadas:', families.length);
+        this.familiesSubject.next(families);
+      }),
+      catchError(err => {
+        console.error('❌ Error cargando familias desde backend:', err);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  loadSeverities(): Observable<Severity[]> {
+    console.log('🔄 Intentando cargar severidades desde backend...');
+    return this.api.getSeverities().pipe(
+      tap(response => {
+        console.log('📦 Respuesta RAW de severidades:', response);
+        console.log('📦 Tipo de respuesta:', typeof response);
+        console.log('📦 Es array?:', Array.isArray(response));
+        
+        // Verificar si la respuesta tiene estructura {data: []}
+        const severities = (response as any)?.data || response;
+        console.log('✅ Severidades procesadas:', severities.length);
+        this.severitiesSubject.next(severities);
+      }),
+      catchError(err => {
+        console.error('❌ Error cargando severidades desde backend:', err);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  loadDefectsByFamily(): Observable<DefectsByFamilyStats[]> {
+    // TODO: Implement getDefectsByFamily in API service
+    console.warn('⚠️ getDefectsByFamily no implementado en API');
+    return of([]).pipe(
+      tap(stats => this.defectsByFamilySubject.next(stats)),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  loadDefectsBySeverity(): Observable<DefectsBySeverityStats[]> {
+    // TODO: Implement getDefectsBySeverity in API service
+    console.warn('⚠️ getDefectsBySeverity no implementado en API');
+    return of([]).pipe(
+      tap(stats => this.defectsBySeveritySubject.next(stats)),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  loadInspections(): Observable<Inspection[]> {
+    console.log('🔄 Intentando cargar inspecciones desde backend...');
+    return this.api.getInspections().pipe(
+      tap((data: Inspection[]) => {
+        this.inspectionsSubject.next(data);
+        console.log('✅ Inspecciones cargadas:', data.length);
+      }),
+      catchError((err: any) => {
+        console.error('❌ Error cargando inspecciones:', err);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  // ===== OPERACIONES CRUD DEFECTS =====
+  
+  createDefect(dto: CreateDefectDto): Observable<Defect> {
+    // Validar que los campos requeridos estén presentes
+    if (!dto.familyId || !dto.severityId) {
+      console.error('❌ familyId o severityId faltante:', { familyId: dto.familyId, severityId: dto.severityId });
+      return throwError(() => new Error('familyId y severityId son requeridos'));
+    }
+
+    const backendDto: any = {
+      code: dto.code,
+      name: dto.name,
+      familyId: dto.familyId,
+      severityId: dto.severityId,
+    };
+    
+    // Solo agregar campos opcionales si tienen valor
+    if (dto.description) backendDto.description = dto.description;
+    if (dto.status) backendDto.status = dto.status;
+    if (dto.productId) backendDto.productId = dto.productId;
+    if (dto.productionOrderId) backendDto.productionOrderId = dto.productionOrderId;
+    if (dto.inspectionId) backendDto.inspectionId = dto.inspectionId;
+    if (dto.quantity !== undefined) backendDto.quantity = dto.quantity;
+    if (dto.notes) backendDto.notes = dto.notes;
+    
+    console.log('📤 DTO enviado al backend:', backendDto);
+    
+    return this.api.createDefect(backendDto).pipe(
+      tap(newDefect => console.log('✅ Defecto creado:', newDefect)),
+      // Recargar la lista completa después de crear
+      tap(() => {
+        this.loadDefects().subscribe();
+      })
+    );
+  }
+
+  updateDefect(id: string, dto: UpdateDefectDto): Observable<Defect> {
+    return this.api.updateDefect(id, dto).pipe(
+      tap(updatedDefect => {
+        const current = this.defectsSubject.value;
+        const index = current.findIndex(d => d.id === id);
+        if (index !== -1) {
+          const updated = [...current];
+          updated[index] = updatedDefect;
+          this.defectsSubject.next(updated);
+        }
+      })
+      // NO hay catchError con fallback
+    );
+  }
+
+  deleteDefect(id: string): Observable<void> {
+    return this.api.deleteDefect(id).pipe(
+      tap(() => {
+        const current = this.defectsSubject.value;
+        this.defectsSubject.next(current.filter(d => d.id !== id));
+      })
+      // NO hay catchError con fallback
+    );
+  }
+
+  // ===== OPERACIONES CRUD INSPECTIONS =====
+  
+  createInspection(dto: CreateInspectionDto): Observable<Inspection> {
+    return this.api.createInspection(dto).pipe(
+      tap((inspection: Inspection) => {
+        const current = this.inspectionsSubject.value;
+        this.inspectionsSubject.next([...current, inspection]);
+        console.log('✅ Inspección creada:', inspection);
+      })
+    );
+  }
+
+  updateInspection(id: string, dto: UpdateInspectionDto): Observable<Inspection> {
+    return this.api.updateInspection(id, dto).pipe(
+      tap((updated: Inspection) => {
+        const current = this.inspectionsSubject.value;
+        const idx = current.findIndex(i => i.id === id);
+        if (idx !== -1) {
+          current[idx] = updated;
+          this.inspectionsSubject.next([...current]);
+          console.log('✅ Inspección actualizada:', updated);
+        }
+      })
+    );
+  }
+
+  deleteInspection(id: string): Observable<void> {
+    return this.api.deleteInspection(id).pipe(
+      tap(() => {
+        const current = this.inspectionsSubject.value;
+        this.inspectionsSubject.next(current.filter(i => i.id !== id));
+        console.log('✅ Inspección eliminada:', id);
+      })
+    );
+  }
+
+  // ===== HELPERS =====
+  
+  familyName(id: string): string {
+    return this.families.find(f => f.id === id)?.name ?? '-';
+  }
+
+  severityName(id: string): string {
+    return this.severities.find(s => s.id === id)?.name ?? '-';
+  }
+
+  defectById(id: string): Defect | null {
+    return this.defects.find(d => d.id === id) ?? null;
+  }
+
+  severityById(id: string): Severity | null {
+    return this.severities.find(s => s.id === id) ?? null;
+  }
+
+  newId(prefix: string): string {
+    return `${prefix}-${crypto.randomUUID?.() ?? String(Date.now())}`;
   }
 }
+export type { Defect, DefectFamily, Severity, SeverityLevel };
+
+

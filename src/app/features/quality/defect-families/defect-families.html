@@ -7,6 +7,37 @@
   </div>
 
   <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Form primero -->
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-sm font-semibold">{{ editing ? 'Editar' : 'Nueva' }} familia</p>
+        <button class="ui-btn-ghost text-xs" (click)="new()">Reset</button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="ui-label">Código</label>
+          <input [(ngModel)]="form.code" class="ui-input" placeholder="FAM-..." />
+        </div>
+        <div>
+          <label class="ui-label">Nombre</label>
+          <input [(ngModel)]="form.name" class="ui-input" placeholder="Visual" />
+        </div>
+        <div>
+          <label class="ui-label">Descripción</label>
+          <input [(ngModel)]="form.description" class="ui-input" placeholder="Opcional" />
+        </div>
+
+        <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+          <input type="checkbox" [(ngModel)]="form.isActive" />
+          Activa
+        </label>
+
+        <button class="ui-btn-primary w-full" (click)="save()">Guardar</button>
+      </div>
+    </div>
+
+    <!-- Listado a la derecha -->
     <div class="ui-surface p-5 xl:col-span-2">
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold">Listado</p>
@@ -45,35 +76,6 @@
             </tr>
           </tbody>
         </table>
-      </div>
-    </div>
-
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-3">
-        <p class="text-sm font-semibold">{{ editing ? 'Editar' : 'Nueva' }} familia</p>
-        <button class="ui-btn-ghost text-xs" (click)="new()">Reset</button>
-      </div>
-
-      <div class="space-y-3">
-        <div>
-          <label class="ui-label">Código</label>
-          <input [(ngModel)]="form.code" class="ui-input" placeholder="FAM-..." />
-        </div>
-        <div>
-          <label class="ui-label">Nombre</label>
-          <input [(ngModel)]="form.name" class="ui-input" placeholder="Visual" />
-        </div>
-        <div>
-          <label class="ui-label">Descripción</label>
-          <input [(ngModel)]="form.description" class="ui-input" placeholder="Opcional" />
-        </div>
-
-        <label class="inline-flex items-center gap-2 text-xs text-slate-300">
-          <input type="checkbox" [(ngModel)]="form.isActive" />
-          Activa
-        </label>
-
-        <button class="ui-btn-primary w-full" (click)="save()">Guardar</button>
       </div>
     </div>
   </div>

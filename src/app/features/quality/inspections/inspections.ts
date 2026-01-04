@@ -1,12 +1,9 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import {
-  QualityStoreService,
-  Inspection,
-  InspectionFinding,
-  InspectionType,
-} from '../services/quality-store.service';
+import { QualityStoreService } from '../services/quality-store.service';
+import { Inspection, CreateInspectionDto, UpdateInspectionDto, InspectionType, InspectionResult } from '../../../shared/models/quality.model';
+import { Observable, map } from 'rxjs';
 
 @Component({
   standalone: true,
@@ -17,165 +14,222 @@ import {
 export class InspectionsComponent {
   q = '';
   editing: Inspection | null = null;
+  loading = false;
+  error: string | null = null;
 
-  form: Partial<Inspection> = {
+  // Enums para el template
+  InspectionType = InspectionType;
+  InspectionResult = InspectionResult;
+
+  form: Partial<CreateInspectionDto> = {
     code: '',
-    type: 'INCOMING',
-    date: new Date().toISOString().slice(0, 10),
-    lotCode: '',
-    serial: '',
-    orderCode: '',
-    operation: '',
-    machineCode: '',
-    sampleSize: 30,
-    findings: [],
-    result: 'PASS',
-    inspector: 'calidad',
-    notes: '',
+    type: InspectionType.INCOMING,
+    result: InspectionResult.PENDING,
+    productId: '',
+    productionOrderId: '',
+    lotId: '',
+    quantityInspected: 0,
+    quantityApproved: 0,
+    quantityRejected: 0,
+    inspectorId: '',
+    inspectionDate: new Date(),
+    observations: '',
+    corrective_actions: '',
   };
 
-  findingDefectId = '';
-  findingQty = 1;
-  findingNote = '';
+  // Observables reactivos
+  inspections$!: Observable<Inspection[]>;
+  list$!: Observable<Inspection[]>;
 
   constructor(public qs: QualityStoreService) {
-    this.findingDefectId = this.qs.defects[0]?.id ?? '';
+    this.inspections$ = this.qs.inspections$;
+    
+    this.list$ = this.inspections$.pipe(
+      map(inspections => {
+        const t = this.q.trim().toLowerCase();
+        return inspections.filter(i => {
+          if (!t) return true;
+          return [
+            i.code,
+            i.type,
+            i.result,
+            i.observations ?? '',
+            i.inspectorId
+          ].join(' ').toLowerCase().includes(t);
+        });
+      })
+    );
   }
 
-  get list() {
-    const t = this.q.trim().toLowerCase();
-    return this.qs.inspections.filter(i => {
-      if (!t) return true;
-      return [i.code, i.type, i.date, i.lotCode ?? '', i.serial ?? '', i.result, i.inspector].join(' ')
-        .toLowerCase()
-        .includes(t);
-    });
+  get inspectionTypes() {
+    return Object.values(InspectionType);
+  }
+
+  get inspectionResults() {
+    return Object.values(InspectionResult);
+  }
+
+  filterList() {
+    this.list$ = this.inspections$.pipe(
+      map(inspections => {
+        const t = this.q.trim().toLowerCase();
+        return inspections.filter(i => {
+          if (!t) return true;
+          return [
+            i.code,
+            i.type,
+            i.result,
+            i.observations ?? '',
+            i.inspectorId
+          ].join(' ').toLowerCase().includes(t);
+        });
+      })
+    );
   }
 
   new() {
     this.editing = null;
+    this.error = null;
     this.form = {
-      code: `INSP-${String(this.qs.inspections.length + 1).padStart(4, '0')}`,
-      type: 'INCOMING',
-      date: new Date().toISOString().slice(0, 10),
-      sampleSize: 30,
-      findings: [],
-      result: 'PASS',
-      inspector: 'calidad',
-      notes: '',
+      code: '',
+      type: InspectionType.INCOMING,
+      result: InspectionResult.PENDING,
+      productId: '',
+      productionOrderId: '',
+      lotId: '',
+      quantityInspected: 0,
+      quantityApproved: 0,
+      quantityRejected: 0,
+      inspectorId: '',
+      inspectionDate: new Date(),
+      observations: '',
+      corrective_actions: '',
     };
-    this.findingDefectId = this.qs.defects[0]?.id ?? '';
-    this.findingQty = 1;
-    this.findingNote = '';
   }
 
   edit(i: Inspection) {
     this.editing = i;
-    this.form = { ...i, findings: [...i.findings] };
-  }
-
-  addFinding() {
-    if (!this.form.findings) this.form.findings = [];
-    if (!this.findingDefectId || this.findingQty <= 0) return;
-
-    (this.form.findings as InspectionFinding[]).push({
-      defectId: this.findingDefectId,
-      qty: Number(this.findingQty),
-      note: this.findingNote?.trim() || '',
-    });
-
-    this.findingQty = 1;
-    this.findingNote = '';
-    this.recalc();
-  }
-
-  removeFinding(idx: number) {
-    (this.form.findings as InspectionFinding[]).splice(idx, 1);
-    this.recalc();
-  }
-
-  recalc() {
-    const tmp: Inspection = {
-      id: 'tmp',
-      code: this.form.code ?? '',
-      type: (this.form.type as InspectionType) ?? 'INCOMING',
-      date: this.form.date ?? new Date().toISOString().slice(0, 10),
-      sampleSize: Number(this.form.sampleSize || 0),
-      findings: (this.form.findings as InspectionFinding[]) ?? [],
-      result: 'PASS',
-      inspector: this.form.inspector ?? 'calidad',
-      notes: this.form.notes ?? '',
-      lotCode: this.form.lotCode ?? '',
-      serial: this.form.serial ?? '',
-      orderCode: this.form.orderCode ?? '',
-      operation: this.form.operation ?? '',
-      machineCode: this.form.machineCode ?? '',
-      shift: this.form.shift ?? '',
+    this.error = null;
+    this.form = {
+      code: i.code,
+      type: i.type,
+      result: i.result,
+      productId: i.productId,
+      productionOrderId: i.productionOrderId,
+      lotId: i.lotId,
+      quantityInspected: i.quantityInspected,
+      quantityApproved: i.quantityApproved,
+      quantityRejected: i.quantityRejected,
+      inspectorId: i.inspectorId,
+      inspectionDate: new Date(i.inspectionDate),
+      observations: i.observations,
+      corrective_actions: i.corrective_actions,
     };
-    this.form.result = this.qs.computeInspectionResult(tmp);
   }
 
-  score() {
-    const tmp: Inspection = {
-      id: 'tmp',
-      code: this.form.code ?? '',
-      type: (this.form.type as InspectionType) ?? 'INCOMING',
-      date: this.form.date ?? new Date().toISOString().slice(0, 10),
-      sampleSize: Number(this.form.sampleSize || 0),
-      findings: (this.form.findings as InspectionFinding[]) ?? [],
-      result: 'PASS',
-      inspector: this.form.inspector ?? 'calidad',
-      notes: this.form.notes ?? '',
-      lotCode: this.form.lotCode ?? '',
-      serial: this.form.serial ?? '',
-      orderCode: this.form.orderCode ?? '',
-      operation: this.form.operation ?? '',
-      machineCode: this.form.machineCode ?? '',
-      shift: this.form.shift ?? '',
-    };
-    return this.qs.computeInspectionScore(tmp);
+  formatDate(date: Date | string): string {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  }
+
+  getResultClass(result: InspectionResult): string {
+    switch (result) {
+      case InspectionResult.APPROVED:
+        return 'ui-badge-ok';
+      case InspectionResult.REJECTED:
+        return 'ui-badge-bad';
+      case InspectionResult.CONDITIONAL:
+        return 'ui-badge-warn';
+      default:
+        return 'ui-badge';
+    }
   }
 
   save() {
-    if (!this.form.code || !this.form.type || !this.form.date) return;
-
-    const payload: Inspection = {
-      id: this.editing?.id ?? this.qs.newId('insp'),
-      code: this.form.code!,
-      type: this.form.type as InspectionType,
-      date: this.form.date!,
-      shift: this.form.shift ?? '',
-      lotCode: this.form.lotCode ?? '',
-      serial: this.form.serial ?? '',
-      orderCode: this.form.orderCode ?? '',
-      operation: this.form.operation ?? '',
-      machineCode: this.form.machineCode ?? '',
-      sampleSize: Number(this.form.sampleSize || 0),
-      findings: (this.form.findings as InspectionFinding[]) ?? [],
-      result: (this.form.result as any) ?? 'PASS',
-      inspector: this.form.inspector ?? 'calidad',
-      notes: this.form.notes ?? '',
-    };
-
-    if (!this.editing) this.qs.inspections.unshift(payload);
-    else {
-      const idx = this.qs.inspections.findIndex(x => x.id === this.editing!.id);
-      if (idx >= 0) this.qs.inspections[idx] = payload;
+    if (!this.form.code || !this.form.type || !this.form.inspectorId || !this.form.inspectionDate) {
+      this.error = 'Por favor complete los campos requeridos';
+      return;
     }
 
-    this.new();
+    this.loading = true;
+    this.error = null;
+
+    if (!this.editing) {
+      const dto: CreateInspectionDto = {
+        code: this.form.code!,
+        type: this.form.type!,
+        result: this.form.result,
+        productId: this.form.productId,
+        productionOrderId: this.form.productionOrderId,
+        lotId: this.form.lotId,
+        quantityInspected: this.form.quantityInspected,
+        quantityApproved: this.form.quantityApproved,
+        quantityRejected: this.form.quantityRejected,
+        inspectorId: this.form.inspectorId!,
+        inspectionDate: this.form.inspectionDate!,
+        observations: this.form.observations,
+        corrective_actions: this.form.corrective_actions,
+      };
+
+      this.qs.createInspection(dto).subscribe({
+        next: () => {
+          this.loading = false;
+          this.new();
+          console.log('✅ Inspección creada');
+        },
+        error: (err: any) => {
+          this.loading = false;
+          this.error = err.error?.message || 'Error al crear inspección';
+          console.error('❌ Error creando inspección:', err);
+        }
+      });
+    } else {
+      const dto: UpdateInspectionDto = {
+        code: this.form.code,
+        type: this.form.type,
+        result: this.form.result,
+        productId: this.form.productId,
+        productionOrderId: this.form.productionOrderId,
+        lotId: this.form.lotId,
+        quantityInspected: this.form.quantityInspected,
+        quantityApproved: this.form.quantityApproved,
+        quantityRejected: this.form.quantityRejected,
+        inspectorId: this.form.inspectorId,
+        inspectionDate: this.form.inspectionDate,
+        observations: this.form.observations,
+        corrective_actions: this.form.corrective_actions,
+      };
+
+      this.qs.updateInspection(this.editing.id, dto).subscribe({
+        next: () => {
+          this.loading = false;
+          this.new();
+          console.log('✅ Inspección actualizada');
+        },
+        error: (err: any) => {
+          this.loading = false;
+          this.error = err.error?.message || 'Error al actualizar inspección';
+          console.error('❌ Error actualizando inspección:', err);
+        }
+      });
+    }
   }
 
-  defectLabel(defectId: string) {
-    const d = this.qs.defects.find(x => x.id === defectId);
-    if (!d) return '-';
-    return `${d.code} · ${d.name}`;
-  }
+  delete(i: Inspection) {
+    if (!confirm(`¿Eliminar inspección ${i.code}?`)) return;
+    this.loading = true;
+    this.error = null;
 
-  severityLabel(defectId: string) {
-    const d = this.qs.defects.find(x => x.id === defectId);
-    if (!d) return '-';
-    const s = this.qs.severities.find(x => x.id === d.severityId);
-    return s ? `${s.level} (${s.points} pts)` : '-';
+    this.qs.deleteInspection(i.id).subscribe({
+      next: () => {
+        this.loading = false;
+        console.log('✅ Inspección eliminada');
+      },
+      error: (err: any) => {
+        this.loading = false;
+        this.error = err.error?.message || 'Error al eliminar inspección';
+        console.error('❌ Error eliminando inspección:', err);
+      }
+    });
   }
 }

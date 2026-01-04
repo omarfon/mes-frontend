@@ -1,8 +1,8 @@
 <div class="space-y-5">
   <div class="ui-page-header">
     <div>
-      <h3 class="ui-title">Ejecución</h3>
-      <p class="ui-subtitle">Registro de producción por orden, máquina y turno (buenas/merma).</p>
+      <h3 class="ui-title">Ejecución de Producción</h3>
+      <p class="ui-subtitle">Registro de producción en tiempo real por orden y máquina.</p>
     </div>
 
     <div class="w-full max-w-sm">
@@ -13,73 +13,80 @@
     </div>
   </div>
 
+  <!-- Mensajes de error/loading -->
+  <div *ngIf="error" class="p-4 bg-red-500/20 border border-red-500/30 rounded-lg text-sm text-red-200">
+    {{ error }}
+  </div>
+  
+  <div *ngIf="loading" class="p-4 bg-blue-500/20 border border-blue-500/30 rounded-lg text-sm text-blue-200">
+    Cargando ejecuciones...
+  </div>
+
   <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
     <!-- Form -->
     <div class="ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">{{ editingId ? 'Editar registro' : 'Nuevo registro' }}</p>
-        <span class="text-[11px] text-slate-500">MVP</span>
+        <p class="text-sm font-semibold">{{ editingId ? 'Editar ejecución' : 'Nueva ejecución' }}</p>
       </div>
 
       <form (ngSubmit)="submit()" class="space-y-4">
         <div>
-          <label class="ui-label">Orden</label>
-          <input [(ngModel)]="form.orderCode" name="orderCode" required class="ui-input" placeholder="OP-0001" />
-        </div>
-
-        <div>
-          <label class="ui-label">Máquina</label>
-          <input [(ngModel)]="form.machineCode" name="machineCode" required class="ui-input" placeholder="MC-001" />
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="ui-label">Turno</label>
-            <input [(ngModel)]="form.shiftCode" name="shiftCode" class="ui-input" placeholder="A / B / C" />
-          </div>
-          <div>
-            <label class="ui-label">UoM</label>
-            <input [(ngModel)]="form.uom" name="uom" class="ui-input" placeholder="kg" />
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="ui-label">Buenas</label>
-            <input type="number" [(ngModel)]="form.producedGood" name="producedGood" min="0" class="ui-input" />
-          </div>
-          <div>
-            <label class="ui-label">Merma</label>
-            <input type="number" [(ngModel)]="form.producedScrap" name="producedScrap" min="0" class="ui-input" />
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="ui-label">Inicio</label>
-            <input type="date" [(ngModel)]="form.startedAt" name="startedAt" class="ui-input" />
-          </div>
-          <div>
-            <label class="ui-label">Fin (opcional)</label>
-            <input type="date" [(ngModel)]="form.endedAt" name="endedAt" class="ui-input" />
-          </div>
-        </div>
-
-        <div>
-          <label class="ui-label">Estado</label>
-          <select [(ngModel)]="form.status" name="status" class="ui-select">
-            <option value="OPEN">Abierto</option>
-            <option value="CLOSED">Cerrado</option>
+          <label class="ui-label">Orden *</label>
+          <select [(ngModel)]="form.ordenId" name="ordenId" required class="ui-select">
+            <option value="">-- Seleccionar orden --</option>
+            <option *ngFor="let orden of ordenes" [value]="orden.id">
+              {{ orden.numeroOrden }} - {{ orden.productoNombre }}
+            </option>
           </select>
         </div>
 
         <div>
-          <label class="ui-label">Notas</label>
-          <input [(ngModel)]="form.notes" name="notes" class="ui-input" placeholder="Observaciones..." />
+          <label class="ui-label">Máquina *</label>
+          <select [(ngModel)]="form.maquinaId" name="maquinaId" required class="ui-select">
+            <option value="">-- Seleccionar máquina --</option>
+            <option *ngFor="let maquina of maquinas" [value]="maquina.id">
+              {{ maquina.code }} - {{ maquina.name }}
+            </option>
+          </select>
+        </div>
+
+        <div>
+          <label class="ui-label">Operador *</label>
+          <select [(ngModel)]="form.operadorId" name="operadorId" required class="ui-select">
+            <option value="">-- Seleccionar operador --</option>
+            <option *ngFor="let operador of operadores" [value]="operador.id">
+              {{ operador.codigo || operador.code }} - {{ operador.nombre || operador.name }}
+            </option>
+          </select>
+        </div>
+
+        <div>
+          <label class="ui-label">Estado</label>
+          <select [(ngModel)]="form.estado" name="estado" class="ui-select">
+            <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="ui-label">Fecha Inicio <span class="text-xs text-slate-400">(opcional, usa fecha actual si no se envía)</span></label>
+          <input type="datetime-local" [(ngModel)]="form.fechaInicio" name="fechaInicio" class="ui-input" />
+        </div>
+
+        <div>
+          <label class="ui-label">Parámetros <span class="text-xs text-slate-400">(JSON, opcional)</span></label>
+          <textarea [(ngModel)]="form.parametros" name="parametros" rows="3" class="ui-input font-mono text-xs" placeholder='{"temperatura":180,"velocidad":50}'></textarea>
+          <p class="text-[11px] text-slate-400 mt-1">Formato: JSON válido. Ejemplo: {{ '{' }}"temperatura":180,"presion":120{{ '}' }}</p>
+        </div>
+
+        <div>
+          <label class="ui-label">Observaciones</label>
+          <textarea [(ngModel)]="form.observaciones" name="observaciones" rows="2" class="ui-input" placeholder="Notas adicionales..."></textarea>
         </div>
 
         <div class="flex gap-2 pt-1">
-          <button type="submit" class="flex-1 ui-btn-primary">{{ editingId ? 'Guardar' : 'Agregar' }}</button>
+          <button type="submit" class="flex-1 ui-btn-primary" [disabled]="loading">
+            {{ editingId ? 'Guardar' : 'Agregar' }}
+          </button>
           <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
         </div>
       </form>
@@ -89,13 +96,9 @@
     <div class="xl:col-span-2 ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
         <div>
-          <p class="text-sm font-semibold">Registros</p>
-          <p class="text-xs text-slate-400 mt-1">
-            Buenas: <span class="text-slate-200 font-medium">{{ totalGood }}</span>
-            · Merma: <span class="text-slate-200 font-medium">{{ totalScrap }}</span>
-          </p>
+          <p class="text-sm font-semibold">Ejecuciones</p>
         </div>
-        <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
+        <span class="text-[11px] text-slate-500">{{ filtered.length }} ejecuciones</span>
       </div>
 
       <div class="ui-table-wrap">
@@ -104,10 +107,8 @@
             <tr>
               <th class="ui-th">Orden</th>
               <th class="ui-th">Máquina</th>
-              <th class="ui-th">Turno</th>
-              <th class="ui-th">Buenas</th>
-              <th class="ui-th">Merma</th>
-              <th class="ui-th">Fecha</th>
+              <th class="ui-th">Operador</th>
+              <th class="ui-th">Fecha Inicio</th>
               <th class="ui-th">Estado</th>
               <th class="ui-th w-40">Acciones</th>
             </tr>
@@ -115,14 +116,15 @@
 
           <tbody class="bg-slate-950/20">
             <tr *ngFor="let it of filtered" class="ui-tr">
-              <td class="ui-td">{{ it.orderCode }}</td>
-              <td class="ui-td">{{ it.machineCode }}</td>
-              <td class="ui-td">{{ it.shiftCode }}</td>
-              <td class="ui-td">{{ it.producedGood }} {{ it.uom }}</td>
-              <td class="ui-td">{{ it.producedScrap }} {{ it.uom }}</td>
-              <td class="ui-td">{{ it.startedAt || '-' }}</td>
+              <td class="ui-td">{{ getOrdenInfo(it.ordenId) }}</td>
+              <td class="ui-td text-xs">{{ getMaquinaInfo(it.maquinaId) }}</td>
               <td class="ui-td">
-                <span [ngClass]="statusBadge(it.status)">{{ it.status }}</span>
+                <span class="text-white">{{ getOperadorInfo(it.operadorId).split(' (')[0] }}</span>
+                <span class="text-xs text-slate-400 ml-1">({{ getOperadorInfo(it.operadorId).split(' (')[1]?.replace(')', '') }})</span>
+              </td>
+              <td class="ui-td text-xs">{{ it.fechaInicio | date:'short' }}</td>
+              <td class="ui-td">
+                <span [ngClass]="badgeClass(it.estado)" class="ui-badge">{{ it.estado }}</span>
               </td>
               <td class="ui-td">
                 <div class="flex gap-2">
@@ -132,8 +134,8 @@
               </td>
             </tr>
 
-            <tr *ngIf="filtered.length === 0">
-              <td colspan="8" class="px-4 py-10 text-center text-slate-500">No hay registros.</td>
+            <tr *ngIf="filtered.length === 0 && !loading">
+              <td colspan="6" class="px-4 py-10 text-center text-slate-500">No hay ejecuciones registradas.</td>
             </tr>
           </tbody>
         </table>

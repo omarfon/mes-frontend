@@ -1,0 +1,247 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Trazabilidad WIP</h3>
+      <p class="ui-subtitle">Estado en tiempo real y trazabilidad completa de producción</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-2 border-b border-slate-800/60">
+    <button (click)="activeTab = 'ACTIVE_WIP'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'ACTIVE_WIP'" [class.border-b-2]="activeTab === 'ACTIVE_WIP'" [class.border-blue-500]="activeTab === 'ACTIVE_WIP'" [class.text-slate-400]="activeTab !== 'ACTIVE_WIP'">Unidades Activas</button>
+    <button (click)="activeTab = 'DOWNTIMES'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'DOWNTIMES'" [class.border-b-2]="activeTab === 'DOWNTIMES'" [class.border-blue-500]="activeTab === 'DOWNTIMES'" [class.text-slate-400]="activeTab !== 'DOWNTIMES'">Paradas Activas</button>
+    <button (click)="activeTab = 'HISTORY'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'HISTORY'" [class.border-b-2]="activeTab === 'HISTORY'" [class.border-blue-500]="activeTab === 'HISTORY'" [class.text-slate-400]="activeTab !== 'HISTORY'">Historial de Eventos</button>
+  </div>
+
+  <!-- Filtros -->
+  <div class="ui-surface p-4">
+    <div class="flex items-center justify-between mb-3">
+      <p class="text-xs font-semibold text-slate-300">🔍 Filtros de Búsqueda</p>
+      <button (click)="clearFilters()" class="ui-btn-ghost text-xs px-3 py-1">
+        <span class="pi pi-times text-[10px] mr-1"></span>
+        Limpiar
+      </button>
+    </div>
+    
+    <!-- Fila 1: Búsqueda general + Máquina -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="searchQuery" class="ui-input pl-9 w-full" placeholder="Buscar por OP, Lote, Pieza, WIP ID, Usuario, Máquina..." />
+      </div>
+      <select [(ngModel)]="filterAsset" class="ui-select">
+        <option value="ALL">📍 Todas las Máquinas</option>
+        <option *ngFor="let asset of uniqueAssets" [value]="asset">{{ asset }}</option>
+      </select>
+    </div>
+
+    <!-- Fila 2: Filtros específicos por tab -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <!-- Filtros para WIP Activos -->
+      <ng-container *ngIf="activeTab === 'ACTIVE_WIP'">
+        <select [(ngModel)]="filterWipLevel" class="ui-select">
+          <option value="ALL">📊 Todos los Niveles</option>
+          <option value="ORDER">Orden</option>
+          <option value="LOT">Lote</option>
+          <option value="PIECE">Pieza</option>
+        </select>
+        <select [(ngModel)]="filterStatus" class="ui-select">
+          <option value="ALL">📈 Todos los Status</option>
+          <option value="QUEUED">En Cola</option>
+          <option value="IN_PROGRESS">En Proceso</option>
+          <option value="PAUSED">Pausado</option>
+          <option value="BLOCKED">Bloqueado</option>
+        </select>
+      </ng-container>
+
+      <!-- Filtros para Downtimes -->
+      <ng-container *ngIf="activeTab === 'DOWNTIMES'">
+        <select [(ngModel)]="filterDowntimeTrigger" class="ui-select">
+          <option value="ALL">⚡ Todos los Tipos</option>
+          <option value="AUTO">Automático</option>
+          <option value="MANUAL">Manual</option>
+        </select>
+      </ng-container>
+
+      <!-- Filtros para History -->
+      <ng-container *ngIf="activeTab === 'HISTORY'">
+        <select [(ngModel)]="filterEventType" class="ui-select">
+          <option value="ALL">📋 Todos los Eventos</option>
+          <option value="WIP_STARTED">Unidad Iniciada</option>
+          <option value="WIP_PAUSED">Unidad Pausada</option>
+          <option value="WIP_RESUMED">Unidad Reanudada</option>
+          <option value="WIP_COMPLETED">Unidad Completada</option>
+          <option value="WIP_PROGRESS_UPDATED">Progreso Actualizado</option>
+          <option value="WIP_MOVED">Unidad Movida</option>
+          <option value="DOWNTIME_STARTED">Parada Iniciada</option>
+          <option value="DOWNTIME_ENDED">Parada Finalizada</option>
+          <option value="MACHINE_STATE_CHANGED">Cambio Estado Máquina</option>
+        </select>
+        <div>
+          <label class="ui-label text-[10px] mb-1">📅 Desde</label>
+          <input type="date" [(ngModel)]="filterDateFrom" class="ui-input" />
+        </div>
+        <div>
+          <label class="ui-label text-[10px] mb-1">📅 Hasta</label>
+          <input type="date" [(ngModel)]="filterDateTo" class="ui-input" />
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+  <!-- ACTIVE WIP TAB -->
+  <div *ngIf="activeTab === 'ACTIVE_WIP'">
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Unidades en Proceso</p>
+        <div class="flex items-center gap-3 text-xs">
+          <span class="ui-badge text-blue-300 bg-blue-500/10 border-blue-500/20">{{ filteredWips.length }} mostrados</span>
+          <span class="text-slate-400" *ngIf="filteredWips.length !== activeWips.length">de {{ activeWips.length }} totales</span>
+        </div>
+      </div>
+      <div class="space-y-3" *ngIf="filteredWips.length > 0">
+        <div *ngFor="let wip of filteredWips" class="ui-surface-inner p-4">
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="ui-badge text-purple-300 bg-purple-500/10 border-purple-500/20">{{ translateWipLevel(wip.level) }}</span>
+                <span [ngClass]="getStatusClass(wip.status)">{{ translateWipStatus(wip.status) }}</span>
+                <p class="text-sm font-semibold text-slate-200">{{ wip.assetName }}</p>
+              </div>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                <div><p class="text-slate-400">ID Unidad</p><p class="text-slate-200 font-mono">{{ wip.id }}</p></div>
+                <div *ngIf="wip.workOrderId"><p class="text-slate-400">Orden</p><p class="text-slate-200 font-mono">{{ wip.workOrderId }}</p></div>
+                <div *ngIf="wip.lotId"><p class="text-slate-400">Lote</p><p class="text-slate-200 font-mono">{{ wip.lotId }}</p></div>
+                <div *ngIf="wip.pieceId"><p class="text-slate-400">Pieza</p><p class="text-slate-200 font-mono">{{ wip.pieceId }}</p></div>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs border-t border-slate-800/60 pt-3">
+            <div><p class="text-slate-400">Operación</p><p class="text-slate-200">{{ wip.operationName }}</p></div>
+            <div><p class="text-slate-400">Buenas</p><p class="text-green-400 font-semibold">{{ wip.goodCount }}</p></div>
+            <div><p class="text-slate-400">Scrap</p><p class="text-red-400 font-semibold">{{ wip.scrapCount }}</p></div>
+            <div><p class="text-slate-400">Operador</p><p class="text-slate-200">{{ wip.userName }}</p></div>
+            <div><p class="text-slate-400">Inicio</p><p class="text-slate-200 font-mono">{{ wip.startedAt }}</p></div>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="filteredWips.length === 0" class="text-center py-12">
+        <span class="pi pi-inbox text-4xl text-slate-600 mb-3 block"></span>
+        <p class="text-slate-400 text-sm">No se encontraron unidades en proceso con los filtros aplicados</p>
+        <button (click)="clearFilters()" class="ui-btn-ghost text-xs mt-3">Limpiar filtros</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOWNTIMES TAB -->
+  <div *ngIf="activeTab === 'DOWNTIMES'">
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Paradas Activas</p>
+        <div class="flex items-center gap-3 text-xs">
+          <span class="ui-badge text-red-300 bg-red-500/10 border-red-500/20">{{ activeDowntimesFiltered.length }} mostrados</span>
+          <span class="text-slate-400" *ngIf="activeDowntimesFiltered.length !== activeDowntimes.length">de {{ activeDowntimes.length }} totales</span>
+        </div>
+      </div>
+      <div class="space-y-3" *ngIf="activeDowntimesFiltered.length > 0">
+        <div *ngFor="let dt of activeDowntimesFiltered" class="ui-surface-inner p-4">
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-2">
+                <span [ngClass]="getTriggerClass(dt.trigger)">{{ translateTrigger(dt.trigger) }}</span>
+                <p class="text-sm font-semibold text-slate-200">{{ dt.assetName }}</p>
+              </div>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                <div><p class="text-slate-400">ID Parada</p><p class="text-slate-200 font-mono">{{ dt.id }}</p></div>
+                <div><p class="text-slate-400">Motivo</p><p class="text-slate-200">{{ dt.reasonName }}</p></div>
+                <div *ngIf="dt.wipUnitId"><p class="text-slate-400">Unidad Afectada</p><p class="text-slate-200 font-mono">{{ dt.wipUnitId }}</p></div>
+                <div><p class="text-slate-400">Duración</p><p class="text-orange-400 font-semibold">{{ formatDuration(dt.duration) }}</p></div>
+              </div>
+            </div>
+          </div>
+          <div class="text-xs border-t border-slate-800/60 pt-3">
+            <p class="text-slate-400 mb-1">Inicio</p>
+            <p class="text-slate-200 font-mono mb-2">{{ dt.startAt }}</p>
+            <p class="text-slate-400 mb-1">Notas</p>
+            <p class="text-slate-300">{{ dt.notes || 'Sin notas' }}</p>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="activeDowntimesFiltered.length === 0" class="text-center py-12">
+        <span class="pi pi-inbox text-4xl text-slate-600 mb-3 block"></span>
+        <p class="text-slate-400 text-sm">No se encontraron paradas activas con los filtros aplicados</p>
+        <button (click)="clearFilters()" class="ui-btn-ghost text-xs mt-3">Limpiar filtros</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div *ngIf="activeTab === 'HISTORY'">
+    <div class="ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Historial de Eventos</p>
+        <div class="flex items-center gap-3 text-xs">
+          <span class="ui-badge text-purple-300 bg-purple-500/10 border-purple-500/20">{{ filteredHistory.length }} mostrados</span>
+          <span class="text-slate-400" *ngIf="filteredHistory.length !== historyEvents.length">de {{ historyEvents.length }} totales</span>
+        </div>
+      </div>
+      <div class="ui-table-wrap" *ngIf="filteredHistory.length > 0">
+        <table class="ui-table">
+          <thead class="ui-thead">
+            <tr>
+              <th class="ui-th">Timestamp</th>
+              <th class="ui-th">Tipo</th>
+              <th class="ui-th">Máquina</th>
+              <th class="ui-th">ID Unidad/Parada</th>
+              <th class="ui-th">OP/Lote/Pieza</th>
+              <th class="ui-th">Usuario</th>
+              <th class="ui-th">Detalles</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="ui-tr" *ngFor="let ev of filteredHistory">
+              <td class="ui-td text-xs font-mono">{{ ev.timestamp }}</td>
+              <td class="ui-td"><span [ngClass]="getEventTypeClass(ev.type)">{{ translateEventType(ev.type) }}</span></td>
+              <td class="ui-td text-xs">{{ ev.assetName || '-' }}</td>
+              <td class="ui-td text-xs font-mono">
+                <span *ngIf="ev.wipUnitId">{{ ev.wipUnitId }}</span>
+                <span *ngIf="ev.downtimeId" class="text-red-400">{{ ev.downtimeId }}</span>
+                <span *ngIf="!ev.wipUnitId && !ev.downtimeId">-</span>
+              </td>
+              <td class="ui-td text-xs font-mono">
+                <span *ngIf="ev.workOrderId" class="text-blue-300">{{ ev.workOrderId }}</span>
+                <span *ngIf="ev.lotId" class="text-green-300 ml-1">{{ ev.lotId }}</span>
+                <span *ngIf="ev.pieceId" class="text-purple-300 ml-1">{{ ev.pieceId }}</span>
+                <span *ngIf="!ev.workOrderId && !ev.lotId && !ev.pieceId">-</span>
+              </td>
+              <td class="ui-td text-xs">{{ ev.userName || '-' }}</td>
+              <td class="ui-td text-xs">
+                <span *ngIf="ev.machineState" [ngClass]="getMachineStateClass(ev.machineState)">{{ translateMachineState(ev.machineState) }}</span>
+                <span *ngIf="ev.payload?.goodCount">Buenas: {{ ev.payload.goodCount }}</span>
+                <span *ngIf="ev.payload?.scrapCount"> / Scrap: {{ ev.payload.scrapCount }}</span>
+                <span *ngIf="ev.payload?.reasonCode" class="text-orange-300">{{ ev.payload.reasonCode }}</span>
+                <span *ngIf="ev.payload?.reason" class="text-slate-400">{{ ev.payload.reason }}</span>
+                <span *ngIf="ev.payload?.fromOperation">{{ ev.payload.fromOperation }} → {{ ev.payload.toOperation }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div *ngIf="filteredHistory.length === 0" class="text-center py-12">
+        <span class="pi pi-inbox text-4xl text-slate-600 mb-3 block"></span>
+        <p class="text-slate-400 text-sm">No se encontraron eventos con los filtros aplicados</p>
+        <button (click)="clearFilters()" class="ui-btn-ghost text-xs mt-3">Limpiar filtros</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reglas de Auto-Downtime (Info) -->
+  <div class="ui-surface p-4 border-l-4 border-purple-500">
+    <p class="text-sm font-semibold text-slate-200 mb-2">⚙️ Reglas de Detección Automática de Paradas</p>
+    <div class="text-xs text-slate-400 space-y-1">
+      <p><strong class="text-purple-300">Regla A:</strong> Si máquina pasa a DETENIDA/FALLA con unidad activa por >60s → crear parada AUTO</p>
+      <p><strong class="text-purple-300">Regla B:</strong> Si máquina vuelve a OPERANDO con parada activa → cerrar parada automáticamente</p>
+      <p><strong class="text-purple-300">Regla C:</strong> Pausa manual puede ser PROCESO (no es parada) o PARADA según tipo</p>
+    </div>
+  </div>
+</div>

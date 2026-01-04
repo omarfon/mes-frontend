@@ -1,34 +1,47 @@
 <!-- <div class="flex items-start justify-between gap-4 mb-6">
-
   <div class="rounded-xl border border-slate-800/70 bg-slate-900/30 p-1 flex flex-wrap gap-1">
     <a
       routerLink="./orders"
       routerLinkActive="bg-slate-800/60 text-white"
-      [routerLinkActiveOptions]="{ exact: true }"
+      [routerLinkActiveOptions]="{ exact: false }"
       class="px-3 py-2 text-xs rounded-lg transition hover:bg-slate-800/40"
     >Órdenes</a>
 
     <a
       routerLink="./dispatch"
       routerLinkActive="bg-slate-800/60 text-white"
-      [routerLinkActiveOptions]="{ exact: true }"
+      [routerLinkActiveOptions]="{ exact: false }"
       class="px-3 py-2 text-xs rounded-lg transition hover:bg-slate-800/40"
     >Despacho</a>
 
     <a
       routerLink="./execution"
       routerLinkActive="bg-slate-800/60 text-white"
-      [routerLinkActiveOptions]="{ exact: true }"
+      [routerLinkActiveOptions]="{ exact: false }"
       class="px-3 py-2 text-xs rounded-lg transition hover:bg-slate-800/40"
     >Ejecución</a>
 
     <a
       routerLink="./wip"
       routerLinkActive="bg-slate-800/60 text-white"
-      [routerLinkActiveOptions]="{ exact: true }"
+      [routerLinkActiveOptions]="{ exact: false }"
       class="px-3 py-2 text-xs rounded-lg transition hover:bg-slate-800/40"
     >WIP</a>
-  </div>
-</div> -->
 
+    <a
+      routerLink="./board"
+      routerLinkActive="bg-slate-800/60 text-white"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="px-3 py-2 text-xs rounded-lg transition hover:bg-slate-800/40"
+    >Control Visual</a>
+
+    <a
+      routerLink="./times"
+      routerLinkActive="bg-slate-800/60 text-white"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="px-3 py-2 text-xs rounded-lg transition hover:bg-slate-800/40"
+    >Tiempos</a>
+  </div>
+</div>
+ -->
 <router-outlet></router-outlet>

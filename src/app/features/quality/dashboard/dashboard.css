@@ -1,0 +1,13 @@
+:host {
+  display: block;
+}
+
+/* Animaciones suaves para las barras de progreso */
+.ui-surface {
+  transition: all 0.3s ease;
+}
+
+.ui-surface:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}

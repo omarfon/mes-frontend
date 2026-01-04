@@ -1,182 +1,170 @@
 <div class="space-y-5">
   <div class="ui-page-header">
     <div>
-      <h3 class="ui-title">Seriales / Unidades</h3>
-      <p class="ui-subtitle">Generación por lote, escaneo rápido, estado y ubicación por unidad.</p>
+      <h3 class="ui-title">Seriales</h3>
+      <p class="ui-subtitle">Gestión de números de serie individuales con trazabilidad completa.</p>
+    </div>
+
+    <div class="w-full max-w-sm">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar..." />
+      </div>
     </div>
   </div>
 
+  <!-- Mensajes de error/carga -->
+  <div *ngIf="error" class="ui-surface p-4 border-l-4 border-red-500/60 bg-red-500/5">
+    <p class="text-sm text-red-400">{{ error }}</p>
+  </div>
+
+  <div *ngIf="loading" class="ui-surface p-4 border-l-4 border-blue-500/60 bg-blue-500/5">
+    <p class="text-sm text-blue-400">⏳ Cargando...</p>
+  </div>
+
   <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-    <!-- Generación -->
+    <!-- Form -->
     <div class="ui-surface p-5">
-      <p class="text-sm font-semibold mb-3">Generar seriales</p>
-
-      <div class="space-y-3">
-        <div>
-          <label class="ui-label">Lote</label>
-          <input [(ngModel)]="lotCode" class="ui-input" placeholder="LOT-PT-0108" />
-        </div>
-
-        <div>
-          <label class="ui-label">Prefijo (opcional)</label>
-          <input [(ngModel)]="prefix" class="ui-input" placeholder="SER-PT-0108" />
- <p class="text-[11px] text-slate-500 mt-1">Si vacío: SER-{{ '{' }}LOTE-0001..</p>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="ui-label">Cantidad</label>
-            <input type="number" min="1" [(ngModel)]="count" class="ui-input" />
-          </div>
-
-          <div>
-            <label class="ui-label">Tipo unidad</label>
-            <select [(ngModel)]="unitType" class="ui-select">
-              <option value="BOBINA">Bobina</option>
-              <option value="ROLLO">Rollo</option>
-              <option value="CAJA">Caja</option>
-              <option value="PALLET">Pallet</option>
-              <option value="OTRO">Otro</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="ui-label">Qty por unidad</label>
-            <input type="number" min="0" [(ngModel)]="qtyPerUnit" class="ui-input" />
-          </div>
-          <div>
-            <label class="ui-label">Ubicación (opcional)</label>
-            <input [(ngModel)]="genLocation" class="ui-input" placeholder="ALM-PT/R1/N1" />
-          </div>
-        </div>
-
-        <button class="ui-btn-primary w-full" (click)="gen()">Generar</button>
-      </div>
-    </div>
-
-    <!-- Escaneo -->
-    <div class="ui-surface p-5 xl:col-span-2">
-      <div class="flex items-center justify-between mb-3">
-        <p class="text-sm font-semibold">Escaneo / Operación rápida</p>
-        <span class="text-[11px] text-slate-500">Enter para cargar serial</span>
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">{{ editingId ? 'Editar Serial' : 'Nuevo Serial' }}</p>
+        <span class="text-[11px] text-slate-500">Backend</span>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <div class="md:col-span-2">
-          <label class="ui-label">Serial</label>
-          <input [(ngModel)]="scan" (keydown.enter)="onScanEnter()" class="ui-input" placeholder="SER-LOT-...-0001" />
+      <form (ngSubmit)="submit()" class="space-y-4">
+        <!-- Número de Serie (requerido) -->
+        <div>
+          <label class="ui-label">Número de Serie <span class="text-red-400">*</span></label>
+          <input [(ngModel)]="form.serialNumber" name="serialNumber" required class="ui-input" placeholder="SN-123456789" />
         </div>
 
+        <!-- Lote (requerido) -->
         <div>
-          <label class="ui-label">Acción</label>
-          <select [(ngModel)]="action" class="ui-select">
-            <option value="MOVE">Mover</option>
-            <option value="BLOCK">Bloquear</option>
-            <option value="QUARANTINE">Cuarentena</option>
-            <option value="RELEASE">Liberar</option>
-            <option value="NOTE">Nota</option>
+          <label class="ui-label">Lote <span class="text-red-400">*</span></label>
+          <select [(ngModel)]="form.lotId" name="lotId" required class="ui-select">
+            <option value="">-- Selecciona lote --</option>
+            <option *ngFor="let lot of lots" [value]="lot.id">
+              {{ lot.lotNumber || lot.code }} - {{ lot.productName || lot.description || '' }}
+            </option>
           </select>
         </div>
 
+        <!-- Producto (requerido) -->
         <div>
-          <label class="ui-label">Destino (si mover)</label>
-          <input [(ngModel)]="toLocation" class="ui-input" placeholder="ALM-..." />
+          <label class="ui-label">Producto <span class="text-red-400">*</span></label>
+          <select [(ngModel)]="form.productId" name="productId" required class="ui-select">
+            <option value="">-- Selecciona producto --</option>
+            <option *ngFor="let product of products" [value]="product.id">
+              {{ product.code }} - {{ product.name }}
+            </option>
+          </select>
         </div>
 
-        <div class="md:col-span-4">
-          <label class="ui-label">Nota / Motivo (opcional)</label>
-          <input [(ngModel)]="note" class="ui-input" placeholder="Motivo / detalle..." />
+        <!-- Estado -->
+        <div>
+          <label class="ui-label">Estado</label>
+          <select [(ngModel)]="form.status" name="status" class="ui-select">
+            <option *ngFor="let status of statusList" [value]="status">
+              {{ getStatusLabel(status) }}
+            </option>
+          </select>
         </div>
 
-        <div class="md:col-span-4 flex gap-2 pt-1">
-          <button class="ui-btn-ghost flex-1" (click)="resolve()">Cargar</button>
-          <button class="ui-btn-primary flex-1" (click)="apply()">Aplicar</button>
-        </div>
-      </div>
-
-      <div *ngIf="error" class="mt-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200">
-        {{ error }}
-      </div>
-      <div *ngIf="success"
-        class="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
-        {{ success }}
-      </div>
-
-      <div *ngIf="selected" class="mt-4 rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <div class="text-sm font-semibold">{{ selected.serial }}</div>
-            <div class="text-xs text-slate-400 mt-1">{{ selected.unitType }} · {{ selected.itemCode }} · {{
-              selected.lotCode }}</div>
-          </div>
-          <span [ngClass]="badge(selected.status)">{{ selected.status }}</span>
+        <!-- MAC Address (opcional) -->
+        <div>
+          <label class="ui-label">Dirección MAC</label>
+          <input [(ngModel)]="form.macAddress" name="macAddress" class="ui-input" placeholder="00:1A:2B:3C:4D:5E" />
         </div>
 
-        <div class="mt-3 text-xs text-slate-300">
-          Qty: <b class="text-slate-100">{{ selected.qty }} {{ selected.uom }}</b> ·
-          Ubicación: <b class="text-slate-100">{{ selected.location }}</b>
+        <!-- IMEI (opcional) -->
+        <div>
+          <label class="ui-label">IMEI</label>
+          <input [(ngModel)]="form.imei" name="imei" class="ui-input" placeholder="123456789012345" />
         </div>
 
-        <div class="mt-3">
-          <p class="text-xs font-semibold text-slate-200 mb-2">Últimos eventos</p>
-          <div class="space-y-2">
-            <div *ngFor="let ev of (selected.events | slice:0:5)"
-              class="rounded-xl border border-slate-800/70 bg-slate-900/20 p-3">
-              <div class="flex items-center justify-between">
-                <div class="text-xs text-slate-300"><b class="text-slate-100">{{ ev.type }}</b> · {{ ev.by }}</div>
-                <div class="text-[11px] text-slate-500">{{ ev.at }}</div>
-              </div>
-              <div *ngIf="ev.note" class="text-xs text-slate-300 mt-2">{{ ev.note }}</div>
-            </div>
-          </div>
+        <!-- Firmware Version (opcional) -->
+        <div>
+          <label class="ui-label">Versión de Firmware</label>
+          <input [(ngModel)]="form.firmwareVersion" name="firmwareVersion" class="ui-input" placeholder="v1.2.3" />
         </div>
-      </div>
+
+        <!-- Hardware Revision (opcional) -->
+        <div>
+          <label class="ui-label">Revisión de Hardware</label>
+          <input [(ngModel)]="form.hardwareRevision" name="hardwareRevision" class="ui-input" placeholder="Rev A" />
+        </div>
+
+        <!-- Warranty Months (opcional) -->
+        <div>
+          <label class="ui-label">Meses de Garantía</label>
+          <input type="number" [(ngModel)]="form.warrantyMonths" name="warrantyMonths" min="0" class="ui-input" placeholder="12" />
+        </div>
+
+        <!-- Notas (opcional) -->
+        <div>
+          <label class="ui-label">Notas</label>
+          <textarea [(ngModel)]="form.notes" name="notes" class="ui-input min-h-[80px]" placeholder="Notas adicionales..."></textarea>
+        </div>
+
+        <!-- Botones -->
+        <div class="flex gap-2">
+          <button type="submit" class="ui-btn-primary flex-1">
+            {{ editingId ? 'Actualizar' : 'Crear' }}
+          </button>
+          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn">
+            Cancelar
+          </button>
+        </div>
+      </form>
     </div>
 
     <!-- Lista -->
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-4 gap-3">
-        <div>
-          <p class="text-sm font-semibold">Seriales</p>
-          <p class="text-xs text-slate-400 mt-1">Búsqueda por serial, lote, ubicación, estado.</p>
-        </div>
-        <input [(ngModel)]="q" class="ui-input w-72" placeholder="Buscar..." />
+    <div class="xl:col-span-2 ui-surface">
+      <div class="p-5 border-b border-slate-700/50">
+        <p class="text-sm font-semibold">Seriales ({{ filtered.length }})</p>
       </div>
 
-      <div class="ui-table-wrap">
+      <div class="overflow-x-auto">
         <table class="ui-table">
-          <thead class="ui-thead">
+          <thead>
             <tr>
-              <th class="ui-th">Serial</th>
-              <th class="ui-th">Lote</th>
-              <th class="ui-th">Unidad</th>
-              <th class="ui-th">Qty</th>
-              <th class="ui-th">Ubicación</th>
-              <th class="ui-th">Estado</th>
-              <th class="ui-th w-32">Acción</th>
+              <th>Número de Serie</th>
+              <th>Lote</th>
+              <th>Producto</th>
+              <th>Estado</th>
+              <th>MAC</th>
+              <th>IMEI</th>
+              <th>Garantía</th>
+              <th>Acciones</th>
             </tr>
           </thead>
-
-          <tbody class="bg-slate-950/20">
-            <tr *ngFor="let s of list" class="ui-tr">
-              <td class="ui-td">
-                <div class="font-medium text-slate-100">{{ s.serial }}</div>
-                <div class="text-xs text-slate-500 mt-1">{{ s.itemCode }}</div>
-              </td>
-              <td class="ui-td">{{ s.lotCode }}</td>
-              <td class="ui-td">{{ s.unitType }}</td>
-              <td class="ui-td">{{ s.qty }} {{ s.uom }}</td>
-              <td class="ui-td">{{ s.location }}</td>
-              <td class="ui-td"><span [ngClass]="badge(s.status)">{{ s.status }}</span></td>
-              <td class="ui-td">
-                <button class="ui-btn-ghost text-xs" (click)="open(s)">Ver</button>
+          <tbody>
+            <tr *ngIf="filtered.length === 0">
+              <td colspan="8" class="text-center text-slate-500 py-8">
+                {{ loading ? 'Cargando...' : 'No hay seriales' }}
               </td>
             </tr>
-
-            <tr *ngIf="list.length === 0">
-              <td colspan="7" class="px-4 py-10 text-center text-slate-500">No hay seriales aún.</td>
+            <tr *ngFor="let item of filtered">
+              <td class="font-mono text-xs">{{ item.serialNumber }}</td>
+              <td class="text-xs">{{ getLotInfo(item.lotId) }}</td>
+              <td class="text-xs">{{ getProductInfo(item.productId) }}</td>
+              <td>
+                <span [class]="getStatusBadge(item.status!)">
+                  {{ getStatusLabel(item.status!) }}
+                </span>
+              </td>
+              <td class="text-xs font-mono">{{ item.macAddress || '-' }}</td>
+              <td class="text-xs font-mono">{{ item.imei || '-' }}</td>
+              <td class="text-xs">{{ item.warrantyMonths ? item.warrantyMonths + ' meses' : '-' }}</td>
+              <td>
+                <div class="flex gap-1">
+                  <button (click)="edit(item)" class="ui-btn-icon" title="Editar">
+                    <span class="pi pi-pencil text-xs"></span>
+                  </button>
+                  <button (click)="remove(item.id)" class="ui-btn-icon-bad" title="Eliminar">
+                    <span class="pi pi-trash text-xs"></span>
+                  </button>
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>

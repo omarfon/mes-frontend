@@ -15,10 +15,7 @@ export class AuthInterceptor implements HttpInterceptor {
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     const token = this.auth.token;
 
-    if (!token) {
-      return next.handle(req);
-    }
-
+    // Eliminando la verificación del token
     const cloned = req.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`,
