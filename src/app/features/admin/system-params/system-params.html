@@ -11,6 +11,8 @@
     <button (click)="activeTab = 'SHIFTS'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'SHIFTS'" [class.border-b-2]="activeTab === 'SHIFTS'" [class.border-blue-500]="activeTab === 'SHIFTS'" [class.text-slate-400]="activeTab !== 'SHIFTS'">Turnos</button>
     <button (click)="activeTab = 'STATUSES'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'STATUSES'" [class.border-b-2]="activeTab === 'STATUSES'" [class.border-blue-500]="activeTab === 'STATUSES'" [class.text-slate-400]="activeTab !== 'STATUSES'">Estados</button>
     <button (click)="activeTab = 'WORKFLOWS'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'WORKFLOWS'" [class.border-b-2]="activeTab === 'WORKFLOWS'" [class.border-blue-500]="activeTab === 'WORKFLOWS'" [class.text-slate-400]="activeTab !== 'WORKFLOWS'">Workflows</button>
+    <button (click)="activeTab = 'KPI_ALERTS'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'KPI_ALERTS'" [class.border-b-2]="activeTab === 'KPI_ALERTS'" [class.border-blue-500]="activeTab === 'KPI_ALERTS'" [class.text-slate-400]="activeTab !== 'KPI_ALERTS'">KPIs y Alertas</button>
+    <button (click)="activeTab = 'FORM_TEMPLATES'" class="px-4 py-2 text-sm font-medium transition" [class.text-blue-400]="activeTab === 'FORM_TEMPLATES'" [class.border-b-2]="activeTab === 'FORM_TEMPLATES'" [class.border-blue-500]="activeTab === 'FORM_TEMPLATES'" [class.text-slate-400]="activeTab !== 'FORM_TEMPLATES'">Form Templates</button>
   </div>
 
   <!-- SHIFTS TAB -->
@@ -163,6 +165,270 @@
             <div class="text-xs text-slate-400" *ngIf="wf.requiredFields?.length">
               <span class="text-slate-500">Campos requeridos:</span> {{ wf.requiredFields?.join(', ') }}
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI + ALERTS TAB -->
+  <div *ngIf="activeTab === 'KPI_ALERTS'" class="space-y-4">
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="ui-surface p-5 xl:col-span-1" *ngIf="editingKpi">
+        <p class="text-sm font-semibold mb-4">{{ editingKpi.id ? 'Editar KPI' : 'Nuevo KPI' }}</p>
+        <form (ngSubmit)="saveKpi()" class="space-y-3">
+          <div>
+            <label class="ui-label">Código</label>
+            <select [(ngModel)]="kpiForm.code" name="kpiCode" required class="ui-select">
+              <option *ngFor="let code of kpiCodes" [value]="code">{{ code }}</option>
+            </select>
+          </div>
+          <div><label class="ui-label">Nombre</label><input [(ngModel)]="kpiForm.name" name="kpiName" class="ui-input" required /></div>
+          <div><label class="ui-label">Fórmula</label><textarea [(ngModel)]="kpiForm.formula" name="kpiFormula" rows="2" class="ui-input" required></textarea></div>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="ui-label">Unidad</label>
+              <select [(ngModel)]="kpiForm.unit" name="kpiUnit" class="ui-select" required>
+                <option value="%">%</option>
+                <option value="h">h</option>
+                <option value="min">min</option>
+              </select>
+            </div>
+            <div><label class="ui-label">Meta</label><input type="number" [(ngModel)]="kpiForm.target" name="kpiTarget" class="ui-input" required /></div>
+            <div><label class="ui-label">Tolerancia</label><input type="number" [(ngModel)]="kpiForm.tolerance" name="kpiTol" class="ui-input" required /></div>
+          </div>
+          <label class="flex items-center gap-2 text-sm"><input type="checkbox" [(ngModel)]="kpiForm.active" name="kpiActive" /> Activo</label>
+          <div class="flex gap-2 pt-1">
+            <button type="submit" class="flex-1 ui-btn-primary">Guardar</button>
+            <button type="button" (click)="cancelKpi()" class="ui-btn-ghost">Cancelar</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="ui-surface p-5" [class.xl:col-span-2]="editingKpi" [class.xl:col-span-3]="!editingKpi">
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-sm font-semibold">Definición de KPIs y reglas de cálculo</p>
+          <button class="ui-btn-primary" (click)="newKpi()">Nuevo KPI</button>
+        </div>
+        <div class="space-y-2">
+          <div *ngFor="let k of kpis" class="ui-surface-inner p-3 flex items-start justify-between gap-3">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="ui-badge">{{ k.code }}</span>
+                <span *ngIf="!k.active" class="text-[10px] px-2 py-0.5 rounded bg-red-500/10 text-red-300">Inactivo</span>
+              </div>
+              <p class="text-sm font-semibold text-slate-200">{{ k.name }}</p>
+              <p class="text-xs text-slate-400 mt-1">{{ k.formula }}</p>
+              <p class="text-xs text-slate-500 mt-1">Meta: {{ k.target }} {{ k.unit }} | Tolerancia: {{ k.tolerance }} {{ k.unit }}</p>
+            </div>
+            <div class="flex gap-2">
+              <button (click)="editKpi(k)" class="ui-btn-ghost text-xs">Editar</button>
+              <button (click)="deleteKpi(k.id)" class="ui-btn-danger text-xs">Eliminar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="ui-surface p-5 xl:col-span-1" *ngIf="editingThreshold">
+        <p class="text-sm font-semibold mb-4">{{ editingThreshold.id ? 'Editar umbral' : 'Nuevo umbral' }}</p>
+        <form (ngSubmit)="saveThreshold()" class="space-y-3">
+          <div>
+            <label class="ui-label">Tipo de alerta</label>
+            <select [(ngModel)]="thresholdForm.type" name="thType" class="ui-select" required>
+              <option *ngFor="let t of alertTypes" [value]="t">{{ t }}</option>
+            </select>
+          </div>
+          <div><label class="ui-label">Métrica</label><input [(ngModel)]="thresholdForm.metric" name="thMetric" class="ui-input" required /></div>
+          <div class="grid grid-cols-3 gap-2">
+            <div><label class="ui-label">Warning</label><input type="number" [(ngModel)]="thresholdForm.warningFrom" name="thWarning" class="ui-input" required /></div>
+            <div><label class="ui-label">Crítico</label><input type="number" [(ngModel)]="thresholdForm.criticalFrom" name="thCritical" class="ui-input" required /></div>
+            <div><label class="ui-label">Unidad</label><input [(ngModel)]="thresholdForm.unit" name="thUnit" class="ui-input" required /></div>
+          </div>
+          <p *ngIf="thresholdForm.warningFrom != null && thresholdForm.criticalFrom != null && thresholdForm.warningFrom > thresholdForm.criticalFrom" class="text-xs text-rose-300">Warning no puede ser mayor que crítico.</p>
+          <label class="flex items-center gap-2 text-sm"><input type="checkbox" [(ngModel)]="thresholdForm.active" name="thActive" /> Activo</label>
+          <div class="flex gap-2 pt-1">
+            <button type="submit" class="flex-1 ui-btn-primary">Guardar</button>
+            <button type="button" (click)="cancelThreshold()" class="ui-btn-ghost">Cancelar</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="ui-surface p-5" [class.xl:col-span-2]="editingThreshold" [class.xl:col-span-3]="!editingThreshold">
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-sm font-semibold">Umbrales de alertas por tipo</p>
+          <button class="ui-btn-primary" (click)="newThreshold()">Nuevo umbral</button>
+        </div>
+        <div class="space-y-2">
+          <div *ngFor="let t of alertThresholds" class="ui-surface-inner p-3 flex items-start justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="ui-badge">{{ t.type }}</span>
+                <span *ngIf="!t.active" class="text-[10px] px-2 py-0.5 rounded bg-red-500/10 text-red-300">Inactivo</span>
+              </div>
+              <p class="text-sm text-slate-200">{{ t.metric }}</p>
+              <p class="text-xs text-slate-500">Warning: {{ t.warningFrom }} {{ t.unit }} | Crítico: {{ t.criticalFrom }} {{ t.unit }}</p>
+            </div>
+            <div class="flex gap-2">
+              <button (click)="editThreshold(t)" class="ui-btn-ghost text-xs">Editar</button>
+              <button (click)="deleteThreshold(t.id)" class="ui-btn-danger text-xs">Eliminar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="ui-surface p-5 xl:col-span-1" *ngIf="editingRouting">
+        <p class="text-sm font-semibold mb-4">{{ editingRouting.id ? 'Editar destinatarios/canales' : 'Nueva regla de notificación' }}</p>
+        <form (ngSubmit)="saveRouting()" class="space-y-3">
+          <div>
+            <label class="ui-label">Tipo de alerta</label>
+            <select [(ngModel)]="routingForm.alertType" name="routeType" class="ui-select" required>
+              <option *ngFor="let t of alertTypes" [value]="t">{{ t }}</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Canales de notificación</label>
+            <div class="grid grid-cols-1 gap-1 mt-1">
+              <label *ngFor="let c of channelOptions" class="text-sm flex items-center gap-2">
+                <input type="checkbox" [checked]="routingForm.channels?.includes(c)" (change)="toggleChannel(c, $any($event.target).checked)" />
+                {{ c }}
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="ui-label">Destinatarios por rol/grupo</label>
+            <div class="grid grid-cols-1 gap-1 mt-1 max-h-40 overflow-auto">
+              <label *ngFor="let r of recipientOptions" class="text-sm flex items-center gap-2">
+                <input type="checkbox" [checked]="routingForm.recipients?.includes(r)" (change)="toggleRecipient(r, $any($event.target).checked)" />
+                {{ r }}
+              </label>
+            </div>
+          </div>
+
+          <label class="flex items-center gap-2 text-sm"><input type="checkbox" [(ngModel)]="routingForm.active" name="routeActive" /> Activo</label>
+          <div class="flex gap-2 pt-1">
+            <button type="submit" class="flex-1 ui-btn-primary">Guardar</button>
+            <button type="button" (click)="cancelRouting()" class="ui-btn-ghost">Cancelar</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="ui-surface p-5" [class.xl:col-span-2]="editingRouting" [class.xl:col-span-3]="!editingRouting">
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-sm font-semibold">Canales y destinatarios por alerta</p>
+          <button class="ui-btn-primary" (click)="newRouting()">Nueva regla</button>
+        </div>
+        <div class="space-y-2">
+          <div *ngFor="let r of alertRoutings" class="ui-surface-inner p-3 flex items-start justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="ui-badge">{{ r.alertType }}</span>
+                <span *ngIf="!r.active" class="text-[10px] px-2 py-0.5 rounded bg-red-500/10 text-red-300">Inactivo</span>
+              </div>
+              <p class="text-xs text-slate-400">Canales: {{ r.channels.join(', ') }}</p>
+              <p class="text-xs text-slate-500 mt-1">Destinatarios: {{ r.recipients.join(', ') || 'Sin destinatarios' }}</p>
+            </div>
+            <div class="flex gap-2">
+              <button (click)="editRouting(r)" class="ui-btn-ghost text-xs">Editar</button>
+              <button (click)="deleteRouting(r.id)" class="ui-btn-danger text-xs">Eliminar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM TEMPLATES TAB -->
+  <div *ngIf="activeTab === 'FORM_TEMPLATES'" class="space-y-4">
+    <div class="ui-surface p-5">
+      <p class="text-sm font-semibold">Motor de formularios dinamicos</p>
+      <p class="text-xs text-slate-500 mt-1">Configura campos, validaciones, UI y reglas por template para cada industria sin nuevos desarrollos.</p>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="ui-surface p-5">
+        <p class="text-sm font-semibold mb-3">Templates disponibles</p>
+        <div class="space-y-2">
+          <button
+            *ngFor="let t of formTemplates"
+            type="button"
+            class="w-full text-left ui-surface-inner p-3 border transition"
+            [class.border-blue-500]="selectedTemplateId === t.id"
+            [class.border-slate-800]="selectedTemplateId !== t.id"
+            (click)="selectTemplate(t.id)">
+            <p class="text-sm font-semibold text-slate-200">{{ t.name }}</p>
+            <p class="text-xs text-slate-500">{{ t.description }}</p>
+            <p class="text-[10px] text-slate-500 mt-1">{{ t.fields.length }} campos</p>
+          </button>
+        </div>
+      </div>
+
+      <div class="ui-surface p-5" *ngIf="selectedTemplate as tpl">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-sm font-semibold">{{ editingTemplateFieldId ? 'Editar campo' : 'Nuevo campo' }}</p>
+          <button type="button" class="ui-btn-ghost text-xs" (click)="newTemplateField()">Nuevo</button>
+        </div>
+
+        <form (ngSubmit)="saveTemplateField()" class="space-y-3">
+          <div><label class="ui-label">Key tecnico</label><input [(ngModel)]="templateFieldForm.key" name="tfKey" required class="ui-input" placeholder="temperatura" /></div>
+          <div><label class="ui-label">Etiqueta</label><input [(ngModel)]="templateFieldForm.label" name="tfLabel" required class="ui-input" placeholder="Temperatura" /></div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="ui-label">UI</label>
+              <select [(ngModel)]="templateFieldForm.uiType" name="tfUiType" class="ui-select" required>
+                <option *ngFor="let ui of dynamicUiTypes" [value]="ui">{{ ui }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="ui-label">Tipo dato</label>
+              <select [(ngModel)]="templateFieldForm.dataType" name="tfDataType" class="ui-select" required>
+                <option *ngFor="let dt of dynamicDataTypes" [value]="dt">{{ dt }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div><label class="ui-label">Placeholder</label><input [(ngModel)]="templateFieldForm.placeholder" name="tfPlaceholder" class="ui-input" /></div>
+          <div><label class="ui-label">Opciones (coma separada)</label><input [(ngModel)]="templateFieldForm.optionsText" name="tfOptions" class="ui-input" placeholder="A, B, C" /></div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div><label class="ui-label">Min</label><input type="number" [(ngModel)]="templateFieldForm.validations!.min" name="tfMin" class="ui-input" /></div>
+            <div><label class="ui-label">Max</label><input type="number" [(ngModel)]="templateFieldForm.validations!.max" name="tfMax" class="ui-input" /></div>
+          </div>
+          <div><label class="ui-label">Regex</label><input [(ngModel)]="templateFieldForm.validations!.pattern" name="tfPattern" class="ui-input" placeholder="^[A-Z0-9_-]+$" /></div>
+
+          <div><label class="ui-label">Regla visibilidad</label><input [(ngModel)]="templateFieldForm.visibilityCondition" name="tfVisibility" class="ui-input" placeholder="resultado === 'RECHAZADO'" /></div>
+          <div><label class="ui-label">Regla calculo</label><input [(ngModel)]="templateFieldForm.calculationExpression" name="tfCalculation" class="ui-input" placeholder="pesoBruto - tara" /></div>
+
+          <label class="flex items-center gap-2 text-sm"><input type="checkbox" [(ngModel)]="templateFieldForm.required" name="tfRequired" /> Requerido</label>
+
+          <div class="flex gap-2 pt-1">
+            <button type="submit" class="flex-1 ui-btn-primary">Guardar campo</button>
+            <button type="button" class="ui-btn-ghost" (click)="cancelTemplateFieldEdit()">Cancelar</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="ui-surface p-5" *ngIf="selectedTemplate as tpl">
+        <p class="text-sm font-semibold mb-3">Campos de {{ tpl.name }}</p>
+        <div class="space-y-2">
+          <div *ngFor="let field of tpl.fields" class="ui-surface-inner p-3">
+            <div class="flex items-center justify-between mb-1">
+              <p class="text-sm font-semibold text-slate-200">{{ field.label }}</p>
+              <div class="flex gap-2">
+                <button type="button" class="ui-btn-ghost text-xs" (click)="editTemplateField(field)">Editar</button>
+                <button type="button" class="ui-btn-danger text-xs" (click)="deleteTemplateField(field.id)">Eliminar</button>
+              </div>
+            </div>
+            <p class="text-xs text-slate-500">{{ field.key }} | {{ field.uiType }} | {{ field.dataType }} <span *ngIf="field.required">| requerido</span></p>
+            <p class="text-xs text-slate-500" *ngIf="field.options?.length">Opciones: {{ field.options?.join(', ') }}</p>
+            <p class="text-xs text-slate-500" *ngIf="field.visibilityCondition">Visibilidad: {{ field.visibilityCondition }}</p>
+            <p class="text-xs text-slate-500" *ngIf="field.calculationExpression">Calculo: {{ field.calculationExpression }}</p>
           </div>
         </div>
       </div>

@@ -1,17 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-type OperatorRole = 'OPERATOR' | 'SUPERVISOR' | 'QUALITY';
-
-interface Operator {
-  id: string;
-  code: string;
-  fullName: string;
-  role: OperatorRole;
-  shiftCode: string;
-  active: boolean;
-}
+import { OperatorsService, Operator, OperatorRole, CreateOperatorDto } from './operators.service';
 
 @Component({
   standalone: true,
@@ -19,15 +9,32 @@ interface Operator {
   imports: [CommonModule, FormsModule],
   templateUrl: './operators.html',
 })
-export class OperatorsComponent {
-  form: Omit<Operator, 'id'> = { code: '', fullName: '', role: 'OPERATOR', shiftCode: 'A', active: true };
-  items: Operator[] = [
-    { id: '1', code: 'OP-001', fullName: 'Juan Pérez', role: 'OPERATOR', shiftCode: 'A', active: true },
-    { id: '2', code: 'QA-002', fullName: 'María Torres', role: 'QUALITY', shiftCode: 'B', active: true },
-  ];
-
+export class OperatorsComponent implements OnInit {
+  form: CreateOperatorDto = { code: '', fullName: '', role: 'OPERATOR', shiftCode: 'A', active: true };
+  items: Operator[] = [];
   editingId: string | null = null;
   q = '';
+  loading = false;
+  error: string | null = null;
+
+  readonly roles: { value: OperatorRole; label: string }[] = [
+    { value: 'OPERATOR', label: 'Operario' },
+    { value: 'SUPERVISOR', label: 'Supervisor' },
+    { value: 'QUALITY', label: 'Calidad' },
+  ];
+
+  constructor(private svc: OperatorsService, private cdr: ChangeDetectorRef) {}
+
+  ngOnInit() { this.load(); }
+
+  load() {
+    this.loading = true;
+    this.error = null;
+    this.svc.getAll().subscribe({
+      next: data => { this.items = data; this.loading = false; this.cdr.detectChanges(); },
+      error: err => { this.error = this.extractError(err); this.loading = false; this.cdr.detectChanges(); },
+    });
+  }
 
   get filtered() {
     const t = this.q.trim().toLowerCase();
@@ -37,17 +44,14 @@ export class OperatorsComponent {
 
   submit() {
     if (!this.form.code || !this.form.fullName) return;
-
-    if (this.editingId) {
-      const idx = this.items.findIndex(x => x.id === this.editingId);
-      if (idx >= 0) this.items[idx] = { ...this.items[idx], ...this.form };
-      this.cancelEdit();
-      return;
-    }
-
-    const id = crypto.randomUUID?.() ?? String(Date.now());
-    this.items.unshift({ id, ...this.form });
-    this.resetForm();
+    this.loading = true;
+    const obs = this.editingId
+      ? this.svc.update(this.editingId, this.form)
+      : this.svc.create(this.form);
+    obs.subscribe({
+      next: () => { this.load(); this.editingId ? this.cancelEdit() : this.resetForm(); },
+      error: err => { this.error = this.extractError(err); this.loading = false; },
+    });
   }
 
   edit(it: Operator) {
@@ -56,16 +60,24 @@ export class OperatorsComponent {
   }
 
   remove(id: string) {
-    this.items = this.items.filter(x => x.id !== id);
-    if (this.editingId === id) this.cancelEdit();
+    if (!confirm('¿Eliminar este operario?')) return;
+    this.svc.delete(id).subscribe({
+      next: () => { this.load(); if (this.editingId === id) this.cancelEdit(); },
+      error: err => { this.error = this.extractError(err); },
+    });
   }
 
-  cancelEdit() {
-    this.editingId = null;
-    this.resetForm();
-  }
+  cancelEdit() { this.editingId = null; this.resetForm(); }
 
   resetForm() {
     this.form = { code: '', fullName: '', role: 'OPERATOR', shiftCode: 'A', active: true };
+  }
+
+  private extractError(err: any): string {
+    if (typeof err.error?.message === 'string') return err.error.message;
+    if (Array.isArray(err.error?.message)) return err.error.message.join(', ');
+    if (err.error?.error) return err.error.error;
+    const map: Record<number, string> = { 400: 'Datos inválidos.', 409: 'Ya existe un operario con ese código.', 500: 'Error del servidor.' };
+    return map[err.status] || err.message || 'Error desconocido';
   }
 }

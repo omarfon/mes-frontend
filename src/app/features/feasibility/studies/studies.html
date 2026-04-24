@@ -1,0 +1,614 @@
+<div class="space-y-5">
+
+  <!-- Header -->
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Factibilidad</h3>
+      <p class="ui-subtitle">Evaluación de solicitudes, cotización, tiempos de entrega y ruta de producción.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9 w-64" placeholder="Buscar por código, cliente, producto..." />
+      </div>
+      <select [(ngModel)]="filterStatus" class="ui-select w-40">
+        <option value="">Todos los estados</option>
+        <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
+      </select>
+      <select [(ngModel)]="filterPriority" class="ui-select w-36">
+        <option value="">Prioridad</option>
+        <option *ngFor="let p of priorities" [value]="p.value">{{ p.label }}</option>
+      </select>
+      <button type="button" (click)="openNew()" class="ui-btn-primary flex items-center gap-2">
+        <i class="pi pi-plus text-xs"></i> Nuevo estudio
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ FORM PANEL ═══ -->
+  <div *ngIf="showForm" class="ui-surface p-6 space-y-4">
+    <div class="flex items-center justify-between">
+      <p class="text-sm font-semibold">{{ editingId ? 'Editar estudio' : 'Nuevo estudio de factibilidad' }}</p>
+      <button type="button" (click)="cancel()" class="ui-btn-ghost text-xs">✕ Cerrar</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-1 border-b border-slate-800/50">
+      <button type="button" *ngFor="let tab of [
+        {key:'request',  label:'Solicitud'},
+        {key:'technical', label:'Evaluación técnica'},
+        {key:'route',     label:'Ruta de producción'},
+        {key:'materials', label:'Materiales'},
+        {key:'costs',     label:'Costos / Cotización'}
+      ]" (click)="formTab = $any(tab.key)"
+        class="px-4 py-2 text-xs font-medium rounded-t-lg transition"
+        [class.bg-slate-800]="formTab===tab.key" [class.text-white]="formTab===tab.key"
+        [class.text-slate-400]="formTab!==tab.key">
+        {{ tab.label }}
+      </button>
+    </div>
+
+    <!-- Mensajes -->
+    <div *ngIf="error" class="px-3 py-2 bg-rose-500/10 border border-rose-500/30 rounded-lg text-xs text-rose-400">
+      {{ error }}
+    </div>
+
+    <form (ngSubmit)="submit()">
+
+      <!-- ── TAB: Solicitud ── -->
+      <div *ngIf="formTab==='request'" class="space-y-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div>
+            <label class="ui-label">Código *</label>
+            <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="FAC-0001" />
+          </div>
+          <div>
+            <label class="ui-label">Estado</label>
+            <select [(ngModel)]="form.status" name="status" class="ui-select">
+              <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="ui-label">Prioridad</label>
+            <select [(ngModel)]="form.priority" name="priority" class="ui-select">
+              <option *ngFor="let p of priorities" [value]="p.value">{{ p.label }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="ui-label">Fecha solicitud</label>
+            <input [(ngModel)]="form.requestDate" name="requestDate" type="date" class="ui-input" />
+          </div>
+        </div>
+
+        <div class="my-3 border-t border-slate-800/50"></div>
+        <p class="text-[11px] text-slate-500 uppercase tracking-wide">Cliente</p>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Nombre del cliente *</label>
+            <input [(ngModel)]="form.clientName" name="clientName" required class="ui-input" placeholder="Empresa S.A." />
+          </div>
+          <div>
+            <label class="ui-label">Contacto</label>
+            <input [(ngModel)]="form.clientContact" name="clientContact" class="ui-input" placeholder="email o teléfono" />
+          </div>
+        </div>
+
+        <div class="my-3 border-t border-slate-800/50"></div>
+        <p class="text-[11px] text-slate-500 uppercase tracking-wide">Producto solicitado</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="col-span-2">
+            <label class="ui-label">Nombre del producto *</label>
+            <input [(ngModel)]="form.productName" name="productName" required class="ui-input" placeholder="Nombre del producto" />
+          </div>
+          <div>
+            <label class="ui-label">Código producto</label>
+            <input [(ngModel)]="form.productCode" name="productCode" class="ui-input" placeholder="PROD-XXX" />
+          </div>
+          <div>
+            <label class="ui-label">Fecha requerida</label>
+            <input [(ngModel)]="form.requiredDate" name="requiredDate" type="date" class="ui-input" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div>
+            <label class="ui-label">Cantidad</label>
+            <input [(ngModel)]="form.quantity" name="quantity" type="number" class="ui-input" placeholder="1000" />
+          </div>
+          <div>
+            <label class="ui-label">Unidad</label>
+            <input [(ngModel)]="form.uom" name="uom" class="ui-input" placeholder="piezas, kg, metros..." />
+          </div>
+          <div class="col-span-2">
+            <label class="ui-label">Descripción / Especificaciones</label>
+            <input [(ngModel)]="form.description" name="description" class="ui-input" placeholder="Detalles del trabajo solicitado..." />
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB: Evaluación técnica ── -->
+      <div *ngIf="formTab==='technical'" class="space-y-4">
+        <p class="text-[11px] text-slate-500 uppercase tracking-wide">Verificación de recursos</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <label class="flex items-center gap-2 text-xs cursor-pointer ui-surface p-3 rounded-lg">
+            <input type="checkbox" [(ngModel)]="form.hasMachineCapacity" name="hasMachineCapacity"
+              class="rounded border-slate-600 bg-slate-800 text-emerald-500" />
+            <span>
+              <span class="block font-medium">Capacidad de máquina</span>
+              <span class="text-[10px] text-slate-500">Equipos disponibles</span>
+            </span>
+          </label>
+          <label class="flex items-center gap-2 text-xs cursor-pointer ui-surface p-3 rounded-lg">
+            <input type="checkbox" [(ngModel)]="form.hasTooling" name="hasTooling"
+              class="rounded border-slate-600 bg-slate-800 text-emerald-500" />
+            <span>
+              <span class="block font-medium">Herramental</span>
+              <span class="text-[10px] text-slate-500">Moldes, troqueles, etc.</span>
+            </span>
+          </label>
+          <label class="flex items-center gap-2 text-xs cursor-pointer ui-surface p-3 rounded-lg">
+            <input type="checkbox" [(ngModel)]="form.hasMaterials" name="hasMaterials"
+              class="rounded border-slate-600 bg-slate-800 text-emerald-500" />
+            <span>
+              <span class="block font-medium">Materiales</span>
+              <span class="text-[10px] text-slate-500">MP e insumos</span>
+            </span>
+          </label>
+          <label class="flex items-center gap-2 text-xs cursor-pointer ui-surface p-3 rounded-lg">
+            <input type="checkbox" [(ngModel)]="form.hasLabor" name="hasLabor"
+              class="rounded border-slate-600 bg-slate-800 text-emerald-500" />
+            <span>
+              <span class="block font-medium">Mano de obra</span>
+              <span class="text-[10px] text-slate-500">Personal calificado</span>
+            </span>
+          </label>
+        </div>
+
+        <div>
+          <label class="ui-label">Notas técnicas</label>
+          <textarea [(ngModel)]="form.technicalNotes" name="technicalNotes" rows="3" class="ui-input"
+            placeholder="Observaciones técnicas sobre la viabilidad..."></textarea>
+        </div>
+        <div>
+          <label class="ui-label">Requisitos de calidad</label>
+          <input [(ngModel)]="form.qualityRequirements" name="qualityRequirements" class="ui-input"
+            placeholder="Normas, tolerancias, certificaciones..." />
+        </div>
+        <div>
+          <label class="ui-label">Condiciones especiales</label>
+          <input [(ngModel)]="form.specialConditions" name="specialConditions" class="ui-input"
+            placeholder="Empaque especial, transporte, etc." />
+        </div>
+
+        <div class="my-3 border-t border-slate-800/50"></div>
+        <p class="text-[11px] text-slate-500 uppercase tracking-wide">Resultado de evaluación</p>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">¿Es factible?</label>
+            <select [(ngModel)]="form.feasible" name="feasible" class="ui-select">
+              <option [ngValue]="null">— Pendiente —</option>
+              <option [ngValue]="true">Sí, factible</option>
+              <option [ngValue]="false">No factible</option>
+            </select>
+          </div>
+          <div>
+            <label class="ui-label">Motivo de rechazo</label>
+            <input [(ngModel)]="form.rejectionReason" name="rejectionReason" class="ui-input"
+              placeholder="Solo si no es factible..." [disabled]="form.feasible !== false" />
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB: Ruta de producción ── -->
+      <div *ngIf="formTab==='route'" class="space-y-4">
+        <div class="flex items-center justify-between">
+          <p class="text-[11px] text-slate-500 uppercase tracking-wide">Pasos de la ruta</p>
+          <div class="flex items-center gap-2">
+            <div class="flex rounded-lg border border-slate-700 overflow-hidden">
+              <button type="button" (click)="routeViewMode='list'"
+                class="px-3 py-1.5 text-xs font-medium transition flex items-center gap-1"
+                [class.bg-slate-700]="routeViewMode==='list'" [class.text-white]="routeViewMode==='list'"
+                [class.text-slate-400]="routeViewMode!=='list'">
+                <i class="pi pi-list text-[10px]"></i> Lista
+              </button>
+              <button type="button" (click)="routeViewMode='graph'"
+                class="px-3 py-1.5 text-xs font-medium transition flex items-center gap-1"
+                [class.bg-slate-700]="routeViewMode==='graph'" [class.text-white]="routeViewMode==='graph'"
+                [class.text-slate-400]="routeViewMode!=='graph'">
+                <i class="pi pi-sitemap text-[10px]"></i> Gráfico
+              </button>
+            </div>
+            <button type="button" (click)="addRouteStep()" class="ui-btn-ghost text-xs flex items-center gap-1">
+              <i class="pi pi-plus text-[10px]"></i> Agregar paso
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="form.routeSteps.length === 0" class="text-center py-8 text-slate-500 text-xs">
+          No hay pasos definidos. Agrega pasos para construir la ruta de producción.
+        </div>
+
+        <!-- ── GRAPH VIEW ── -->
+        <div *ngIf="routeViewMode==='graph' && form.routeSteps.length > 0" class="overflow-x-auto py-4">
+          <div class="flex items-start gap-0 min-w-max px-4">
+            <!-- Inicio -->
+            <div class="flex flex-col items-center">
+              <div class="w-10 h-10 rounded-full bg-emerald-500/20 border-2 border-emerald-500/50 flex items-center justify-center">
+                <i class="pi pi-play text-emerald-400 text-xs"></i>
+              </div>
+              <span class="text-[9px] text-slate-500 mt-1">Inicio</span>
+            </div>
+
+            <ng-container *ngFor="let step of form.routeSteps; let i = index; let last = last">
+              <!-- Arrow -->
+              <div class="flex items-center self-center" style="margin-top: -8px">
+                <div class="w-8 h-[2px] bg-gradient-to-r from-slate-600 to-slate-500"></div>
+                <div class="w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-l-[7px] border-l-slate-500"></div>
+              </div>
+
+              <!-- Step node -->
+              <div class="flex flex-col items-center min-w-[140px] max-w-[160px]">
+                <div (click)="editingStepIndex = i" class="w-full ui-surface border rounded-xl p-3 space-y-1.5 hover:border-emerald-500/30 transition cursor-pointer"
+                  [class.border-emerald-500/60]="editingStepIndex === i" [class.ring-1]="editingStepIndex === i" [class.ring-emerald-500/30]="editingStepIndex === i"
+                  [class.border-slate-700/80]="editingStepIndex !== i">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">{{ step.seq }}</span>
+                    <span class="text-[9px] text-slate-500">{{ step.workCenter }}</span>
+                  </div>
+                  <p class="text-xs font-semibold text-white truncate">{{ step.operation || 'Sin operación' }}</p>
+                  <p class="text-[10px] text-slate-400 truncate">{{ step.machineName || step.machineCode || '—' }}</p>
+                  <div class="flex justify-between text-[9px] text-slate-500 pt-1 border-t border-slate-800/50">
+                    <span><i class="pi pi-clock text-[8px]"></i> {{ step.setupTimeMin || 0 }}m setup</span>
+                    <span>{{ step.estimatedHours || 0 }}h</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Final arrow + end node -->
+              <ng-container *ngIf="last">
+                <div class="flex items-center self-center" style="margin-top: -8px">
+                  <div class="w-8 h-[2px] bg-gradient-to-r from-slate-600 to-slate-500"></div>
+                  <div class="w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-l-[7px] border-l-slate-500"></div>
+                </div>
+                <div class="flex flex-col items-center">
+                  <div class="w-10 h-10 rounded-full bg-blue-500/20 border-2 border-blue-500/50 flex items-center justify-center">
+                    <i class="pi pi-flag-fill text-blue-400 text-xs"></i>
+                  </div>
+                  <span class="text-[9px] text-slate-500 mt-1">Fin</span>
+                </div>
+              </ng-container>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- ── GRAPH SIDE PANEL ── -->
+        <div *ngIf="routeViewMode==='graph' && editingStepIndex !== null && form.routeSteps[editingStepIndex]" 
+          class="ui-surface border border-emerald-500/30 rounded-xl p-5 space-y-4 animate-fadeIn">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">Paso {{ form.routeSteps[editingStepIndex].seq }}</span>
+              <span class="text-sm font-semibold">Detalle del paso</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" (click)="removeRouteStep(editingStepIndex)" class="text-rose-400 hover:text-rose-300 text-xs flex items-center gap-1">
+                <i class="pi pi-trash text-[10px]"></i> Eliminar
+              </button>
+              <button type="button" (click)="editingStepIndex = null" class="ui-btn-ghost text-xs">✕</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <label class="ui-label">Centro de trabajo</label>
+              <input [(ngModel)]="form.routeSteps[editingStepIndex].workCenter" [name]="'gStepWC'+editingStepIndex" class="ui-input" placeholder="CT-01" />
+            </div>
+            <div>
+              <label class="ui-label">Código máquina</label>
+              <input [(ngModel)]="form.routeSteps[editingStepIndex].machineCode" [name]="'gStepMC'+editingStepIndex" class="ui-input" placeholder="MC-001" />
+            </div>
+            <div>
+              <label class="ui-label">Máquina</label>
+              <input [(ngModel)]="form.routeSteps[editingStepIndex].machineName" [name]="'gStepMN'+editingStepIndex" class="ui-input" placeholder="Nombre" />
+            </div>
+            <div>
+              <label class="ui-label">Operación</label>
+              <input [(ngModel)]="form.routeSteps[editingStepIndex].operation" [name]="'gStepOP'+editingStepIndex" class="ui-input" placeholder="Corte, ensamble..." />
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="ui-label">Setup (min)</label>
+              <input [(ngModel)]="form.routeSteps[editingStepIndex].setupTimeMin" [name]="'gStepST'+editingStepIndex" type="number" class="ui-input" (ngModelChange)="recalcTimes()" />
+            </div>
+            <div>
+              <label class="ui-label">Ciclo (seg)</label>
+              <input [(ngModel)]="form.routeSteps[editingStepIndex].cycleTimeSec" [name]="'gStepCT'+editingStepIndex" type="number" class="ui-input" />
+            </div>
+            <div>
+              <label class="ui-label">Horas estimadas</label>
+              <input [(ngModel)]="form.routeSteps[editingStepIndex].estimatedHours" [name]="'gStepEH'+editingStepIndex" type="number" step="0.1" class="ui-input" (ngModelChange)="recalcTimes()" />
+            </div>
+          </div>
+          <div>
+            <label class="ui-label">Notas</label>
+            <input [(ngModel)]="form.routeSteps[editingStepIndex].notes" [name]="'gStepNT'+editingStepIndex" class="ui-input" placeholder="Observaciones del paso..." />
+          </div>
+        </div>
+
+        <!-- ── LIST VIEW ── -->
+        <ng-container *ngIf="routeViewMode==='list'">
+        <div *ngFor="let step of form.routeSteps; let i = index"
+          class="ui-surface p-4 rounded-lg space-y-3 border border-slate-800/50">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-300">Paso {{ step.seq }}</span>
+            <button type="button" (click)="removeRouteStep(i)" class="text-rose-400 hover:text-rose-300 text-xs">
+              <i class="pi pi-trash text-xs"></i>
+            </button>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <label class="ui-label">Centro de trabajo</label>
+              <input [(ngModel)]="step.workCenter" [name]="'stepWC'+i" class="ui-input" placeholder="CT-01" />
+            </div>
+            <div>
+              <label class="ui-label">Código máquina</label>
+              <input [(ngModel)]="step.machineCode" [name]="'stepMC'+i" class="ui-input" placeholder="MC-001" />
+            </div>
+            <div>
+              <label class="ui-label">Máquina</label>
+              <input [(ngModel)]="step.machineName" [name]="'stepMN'+i" class="ui-input" placeholder="Nombre" />
+            </div>
+            <div>
+              <label class="ui-label">Operación</label>
+              <input [(ngModel)]="step.operation" [name]="'stepOP'+i" class="ui-input" placeholder="Corte, ensamble..." />
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="ui-label">Setup (min)</label>
+              <input [(ngModel)]="step.setupTimeMin" [name]="'stepST'+i" type="number" class="ui-input" (ngModelChange)="recalcTimes()" />
+            </div>
+            <div>
+              <label class="ui-label">Ciclo (seg)</label>
+              <input [(ngModel)]="step.cycleTimeSec" [name]="'stepCT'+i" type="number" class="ui-input" />
+            </div>
+            <div>
+              <label class="ui-label">Horas estimadas</label>
+              <input [(ngModel)]="step.estimatedHours" [name]="'stepEH'+i" type="number" step="0.1" class="ui-input" (ngModelChange)="recalcTimes()" />
+            </div>
+          </div>
+          <div>
+            <label class="ui-label">Notas</label>
+            <input [(ngModel)]="step.notes" [name]="'stepNT'+i" class="ui-input" placeholder="Observaciones del paso..." />
+          </div>
+        </div>
+        </ng-container>
+
+        <!-- Resumen tiempos -->
+        <div *ngIf="form.routeSteps.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
+          <div class="ui-surface p-3 rounded-lg text-center">
+            <p class="text-[10px] text-slate-500 uppercase">Setup total</p>
+            <p class="text-lg font-semibold">{{ form.estimatedSetupHours || 0 }} h</p>
+          </div>
+          <div class="ui-surface p-3 rounded-lg text-center">
+            <p class="text-[10px] text-slate-500 uppercase">Producción</p>
+            <p class="text-lg font-semibold">{{ form.estimatedProductionHours || 0 }} h</p>
+          </div>
+          <div class="ui-surface p-3 rounded-lg text-center">
+            <p class="text-[10px] text-slate-500 uppercase">Días estimados</p>
+            <p class="text-lg font-semibold">{{ form.estimatedTotalDays || 0 }} d</p>
+          </div>
+          <div class="ui-surface p-3 rounded-lg">
+            <label class="ui-label">Fecha propuesta entrega</label>
+            <input [(ngModel)]="form.proposedDeliveryDate" name="proposedDeliveryDate" type="date" class="ui-input" />
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB: Materiales ── -->
+      <div *ngIf="formTab==='materials'" class="space-y-4">
+        <div class="flex items-center justify-between">
+          <p class="text-[11px] text-slate-500 uppercase tracking-wide">Lista de materiales</p>
+          <button type="button" (click)="addMaterial()" class="ui-btn-ghost text-xs flex items-center gap-1">
+            <i class="pi pi-plus text-[10px]"></i> Agregar material
+          </button>
+        </div>
+
+        <div *ngIf="form.materials.length === 0" class="text-center py-8 text-slate-500 text-xs">
+          No hay materiales. Agrega los materiales necesarios para este trabajo.
+        </div>
+
+        <div class="ui-table-wrap" *ngIf="form.materials.length > 0">
+          <table class="ui-table">
+            <thead class="ui-thead">
+              <tr>
+                <th class="ui-th">Código</th>
+                <th class="ui-th">Material</th>
+                <th class="ui-th">Cantidad</th>
+                <th class="ui-th">UoM</th>
+                <th class="ui-th">Costo unit.</th>
+                <th class="ui-th">Disponible</th>
+                <th class="ui-th">Lead time (días)</th>
+                <th class="ui-th w-16"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let mat of form.materials; let i = index" class="ui-tr">
+                <td class="ui-td">
+                  <input [(ngModel)]="mat.materialCode" [name]="'matCode'+i" class="ui-input text-xs" placeholder="MAT-XXX" />
+                </td>
+                <td class="ui-td">
+                  <input [(ngModel)]="mat.materialName" [name]="'matName'+i" class="ui-input text-xs" placeholder="Nombre" />
+                </td>
+                <td class="ui-td">
+                  <input [(ngModel)]="mat.qty" [name]="'matQty'+i" type="number" class="ui-input text-xs w-20" (ngModelChange)="recalcCosts()" />
+                </td>
+                <td class="ui-td">
+                  <input [(ngModel)]="mat.uom" [name]="'matUom'+i" class="ui-input text-xs w-16" placeholder="kg" />
+                </td>
+                <td class="ui-td">
+                  <input [(ngModel)]="mat.unitCost" [name]="'matCost'+i" type="number" step="0.01" class="ui-input text-xs w-20" (ngModelChange)="recalcCosts()" />
+                </td>
+                <td class="ui-td text-center">
+                  <input type="checkbox" [(ngModel)]="mat.available" [name]="'matAvail'+i"
+                    class="rounded border-slate-600 bg-slate-800 text-emerald-500" />
+                </td>
+                <td class="ui-td">
+                  <input [(ngModel)]="mat.leadTimeDays" [name]="'matLead'+i" type="number" class="ui-input text-xs w-16" />
+                </td>
+                <td class="ui-td">
+                  <button type="button" (click)="removeMaterial(i)" class="text-rose-400 hover:text-rose-300">
+                    <i class="pi pi-trash text-xs"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── TAB: Costos / Cotización ── -->
+      <div *ngIf="formTab==='costs'" class="space-y-4">
+        <div class="flex items-center justify-between">
+          <p class="text-[11px] text-slate-500 uppercase tracking-wide">Estructura de costos</p>
+          <button type="button" (click)="recalcCosts()" class="ui-btn-ghost text-xs flex items-center gap-1">
+            <i class="pi pi-refresh text-[10px]"></i> Recalcular
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div>
+            <label class="ui-label">Costo materiales</label>
+            <input [(ngModel)]="form.materialCost" name="materialCost" type="number" step="0.01" class="ui-input" />
+          </div>
+          <div>
+            <label class="ui-label">Costo mano de obra</label>
+            <input [(ngModel)]="form.laborCost" name="laborCost" type="number" step="0.01" class="ui-input" />
+          </div>
+          <div>
+            <label class="ui-label">Gastos indirectos</label>
+            <input [(ngModel)]="form.overheadCost" name="overheadCost" type="number" step="0.01" class="ui-input" (ngModelChange)="recalcCosts()" />
+          </div>
+        </div>
+
+        <div class="my-3 border-t border-slate-800/50"></div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="ui-surface p-4 rounded-lg text-center">
+            <p class="text-[10px] text-slate-500 uppercase">Costo total</p>
+            <p class="text-xl font-bold">{{ form.currency }} {{ form.totalCost || 0 | number:'1.2-2' }}</p>
+          </div>
+          <div>
+            <label class="ui-label">Margen (%)</label>
+            <input [(ngModel)]="form.margin" name="margin" type="number" class="ui-input" (ngModelChange)="recalcCosts()" />
+          </div>
+          <div>
+            <label class="ui-label">Moneda</label>
+            <select [(ngModel)]="form.currency" name="currency" class="ui-select">
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="COP">COP</option>
+              <option value="MXN">MXN</option>
+              <option value="PEN">PEN</option>
+              <option value="BRL">BRL</option>
+            </select>
+          </div>
+          <div class="ui-surface p-4 rounded-lg text-center border-2 border-emerald-500/30">
+            <p class="text-[10px] text-emerald-400 uppercase font-medium">Precio cotización</p>
+            <p class="text-xl font-bold text-emerald-400">{{ form.currency }} {{ form.quotePrice || 0 | number:'1.2-2' }}</p>
+          </div>
+        </div>
+
+        <div class="my-3 border-t border-slate-800/50"></div>
+        <p class="text-[11px] text-slate-500 uppercase tracking-wide">Aprobación</p>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Aprobado por</label>
+            <input [(ngModel)]="form.approvedBy" name="approvedBy" class="ui-input" placeholder="Nombre del responsable" />
+          </div>
+          <div>
+            <label class="ui-label">Fecha propuesta entrega</label>
+            <input [(ngModel)]="form.proposedDeliveryDate" name="proposedDeliveryDate2" type="date" class="ui-input" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Botones -->
+      <div class="flex gap-2 pt-4 border-t border-slate-800/50 mt-4">
+        <button type="submit" [disabled]="loading" class="ui-btn-primary flex items-center gap-2">
+          <i class="pi pi-check text-xs"></i>
+          {{ loading ? 'Procesando...' : (editingId ? 'Guardar cambios' : 'Crear estudio') }}
+        </button>
+        <button type="button" (click)="cancel()" class="ui-btn-ghost">Cancelar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ═══ TABLE ═══ -->
+  <div class="ui-surface p-5">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-sm font-semibold">Estudios de factibilidad</p>
+      <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
+    </div>
+
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead class="ui-thead">
+          <tr>
+            <th class="ui-th">Código</th>
+            <th class="ui-th">Cliente</th>
+            <th class="ui-th">Producto</th>
+            <th class="ui-th">Cantidad</th>
+            <th class="ui-th">Prioridad</th>
+            <th class="ui-th">Fecha requerida</th>
+            <th class="ui-th">Entrega propuesta</th>
+            <th class="ui-th">Cotización</th>
+            <th class="ui-th">Estado</th>
+            <th class="ui-th w-36">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let it of filtered" class="ui-tr">
+            <td class="ui-td font-medium">{{ it.code }}</td>
+            <td class="ui-td">{{ it.clientName }}</td>
+            <td class="ui-td">
+              <div>{{ it.productName }}</div>
+              <div class="text-[10px] text-slate-500">{{ it.productCode }}</div>
+            </td>
+            <td class="ui-td">{{ it.quantity }} {{ it.uom }}</td>
+            <td class="ui-td">
+              <span class="ui-badge"
+                [ngClass]="{
+                  'ui-badge-ok': it.priority === 'LOW',
+                  'ui-badge-warn': it.priority === 'MEDIUM' || it.priority === 'HIGH',
+                  'ui-badge-bad': it.priority === 'URGENT'
+                }">
+                {{ priorityLabel(it.priority) }}
+              </span>
+            </td>
+            <td class="ui-td">{{ it.requiredDate ? (it.requiredDate | date:'dd/MM/yyyy') : '-' }}</td>
+            <td class="ui-td">{{ it.proposedDeliveryDate ? (it.proposedDeliveryDate | date:'dd/MM/yyyy') : '-' }}</td>
+            <td class="ui-td">
+              <span *ngIf="it.quotePrice">{{ it.currency }} {{ it.quotePrice | number:'1.2-2' }}</span>
+              <span *ngIf="!it.quotePrice" class="text-slate-500">—</span>
+            </td>
+            <td class="ui-td">
+              <span class="text-xs font-medium" [ngClass]="statusColor(it.status)">
+                {{ statusLabel(it.status) }}
+              </span>
+            </td>
+            <td class="ui-td">
+              <div class="flex gap-2">
+                <button (click)="edit(it)" [disabled]="loading" class="ui-btn-ghost text-xs">Editar</button>
+                <button (click)="remove(it.id)" [disabled]="loading" class="ui-btn-danger text-xs">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filtered.length === 0">
+            <td colspan="10" class="px-4 py-10 text-center text-slate-500">
+              {{ loading ? 'Cargando...' : 'No hay estudios de factibilidad registrados.' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

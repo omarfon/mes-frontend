@@ -47,7 +47,12 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         
         if (!shouldSkipRedirect) {
           console.error('Sesión expirada - redirigiendo al login');
-          router.navigate(['/auth/login']);
+          try {
+            const returnUrl = router.url || window.location.pathname;
+            router.navigate(['/auth/login'], { queryParams: { returnUrl } });
+          } catch (e) {
+            router.navigate(['/auth/login']);
+          }
         } else {
           console.log('ℹ️ Endpoint no implementado:', error.url);
         }

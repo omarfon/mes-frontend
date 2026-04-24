@@ -141,36 +141,67 @@ export interface DefectsBySeverityStats {
 }
 
 export enum InspectionType {
-  INCOMING = 'INCOMING',
+  RAW_MATERIAL = 'RAW_MATERIAL',
   IN_PROCESS = 'IN_PROCESS',
-  FINAL = 'FINAL',
-  OUTGOING = 'OUTGOING'
+  FINISHED_GOOD = 'FINISHED_GOOD',
+  // Alias para compatibilidad
+  INCOMING = 'RAW_MATERIAL',
+  FINAL = 'FINISHED_GOOD'
 }
 
 export enum InspectionResult {
   PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-  CONDITIONAL = 'CONDITIONAL'
+  PASSED = 'PASSED',
+  FAILED = 'FAILED',
+  // Alias para compatibilidad
+  APPROVED = 'PASSED',
+  REJECTED = 'FAILED'
+}
+
+// Alias de estado de inspección (compatible con backend)
+export type InspectionStatus = InspectionResult;
+
+export interface TraceabilityNode {
+  id: string;
+  code: string;
+  type: string;
+  productId?: string | null;
+  productionOrderId?: string | null;
+  quantity: string;
+  unitOfMeasure?: string | null;
+  metadata?: any;
+  manufacturingDate?: string | null;
+  expirationDate?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string | null;
 }
 
 export interface Inspection {
   id: string;
-  code: string;
   type: InspectionType;
-  result: InspectionResult;
+  nodeId: string;
+  node?: TraceabilityNode;
+  status: InspectionStatus;
+  inspectedQuantity: string | number;
+  notes?: string | null;
+  defects?: any[];
+  inspectorId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  // Campos opcionales para compatibilidad con UI legacy
+  code?: string;
+  result?: InspectionResult;
   productId?: string;
   productionOrderId?: string;
   lotId?: string;
   quantityInspected?: number;
   quantityApproved?: number;
   quantityRejected?: number;
-  inspectorId: string;
-  inspectionDate: Date;
+  inspectionDate?: Date;
   observations?: string;
   corrective_actions?: string;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 export interface CreateInspectionDto {
@@ -187,6 +218,11 @@ export interface CreateInspectionDto {
   inspectionDate: Date;
   observations?: string;
   corrective_actions?: string;
+  // Campos opcionales compatibles con DTO del backend
+  nodeId?: string;
+  status?: InspectionStatus;
+  inspectedQuantity?: number;
+  notes?: string;
 }
 
 export interface UpdateInspectionDto {
@@ -203,4 +239,9 @@ export interface UpdateInspectionDto {
   inspectionDate?: Date;
   observations?: string;
   corrective_actions?: string;
+  // Campos opcionales compatibles con DTO del backend
+  nodeId?: string;
+  status?: InspectionStatus;
+  inspectedQuantity?: number;
+  notes?: string;
 }

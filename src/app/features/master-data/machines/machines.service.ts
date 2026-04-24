@@ -6,6 +6,14 @@ import { environment } from '../../../../environmets/environments';
 
 export type MachineStatus = 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE';
 
+export type MachineType =
+  | 'CNC' | 'INJECTION' | 'EXTRUSION' | 'PRESS' | 'LATHE'
+  | 'WEAVING' | 'KNITTING' | 'DYEING' | 'CUTTING' | 'SEWING'
+  | 'PACKAGING' | 'FILLING' | 'LABELING' | 'MIXING' | 'OVEN'
+  | 'CONVEYOR' | 'ROBOT' | 'WELDING' | 'ASSEMBLY' | 'TESTING'
+  | 'PRINTING' | 'DRYING' | 'COOLING' | 'COMPRESSOR' | 'PUMP'
+  | 'OTHER';
+
 export interface Machine {
   id: string;
   code: string;
@@ -13,20 +21,40 @@ export interface Machine {
   description?: string | null;
   type?: string | null;
   model?: string | null;
+  brand?: string | null;
   serialNumber?: string | null;
+  year?: number | null;
   location?: string | null;
   area?: string | null;
   workCenter?: string | null;
   workCenterId?: string | null;
+  // Capacidad y producción
   nominalCapacity?: number | null;
+  capacityUnit?: string | null;
+  cycleTimeSec?: number | null;
+  setupTimeMin?: number | null;
+  // Mantenimiento
+  maintenanceIntervalHours?: number | null;
+  maintenanceIntervalDays?: number | null;
+  lastMaintenanceDate?: string | null;
+  nextMaintenanceDate?: string | null;
+  maintenanceCostPerHour?: number | null;
+  operatingCostPerHour?: number | null;
+  avgDowntimeMin?: number | null;
+  mtbfHours?: number | null;
+  mttrMin?: number | null;
+  // Energía
+  powerKw?: number | null;
+  voltageV?: number | null;
+  // Flags
   isCritical?: boolean;
+  requiresCalibration?: boolean;
   status: MachineStatus;
   createdAt?: string;
   updatedAt?: string;
   deletedAt?: string | null;
 }
 
-// Respuesta paginada del backend
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
@@ -35,13 +63,11 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
-// DTO que el backend acepta
 export interface CreateMachineDto {
   code: string;
   name: string;
   status: MachineStatus;
-  description?: string;
-  // NO incluir type - el backend lo rechaza
+  [key: string]: any;
 }
 
 export interface UpdateMachineDto extends Partial<CreateMachineDto> {}

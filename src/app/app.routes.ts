@@ -76,6 +76,10 @@ export const routes: Routes = [
         path: 'integrations',
         loadChildren: () => import('./features/integrations/integrations.routes')
           .then(m => m.INTEGRATIONS_ROUTES)
+      },{
+        path: 'feasibility',
+        loadChildren: () => import('./features/feasibility/feasibility.routes')
+          .then(m => m.FEASIBILITY_ROUTES)
       }
       
     ],

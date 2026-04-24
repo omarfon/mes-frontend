@@ -2,11 +2,27 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OrdenesService, Orden, EstadoOrden, PrioridadOrden, CreateOrdenDto } from './orders.service';
+import { DynamicFormComponent } from '../../../shared/components/dynamic-form/dynamic-form';
+import { FormTemplateService } from '../../../core/services/form-template.service';
+import { FormTemplate } from '../../../shared/models/form-template.model';
+
+export interface OrderRouteStep {
+  seq: number;
+  workCenter: string;
+  machineCode: string;
+  machineName: string;
+  operation: string;
+  setupTimeMin: number;
+  estimatedHours: number;
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+  startedAt?: string;
+  completedAt?: string;
+}
 
 @Component({
   standalone: true,
   selector: 'app-orders',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DynamicFormComponent],
   templateUrl: './orders.html',
 })
 export class OrdersComponent implements OnInit {
@@ -29,7 +45,11 @@ export class OrdersComponent implements OnInit {
 
   items: Orden[] = [];
   editingId: string | null = null;
+  formPanelOpen = false;
   q = '';
+  page = 1;
+  pageSize = 10;
+  readonly pageSizeOptions = [5, 10, 20, 50];
   loading = false;
   error: string | null = null;
 
@@ -37,12 +57,32 @@ export class OrdersComponent implements OnInit {
   estados = Object.values(EstadoOrden);
   prioridades = Object.values(PrioridadOrden);
 
+  // Route visualization
+  selectedOrderRoute: Orden | null = null;
+  routeSteps: OrderRouteStep[] = [];
+
+  // Reprogramación
+  reprogrammingOrder: Orden | null = null;
+  reprogramForm = {
+    fechaInicioPlanificada: '',
+    fechaFinPlanificada: '',
+  };
+  reprogramError: string | null = null;
+
+  productionTemplate: FormTemplate | null = null;
+  dynamicFormValues: Record<string, any> = {};
+  dynamicFormValid = true;
+
+  private fakeRoutes: Record<string, OrderRouteStep[]> = {};
+
   constructor(
     private ordenesService: OrdenesService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private formTemplateService: FormTemplateService
   ) {}
 
   ngOnInit() {
+    this.productionTemplate = this.formTemplateService.getTemplateByCode('PRODUCTION_RECORD') ?? null;
     this.loadOrdenes();
   }
 
@@ -53,15 +93,17 @@ export class OrdersComponent implements OnInit {
     this.ordenesService.getAll().subscribe({
       next: (data) => {
         console.log('✅ Ordenes loaded:', data);
-        this.items = data || [];
+        const fakes = this.seedFakeOrders();
+        this.items = [...(data || []), ...fakes];
+        this.ensurePageInRange();
         this.loading = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('❌ Error loading ordenes:', err);
-        this.error = 'No se pudieron cargar las órdenes.';
+        this.items = this.seedFakeOrders();
+        this.error = null;
         this.loading = false;
-        this.items = [];
         this.cdr.detectChanges();
       }
     });
@@ -75,6 +117,46 @@ export class OrdersComponent implements OnInit {
       [x.numeroOrden, x.productoCodigo, x.productoNombre, x.estado, x.cliente, x.lote]
         .some(v => String(v || '').toLowerCase().includes(t))
     );
+  }
+
+  get pagedOrders() {
+    const start = (this.page - 1) * this.pageSize;
+    return this.filtered.slice(start, start + this.pageSize);
+  }
+
+  get totalPages() {
+    return Math.max(1, Math.ceil(this.filtered.length / this.pageSize));
+  }
+
+  get pageStart() {
+    if (!this.filtered.length) return 0;
+    return (this.page - 1) * this.pageSize + 1;
+  }
+
+  get pageEnd() {
+    return Math.min(this.page * this.pageSize, this.filtered.length);
+  }
+
+  onSearchChange() {
+    this.page = 1;
+  }
+
+  setPageSize(size: number) {
+    this.pageSize = Number(size);
+    this.page = 1;
+  }
+
+  changePage(delta: number) {
+    this.page = Math.min(this.totalPages, Math.max(1, this.page + delta));
+  }
+
+  private ensurePageInRange() {
+    if (this.page > this.totalPages) {
+      this.page = this.totalPages;
+    }
+    if (this.page < 1) {
+      this.page = 1;
+    }
   }
 
   submit() {
@@ -106,7 +188,14 @@ export class OrdersComponent implements OnInit {
       cliente: this.form.cliente || undefined,
       pedidoCliente: this.form.pedidoCliente || undefined,
       notas: this.form.notas || undefined,
+      parametros: this.dynamicFormValues,
     };
+
+    if (!this.dynamicFormValid) {
+      this.error = 'Completa los campos dinamicos requeridos del registro de produccion.';
+      this.loading = false;
+      return;
+    }
 
     if (this.editingId) {
       this.ordenesService.update(this.editingId, dto).subscribe({
@@ -130,6 +219,7 @@ export class OrdersComponent implements OnInit {
           this.q = '';
           this.loadOrdenes();
           this.resetForm();
+          this.formPanelOpen = false;
         },
         error: (err) => {
           console.error('Error creating:', err);
@@ -169,6 +259,7 @@ export class OrdersComponent implements OnInit {
   }
 
   edit(item: Orden) {
+    this.formPanelOpen = true;
     this.editingId = item.id;
     this.form = {
       numeroOrden: item.numeroOrden,
@@ -187,6 +278,7 @@ export class OrdersComponent implements OnInit {
       notas: item.notas || '',
     };
     this.error = null;
+    this.dynamicFormValues = { ...(item.parametros ?? {}) };
     this.cdr.detectChanges();
   }
 
@@ -198,6 +290,7 @@ export class OrdersComponent implements OnInit {
       next: () => {
         console.log('Orden deleted');
         this.loadOrdenes();
+        this.ensurePageInRange();
       },
       error: (err) => {
         console.error('Error deleting:', err);
@@ -211,6 +304,13 @@ export class OrdersComponent implements OnInit {
   cancelEdit() {
     this.editingId = null;
     this.resetForm();
+    this.formPanelOpen = false;
+  }
+
+  openCreatePanel() {
+    this.editingId = null;
+    this.resetForm();
+    this.formPanelOpen = true;
   }
 
   resetForm() {
@@ -231,8 +331,80 @@ export class OrdersComponent implements OnInit {
       notas: '',
     };
     this.error = null;
+    this.dynamicFormValues = {};
+    this.dynamicFormValid = true;
     this.loading = false;
     this.cdr.detectChanges();
+  }
+
+  onDynamicFormValueChange(values: Record<string, any>) {
+    this.dynamicFormValues = values;
+  }
+
+  onDynamicFormValidityChange(valid: boolean) {
+    this.dynamicFormValid = valid;
+  }
+
+  private seedFakeOrders(): Orden[] {
+    return [
+      {
+        id: 'ord-001', numeroOrden: 'OP-2026-0451', productoId: 'prod-101',
+        productoCodigo: 'TEL-POL-001', productoNombre: 'Tela Polyester 150cm Blanco',
+        cantidadPlanificada: 2500, cantidadProducida: 1600, unidadMedida: 'MT',
+        estado: EstadoOrden.EN_PROCESO, prioridad: PrioridadOrden.ALTA,
+        fechaInicioPlanificada: '2026-04-10', fechaFinPlanificada: '2026-04-18',
+        fechaInicioReal: '2026-04-10', lote: 'L-2026-0451',
+        cliente: 'Textiles del Norte S.A.', pedidoCliente: 'PED-TN-1205',
+        notas: 'Entrega parcial permitida', creadoPor: 'jperez', activo: true,
+        createdAt: '2026-04-08T10:30:00Z', updatedAt: '2026-04-15T14:20:00Z',
+      },
+      {
+        id: 'ord-002', numeroOrden: 'OP-2026-0452', productoId: 'prod-102',
+        productoCodigo: 'TEL-ALG-003', productoNombre: 'Tela Algodón 180cm Azul Marino',
+        cantidadPlanificada: 1800, cantidadProducida: 0, unidadMedida: 'MT',
+        estado: EstadoOrden.LIBERADA, prioridad: PrioridadOrden.URGENTE,
+        fechaInicioPlanificada: '2026-04-19', fechaFinPlanificada: '2026-04-25',
+        lote: 'L-2026-0452',
+        cliente: 'Confecciones Modatex Ltda.', pedidoCliente: 'PED-CM-0843',
+        notas: 'Cliente requiere certificado de calidad', creadoPor: 'mrodriguez', activo: true,
+        createdAt: '2026-04-12T08:15:00Z', updatedAt: '2026-04-12T08:15:00Z',
+      },
+      {
+        id: 'ord-003', numeroOrden: 'OP-2026-0448', productoId: 'prod-103',
+        productoCodigo: 'HIL-NYL-010', productoNombre: 'Hilo Nylon 40/2 Negro',
+        cantidadPlanificada: 500, cantidadProducida: 500, unidadMedida: 'KG',
+        estado: EstadoOrden.COMPLETADA, prioridad: PrioridadOrden.NORMAL,
+        fechaInicioPlanificada: '2026-04-05', fechaFinPlanificada: '2026-04-12',
+        fechaInicioReal: '2026-04-05', fechaFinReal: '2026-04-11',
+        lote: 'L-2026-0448',
+        cliente: 'Industrias Hilatex', pedidoCliente: 'PED-IH-0392',
+        creadoPor: 'lgomez', activo: true,
+        createdAt: '2026-04-03T09:00:00Z', updatedAt: '2026-04-11T16:45:00Z',
+      },
+      {
+        id: 'ord-004', numeroOrden: 'OP-2026-0453', productoId: 'prod-104',
+        productoCodigo: 'TEL-LYC-005', productoNombre: 'Tela Lycra Sport 140cm Rojo',
+        cantidadPlanificada: 3200, cantidadProducida: 0, unidadMedida: 'MT',
+        estado: EstadoOrden.PENDIENTE, prioridad: PrioridadOrden.BAJA,
+        fechaInicioPlanificada: '2026-04-22', fechaFinPlanificada: '2026-04-30',
+        lote: 'L-2026-0453',
+        cliente: 'Deportivos Elite S.A.S.', pedidoCliente: 'PED-DE-0157',
+        notas: 'Requiere teñido especial - color Pantone 186C', creadoPor: 'jperez', activo: true,
+        createdAt: '2026-04-15T11:00:00Z', updatedAt: '2026-04-15T11:00:00Z',
+      },
+      {
+        id: 'ord-005', numeroOrden: 'OP-2026-0449', productoId: 'prod-105',
+        productoCodigo: 'TEL-MZC-002', productoNombre: 'Tela Mezclilla 12oz 160cm',
+        cantidadPlanificada: 4000, cantidadProducida: 2100, unidadMedida: 'MT',
+        estado: EstadoOrden.PAUSADA, prioridad: PrioridadOrden.ALTA,
+        fechaInicioPlanificada: '2026-04-07', fechaFinPlanificada: '2026-04-20',
+        fechaInicioReal: '2026-04-07',
+        lote: 'L-2026-0449',
+        cliente: 'Jeans & Denim Corp.', pedidoCliente: 'PED-JD-0721',
+        notas: 'Pausada por falta de insumo de índigo - ETA proveedor 2026-04-19', creadoPor: 'mrodriguez', activo: true,
+        createdAt: '2026-04-04T07:30:00Z', updatedAt: '2026-04-14T09:10:00Z',
+      },
+    ];
   }
 
   badgeClass(estado: EstadoOrden) {
@@ -255,4 +427,187 @@ export class OrdersComponent implements OnInit {
       default: return 'text-slate-600';
     }
   }
+
+  // ── Route visualization ──
+  showRoute(order: Orden) {
+    if (this.selectedOrderRoute?.id === order.id) {
+      this.selectedOrderRoute = null;
+      this.routeSteps = [];
+      return;
+    }
+    this.selectedOrderRoute = order;
+    this.routeSteps = this.getRouteForOrder(order);
+  }
+
+  private getRouteForOrder(order: Orden): OrderRouteStep[] {
+    if (this.fakeRoutes[order.id]) return this.fakeRoutes[order.id];
+
+    const templates: OrderRouteStep[][] = [
+      [
+        { seq: 1, workCenter: 'CT-COR', machineCode: 'COR-001', machineName: 'Cortadora CNC', operation: 'Corte', setupTimeMin: 30, estimatedHours: 4, status: 'COMPLETED', startedAt: '2026-04-10 08:00', completedAt: '2026-04-10 12:30' },
+        { seq: 2, workCenter: 'CT-TEJ', machineCode: 'TEJ-003', machineName: 'Telar circular', operation: 'Tejido', setupTimeMin: 45, estimatedHours: 16, status: 'COMPLETED', startedAt: '2026-04-10 13:00', completedAt: '2026-04-11 14:00' },
+        { seq: 3, workCenter: 'CT-TIN', machineCode: 'TIN-001', machineName: 'Autoclave teñido', operation: 'Teñido', setupTimeMin: 25, estimatedHours: 8, status: 'IN_PROGRESS', startedAt: '2026-04-11 15:00' },
+        { seq: 4, workCenter: 'CT-ACA', machineCode: 'ACA-001', machineName: 'Rama acabados', operation: 'Acabado', setupTimeMin: 20, estimatedHours: 6, status: 'PENDING' },
+        { seq: 5, workCenter: 'CT-INS', machineCode: 'INS-001', machineName: 'Mesa inspección', operation: 'Inspección final', setupTimeMin: 10, estimatedHours: 3, status: 'PENDING' },
+      ],
+      [
+        { seq: 1, workCenter: 'CT-PREP', machineCode: 'PREP-01', machineName: 'Urdidora', operation: 'Preparación urdimbre', setupTimeMin: 60, estimatedHours: 8, status: 'COMPLETED', startedAt: '2026-04-08 07:00', completedAt: '2026-04-08 16:00' },
+        { seq: 2, workCenter: 'CT-TEJ', machineCode: 'TEJ-005', machineName: 'Telar Jacquard', operation: 'Tejido', setupTimeMin: 90, estimatedHours: 24, status: 'IN_PROGRESS', startedAt: '2026-04-09 07:00' },
+        { seq: 3, workCenter: 'CT-TIN', machineCode: 'TIN-002', machineName: 'Máquina teñido', operation: 'Teñido', setupTimeMin: 30, estimatedHours: 10, status: 'PENDING' },
+        { seq: 4, workCenter: 'CT-ACA', machineCode: 'ACA-002', machineName: 'Calandra', operation: 'Calandrado', setupTimeMin: 15, estimatedHours: 4, status: 'PENDING' },
+      ],
+      [
+        { seq: 1, workCenter: 'CT-COR', machineCode: 'COR-002', machineName: 'Cortadora láser', operation: 'Corte', setupTimeMin: 20, estimatedHours: 3, status: 'COMPLETED', startedAt: '2026-04-12 08:00', completedAt: '2026-04-12 11:30' },
+        { seq: 2, workCenter: 'CT-ENS', machineCode: 'ENS-001', machineName: 'Línea ensamble', operation: 'Ensamblaje', setupTimeMin: 15, estimatedHours: 12, status: 'COMPLETED', startedAt: '2026-04-12 12:00', completedAt: '2026-04-13 10:00' },
+        { seq: 3, workCenter: 'CT-CAL', machineCode: 'CAL-001', machineName: 'Estación calidad', operation: 'Control de calidad', setupTimeMin: 10, estimatedHours: 4, status: 'COMPLETED', startedAt: '2026-04-13 10:30', completedAt: '2026-04-13 15:00' },
+        { seq: 4, workCenter: 'CT-EMP', machineCode: 'EMP-001', machineName: 'Empacadora', operation: 'Empaque', setupTimeMin: 10, estimatedHours: 2, status: 'COMPLETED', startedAt: '2026-04-13 15:30', completedAt: '2026-04-13 17:30' },
+      ],
+    ];
+
+    // Hash using last char of id for better distribution across templates
+    const hash = order.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    const idx = hash % templates.length;
+    let steps = templates[idx].map(s => ({ ...s }));
+
+    // Adjust based on order status
+    if (order.estado === EstadoOrden.PENDIENTE || order.estado === EstadoOrden.LIBERADA) {
+      steps = steps.map(s => ({ ...s, status: 'PENDING' as const, startedAt: undefined, completedAt: undefined }));
+    } else if (order.estado === EstadoOrden.COMPLETADA) {
+      steps = steps.map(s => ({ ...s, status: 'COMPLETED' as const, startedAt: s.startedAt || '2026-04-10 08:00', completedAt: s.completedAt || '2026-04-13 17:00' }));
+    }
+
+    this.fakeRoutes[order.id] = steps;
+    return steps;
+  }
+
+  routeProgress(): number {
+    if (!this.routeSteps.length) return 0;
+    const completed = this.routeSteps.filter(s => s.status === 'COMPLETED').length;
+    return Math.round((completed / this.routeSteps.length) * 100);
+  }
+
+  currentStepIndex(): number {
+    const idx = this.routeSteps.findIndex(s => s.status === 'IN_PROGRESS');
+    return idx >= 0 ? idx : -1;
+  }
+
+  stepNodeClass(step: OrderRouteStep): string {
+    switch (step.status) {
+      case 'COMPLETED': return 'border-emerald-500/60 bg-emerald-500/5';
+      case 'IN_PROGRESS': return 'border-blue-500/60 bg-blue-500/5 ring-2 ring-blue-500/20';
+      case 'PENDING': return 'border-slate-700/80 bg-slate-900/30';
+      default: return 'border-slate-700/80';
+    }
+  }
+
+  stepIconClass(step: OrderRouteStep): string {
+    switch (step.status) {
+      case 'COMPLETED': return 'pi-check-circle text-emerald-400';
+      case 'IN_PROGRESS': return 'pi-spin pi-spinner text-blue-400';
+      case 'PENDING': return 'pi-circle text-slate-500';
+      default: return 'pi-circle text-slate-500';
+    }
+  }
+
+  stepStatusLabel(step: OrderRouteStep): string {
+    switch (step.status) {
+      case 'COMPLETED': return 'Completado';
+      case 'IN_PROGRESS': return 'En proceso';
+      case 'PENDING': return 'Pendiente';
+      default: return step.status;
+    }
+  }
+
+  stepConnectorClass(step: OrderRouteStep): string {
+    return step.status === 'COMPLETED' ? 'from-emerald-500/60 to-emerald-500/40' : 'from-slate-600 to-slate-500';
+  }
+
+  // ── Reprogramación ──
+  openRescheduleModal(order: Orden) {
+    this.reprogrammingOrder = order;
+    this.reprogramForm = {
+      fechaInicioPlanificada: order.fechaInicioPlanificada || '',
+      fechaFinPlanificada: order.fechaFinPlanificada || '',
+    };
+    this.reprogramError = null;
+  }
+
+  closeRescheduleModal() {
+    this.reprogrammingOrder = null;
+    this.reprogramForm = { fechaInicioPlanificada: '', fechaFinPlanificada: '' };
+    this.reprogramError = null;
+  }
+
+  areReprogramDatesValid(): boolean {
+    const start = this.reprogramForm.fechaInicioPlanificada;
+    const end = this.reprogramForm.fechaFinPlanificada;
+    if (!start || !end) return false;
+    return new Date(start) < new Date(end);
+  }
+
+  isValidReschedule(): boolean {
+    const start = this.reprogramForm.fechaInicioPlanificada;
+    const end = this.reprogramForm.fechaFinPlanificada;
+
+    if (!start || !end) {
+      this.reprogramError = 'Ambas fechas son requeridas';
+      return false;
+    }
+
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    if (startDate >= endDate) {
+      this.reprogramError = 'La fecha de inicio debe ser anterior a la fecha de fin';
+      return false;
+    }
+
+    this.reprogramError = null;
+    return true;
+  }
+
+  calculateDurationHours(): number {
+    const start = new Date(this.reprogramForm.fechaInicioPlanificada);
+    const end = new Date(this.reprogramForm.fechaFinPlanificada);
+    return (end.getTime() - start.getTime()) / 3600000;
+  }
+
+  saveReschedule() {
+    if (!this.reprogrammingOrder || !this.isValidReschedule()) return;
+
+    this.loading = true;
+    const updateDto: CreateOrdenDto = {
+      numeroOrden: this.reprogrammingOrder.numeroOrden,
+      cantidadPlanificada: this.reprogrammingOrder.cantidadPlanificada,
+      unidadMedida: this.reprogrammingOrder.unidadMedida,
+      fechaInicioPlanificada: this.reprogramForm.fechaInicioPlanificada,
+      fechaFinPlanificada: this.reprogramForm.fechaFinPlanificada,
+      productoId: this.reprogrammingOrder.productoId,
+      productoCodigo: this.reprogrammingOrder.productoCodigo,
+      productoNombre: this.reprogrammingOrder.productoNombre,
+      estado: this.reprogrammingOrder.estado,
+      prioridad: this.reprogrammingOrder.prioridad,
+      lote: this.reprogrammingOrder.lote,
+      cliente: this.reprogrammingOrder.cliente,
+      pedidoCliente: this.reprogrammingOrder.pedidoCliente,
+      notas: this.reprogrammingOrder.notas,
+    };
+
+    this.ordenesService.update(this.reprogrammingOrder.id, updateDto).subscribe({
+      next: (updated) => {
+        console.log('✅ Orden reprogramada:', updated);
+        this.loadOrdenes();
+        this.closeRescheduleModal();
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('❌ Error al reprogramar:', err);
+        this.reprogramError = this.extractErrorMessage(err);
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
 }
+

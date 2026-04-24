@@ -90,7 +90,9 @@ export class OrdenesService {
   constructor(private http: HttpClient) {}
 
   getAll(): Observable<Orden[]> {
-    return this.http.get<PaginatedResponse>(this.apiUrl).pipe(
+    return this.http.get<PaginatedResponse>(this.apiUrl, {
+      params: { limit: '100', page: '1' }
+    }).pipe(
       map(response => response.data || [])
     );
   }

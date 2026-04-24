@@ -1,0 +1,452 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">No Conformidades · CAPA</h3>
+      <p class="ui-subtitle">Gestión de no conformidades, causa raíz y acciones correctivas/preventivas.</p>
+    </div>
+    <button (click)="showNewForm=!showNewForm" class="ui-btn-primary text-xs">
+      <i class="pi pi-plus mr-1"></i>Nueva NC
+    </button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div class="ui-surface p-4 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
+        <i class="pi pi-exclamation-circle text-red-400 text-sm"></i>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500">NCs Abiertas</p>
+        <p class="text-2xl font-bold text-red-400">{{ openCount }}</p>
+      </div>
+    </div>
+    <div class="ui-surface p-4 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-red-700/20 flex items-center justify-center flex-shrink-0">
+        <i class="pi pi-flag-fill text-red-300 text-sm"></i>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500">Críticas activas</p>
+        <p class="text-2xl font-bold text-red-300">{{ criticalCount }}</p>
+      </div>
+    </div>
+    <div class="ui-surface p-4 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+        <i class="pi pi-clock text-orange-400 text-sm"></i>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500">Acciones vencidas</p>
+        <p class="text-2xl font-bold text-orange-400">{{ overdueActions }}</p>
+      </div>
+    </div>
+    <div class="ui-surface p-4 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+        <i class="pi pi-check-circle text-emerald-400 text-sm"></i>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500">Cerradas</p>
+        <p class="text-2xl font-bold text-emerald-400">{{ closedCount }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- New NC Form Panel -->
+  <div *ngIf="showNewForm" class="ui-surface p-5 border border-emerald-500/20">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-sm font-semibold">Nueva No Conformidad</p>
+      <button (click)="showNewForm=false" class="text-slate-500 hover:text-white transition"><i class="pi pi-times"></i></button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="md:col-span-2">
+        <label class="ui-label">Título <span class="text-red-400">*</span></label>
+        <input [(ngModel)]="newNC.title" class="ui-input" placeholder="Descripción breve de la no conformidad" />
+      </div>
+
+      <div>
+        <label class="ui-label">Origen <span class="text-red-400">*</span></label>
+        <select [(ngModel)]="newNC.origin" class="ui-select">
+          <option value="">-- Selecciona --</option>
+          <option value="INSPECTION">Inspección</option>
+          <option value="CUSTOMER_COMPLAINT">Queja de cliente</option>
+          <option value="INTERNAL_AUDIT">Auditoría interna</option>
+          <option value="PROCESS_DEVIATION">Desviación de proceso</option>
+          <option value="SUPPLIER">Proveedor</option>
+          <option value="OTHER">Otro</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="ui-label">Severidad <span class="text-red-400">*</span></label>
+        <select [(ngModel)]="newNC.severity" class="ui-select">
+          <option value="">-- Selecciona --</option>
+          <option value="CRITICAL">Crítica</option>
+          <option value="MAJOR">Mayor</option>
+          <option value="MINOR">Menor</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="ui-label">Lote (opcional)</label>
+        <input [(ngModel)]="newNC.lotCode" class="ui-input" placeholder="LOT-XXXX-NNNN" />
+      </div>
+
+      <div>
+        <label class="ui-label">Código de producto (opcional)</label>
+        <input [(ngModel)]="newNC.productCode" class="ui-input" placeholder="PT-XXX" />
+      </div>
+
+      <div>
+        <label class="ui-label">Código de inspección (opcional)</label>
+        <input [(ngModel)]="newNC.inspectionId" class="ui-input" placeholder="INS-2026-XXXX" />
+      </div>
+
+      <div>
+        <label class="ui-label">Centro de trabajo (opcional)</label>
+        <input [(ngModel)]="newNC.workCenter" class="ui-input" placeholder="CT-XXX" />
+      </div>
+
+      <div class="md:col-span-2">
+        <label class="ui-label">Descripción detallada <span class="text-red-400">*</span></label>
+        <textarea [(ngModel)]="newNC.description" class="ui-input resize-none" rows="4"
+          placeholder="Describa el defecto, desviación o problema detectado..."></textarea>
+      </div>
+
+      <div class="md:col-span-2">
+        <label class="ui-label">Acción inmediata (contención)</label>
+        <input [(ngModel)]="newNC.immediateAction" class="ui-input" placeholder="Medida tomada de inmediato para contener el problema..." />
+      </div>
+    </div>
+
+    <div class="flex gap-2 mt-4">
+      <button (click)="submitNewNC()"
+        [disabled]="!newNC.title || !newNC.origin || !newNC.severity || !newNC.description"
+        class="ui-btn-primary text-xs disabled:opacity-40">
+        <i class="pi pi-check mr-1"></i>Crear NC
+      </button>
+      <button (click)="showNewForm=false; newNC={}" class="ui-btn-ghost text-xs">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="ui-surface p-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar código, título, lote, producto..." />
+      </div>
+      <select [(ngModel)]="statusFilter" class="ui-select">
+        <option value="ALL">Todos los estados</option>
+        <option value="OPEN">Abierta</option>
+        <option value="ANALYSIS">Análisis</option>
+        <option value="ACTION_PLAN">Plan CAPA</option>
+        <option value="IMPLEMENTATION">Implementación</option>
+        <option value="VERIFICATION">Verificación</option>
+        <option value="CLOSED">Cerrada</option>
+      </select>
+      <select [(ngModel)]="severityFilter" class="ui-select">
+        <option value="ALL">Todas las severidades</option>
+        <option value="CRITICAL">Crítica</option>
+        <option value="MAJOR">Mayor</option>
+        <option value="MINOR">Menor</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-5 gap-4">
+    <!-- NC List -->
+    <div class="xl:col-span-2 space-y-2">
+      <p class="text-xs text-slate-500">{{ filtered.length }} no conformidades</p>
+
+      <div *ngFor="let nc of filtered"
+        class="ui-surface p-4 cursor-pointer border transition-all"
+        [class.border-emerald-500/30]="selectedId === nc.id"
+        [class.bg-emerald-500/5]="selectedId === nc.id"
+        [class.border-slate-800]="selectedId !== nc.id"
+        (click)="select(nc)">
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+              <span class="font-mono text-xs font-semibold text-white">{{ nc.code }}</span>
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold" [class]="severityBadge(nc.severity)">{{ nc.severity }}</span>
+              <span class="px-1.5 py-0.5 rounded text-[10px]" [class]="statusBadge(nc.status)">{{ statusLabel(nc.status) }}</span>
+            </div>
+            <p class="text-xs text-slate-300 line-clamp-2">{{ nc.title }}</p>
+            <div class="flex flex-wrap gap-2 mt-1 text-[10px] text-slate-500">
+              <span *ngIf="nc.lotCode" class="text-blue-400/70"><i class="pi pi-box mr-0.5"></i>{{ nc.lotCode }}</span>
+              <span *ngIf="nc.inspectionId" class="text-purple-400/70"><i class="pi pi-clipboard mr-0.5"></i>{{ nc.inspectionId }}</span>
+              <span>{{ formatDate(nc.detectedAt) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress bar for actions -->
+        <div *ngIf="nc.actions.length > 0" class="mt-2 pt-2 border-t border-slate-800">
+          <div class="flex items-center justify-between text-[10px] text-slate-500 mb-1">
+            <span>Acciones CAPA</span>
+            <span>{{ nc.actions.length }}</span>
+          </div>
+          <div class="flex gap-0.5">
+            <div *ngFor="let a of nc.actions"
+              class="h-1 flex-1 rounded-full"
+              [class.bg-slate-700]="a.status==='PENDING'"
+              [class.bg-blue-500]="a.status==='IN_PROGRESS'"
+              [class.bg-amber-500]="a.status==='DONE'"
+              [class.bg-emerald-500]="a.status==='VERIFIED'">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p *ngIf="filtered.length === 0" class="text-center text-slate-500 text-sm py-8">Sin registros</p>
+    </div>
+
+    <!-- Detail Panel -->
+    <div class="xl:col-span-3 space-y-4">
+      <div *ngIf="!selected" class="ui-surface p-8 text-center">
+        <i class="pi pi-exclamation-triangle text-4xl text-slate-700 mb-3"></i>
+        <p class="text-slate-500 text-sm">Selecciona una no conformidad para ver su detalle.</p>
+      </div>
+
+      <ng-container *ngIf="selected">
+        <!-- Header -->
+        <div class="ui-surface p-4">
+          <div class="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-mono font-bold text-white">{{ selected.code }}</span>
+                <span class="px-2 py-0.5 rounded text-xs font-semibold" [class]="severityBadge(selected.severity)">{{ selected.severity }}</span>
+                <span class="px-2 py-0.5 rounded text-xs" [class]="statusBadge(selected.status)">{{ statusLabel(selected.status) }}</span>
+              </div>
+              <p class="text-sm text-slate-300 mt-1">{{ selected.title }}</p>
+            </div>
+            <button *ngIf="nextStatus(selected.status)"
+              (click)="showTransition=!showTransition"
+              class="ui-btn-primary text-xs flex-shrink-0">
+              {{ nextStatusLabel(selected.status) }} <i class="pi pi-arrow-right ml-1"></i>
+            </button>
+          </div>
+
+          <!-- Transition panel -->
+          <div *ngIf="showTransition" class="mt-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700 space-y-2">
+            <p class="text-xs text-slate-400">Avanzar a: <strong class="text-white">{{ statusLabel(nextStatus(selected.status)!) }}</strong></p>
+            <textarea [(ngModel)]="transitionNote" class="ui-input resize-none text-xs" rows="2" placeholder="Nota del cambio de estado (opcional)..."></textarea>
+            <div class="flex gap-2">
+              <button (click)="advance()" class="ui-btn-primary text-xs">Confirmar</button>
+              <button (click)="showTransition=false" class="ui-btn-ghost text-xs">Cancelar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="ui-surface">
+          <div class="flex border-b border-slate-800 px-2">
+            <button *ngFor="let tab of [['info','Información'],['analysis','Análisis CR'],['actions','Acciones CAPA'],['verification','Verificación'],['timeline','Historial']]"
+              (click)="setTab(tab[0])"
+              class="px-4 py-2.5 text-xs font-medium transition border-b-2 -mb-px"
+              [class.border-emerald-500]="activeTab===tab[0]"
+              [class.text-emerald-400]="activeTab===tab[0]"
+              [class.border-transparent]="activeTab!==tab[0]"
+              [class.text-slate-500]="activeTab!==tab[0]">
+              {{ tab[1] }}
+            </button>
+          </div>
+
+          <!-- TAB: Info -->
+          <div *ngIf="activeTab==='info'" class="p-4 space-y-4">
+            <div class="grid grid-cols-2 gap-3 text-xs">
+              <div><span class="text-slate-500">Origen:</span> <span class="text-slate-200 ml-1">{{ originLabel(selected.origin) }}</span></div>
+              <div><span class="text-slate-500">Detectado por:</span> <span class="text-slate-200 ml-1">{{ selected.detectedBy }}</span></div>
+              <div><span class="text-slate-500">Fecha detección:</span> <span class="text-slate-200 ml-1">{{ formatDate(selected.detectedAt) }}</span></div>
+              <div><span class="text-slate-500">Centro de trabajo:</span> <span class="text-slate-200 ml-1">{{ selected.workCenter ?? '—' }}</span></div>
+              <div *ngIf="selected.lotCode"><span class="text-slate-500">Lote:</span> <span class="text-blue-400 ml-1">{{ selected.lotCode }}</span></div>
+              <div *ngIf="selected.inspectionId"><span class="text-slate-500">Inspección:</span> <span class="text-purple-400 ml-1">{{ selected.inspectionId }}</span></div>
+              <div *ngIf="selected.productCode"><span class="text-slate-500">Producto:</span> <span class="text-slate-200 ml-1">{{ selected.productCode }}</span></div>
+              <div *ngIf="selected.defectCodes.length > 0">
+                <span class="text-slate-500">Códigos defecto:</span>
+                <span *ngFor="let d of selected.defectCodes" class="ml-1 text-amber-400">{{ d }}</span>
+              </div>
+            </div>
+
+            <div class="border-t border-slate-800 pt-3">
+              <p class="text-xs text-slate-500 mb-1">Descripción</p>
+              <p class="text-xs text-slate-300 whitespace-pre-wrap">{{ selected.description }}</p>
+            </div>
+
+            <!-- Immediate action -->
+            <div class="border-t border-slate-800 pt-3">
+              <div class="flex items-center justify-between mb-1">
+                <p class="text-xs font-semibold text-slate-400">Acción Inmediata</p>
+                <button *ngIf="!editingImmediateAction" (click)="immediateActionText=selected.immediateAction??''; editingImmediateAction=true"
+                  class="text-[10px] text-slate-500 hover:text-white transition">
+                  <i class="pi pi-pencil mr-1"></i>Editar
+                </button>
+              </div>
+              <p *ngIf="!editingImmediateAction" class="text-xs text-slate-300">{{ selected.immediateAction ?? 'No registrada.' }}</p>
+              <p *ngIf="!editingImmediateAction && selected.immediateActionBy" class="text-[10px] text-slate-500 mt-0.5">
+                por {{ selected.immediateActionBy }} · {{ formatDate(selected.immediateActionAt!) }}
+              </p>
+              <div *ngIf="editingImmediateAction" class="space-y-2">
+                <textarea [(ngModel)]="immediateActionText" class="ui-input resize-none text-xs" rows="3"></textarea>
+                <div class="flex gap-2">
+                  <button (click)="saveImmediateAction()" class="ui-btn-primary text-xs">Guardar</button>
+                  <button (click)="editingImmediateAction=false" class="ui-btn-ghost text-xs">Cancelar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: Analysis -->
+          <div *ngIf="activeTab==='analysis'" class="p-4 space-y-4">
+            <div class="flex items-center justify-between">
+              <p class="text-xs font-semibold">Causa Raíz</p>
+              <div class="flex items-center gap-2">
+                <span *ngIf="selected.rootCauseMethod" class="px-1.5 py-0.5 bg-purple-500/10 text-purple-400 text-[10px] rounded">{{ selected.rootCauseMethod }}</span>
+                <button *ngIf="!editingRootCause" (click)="startEditRootCause()" class="text-[10px] text-slate-500 hover:text-white transition">
+                  <i class="pi pi-pencil mr-1"></i>Editar
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="!editingRootCause">
+              <p *ngIf="selected.rootCause" class="text-xs text-slate-300 whitespace-pre-wrap bg-slate-800/50 p-3 rounded-lg">{{ selected.rootCause }}</p>
+              <p *ngIf="!selected.rootCause" class="text-xs text-slate-500 italic">Causa raíz no registrada aún.</p>
+            </div>
+
+            <div *ngIf="editingRootCause" class="space-y-3">
+              <div>
+                <label class="ui-label">Método de análisis</label>
+                <select [(ngModel)]="rootCauseMethod" class="ui-select">
+                  <option value="5WHY">5 WHY</option>
+                  <option value="FISHBONE">Espina de pescado (Ishikawa)</option>
+                  <option value="FMEA">AMEF/FMEA</option>
+                  <option value="OTHER">Otro</option>
+                </select>
+              </div>
+              <div>
+                <label class="ui-label">Análisis / Causa raíz identificada</label>
+                <textarea [(ngModel)]="rootCauseText" class="ui-input resize-none text-xs" rows="8" placeholder="Describa el análisis de causa raíz..."></textarea>
+              </div>
+              <div class="flex gap-2">
+                <button (click)="saveRootCause()" class="ui-btn-primary text-xs">Guardar análisis</button>
+                <button (click)="editingRootCause=false" class="ui-btn-ghost text-xs">Cancelar</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: Actions -->
+          <div *ngIf="activeTab==='actions'" class="p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <p class="text-xs font-semibold">Acciones CAPA ({{ selected.actions.length }})</p>
+              <button (click)="showActionForm=!showActionForm; newAction={type:'CORRECTIVE'}" class="text-[10px] text-emerald-400 hover:text-emerald-300 transition">
+                <i class="pi pi-plus mr-1"></i>Nueva acción
+              </button>
+            </div>
+
+            <!-- New action form -->
+            <div *ngIf="showActionForm" class="p-3 bg-slate-800/50 rounded-lg border border-slate-700 space-y-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="ui-label">Tipo</label>
+                  <select [(ngModel)]="newAction.type" class="ui-select text-xs">
+                    <option value="CORRECTIVE">Correctiva</option>
+                    <option value="PREVENTIVE">Preventiva</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="ui-label">Fecha límite</label>
+                  <input type="date" [(ngModel)]="newAction.dueDate" class="ui-input text-xs" />
+                </div>
+              </div>
+              <div>
+                <label class="ui-label">Descripción *</label>
+                <textarea [(ngModel)]="newAction.description" class="ui-input resize-none text-xs" rows="2" placeholder="Descripción de la acción..."></textarea>
+              </div>
+              <div>
+                <label class="ui-label">Responsable</label>
+                <input [(ngModel)]="newAction.responsible" class="ui-input text-xs" placeholder="ID o nombre del responsable" />
+              </div>
+              <div class="flex gap-2">
+                <button (click)="addAction()" [disabled]="!newAction.description" class="ui-btn-primary text-xs disabled:opacity-40">Agregar</button>
+                <button (click)="showActionForm=false" class="ui-btn-ghost text-xs">Cancelar</button>
+              </div>
+            </div>
+
+            <!-- Actions list -->
+            <div *ngFor="let a of selected.actions" class="p-3 rounded-lg border"
+              [class.border-slate-700]="!isOverdue(a)"
+              [class.border-red-500/40]="isOverdue(a)"
+              [class.bg-red-500/5]="isOverdue(a)">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap mb-1">
+                    <span class="px-1.5 py-0.5 rounded text-[10px]" [class]="actionTypeBadge(a.type)">{{ a.type === 'CORRECTIVE' ? 'Correctiva' : 'Preventiva' }}</span>
+                    <span class="px-1.5 py-0.5 rounded text-[10px]" [class]="actionStatusBadge(a.status)">{{ a.status }}</span>
+                    <span *ngIf="isOverdue(a)" class="text-[10px] text-red-400"><i class="pi pi-clock mr-0.5"></i>Vencida</span>
+                  </div>
+                  <p class="text-xs text-slate-300">{{ a.description }}</p>
+                  <div class="flex gap-3 mt-1 text-[10px] text-slate-500 flex-wrap">
+                    <span><i class="pi pi-user mr-0.5"></i>{{ a.responsible || '—' }}</span>
+                    <span><i class="pi pi-calendar mr-0.5"></i>{{ a.dueDate }}</span>
+                    <span *ngIf="a.completedAt" class="text-emerald-400/70">Completada: {{ a.completedAt }}</span>
+                  </div>
+                  <p *ngIf="a.evidence" class="text-[10px] text-blue-400/70 mt-0.5"><i class="pi pi-link mr-0.5"></i>{{ a.evidence }}</p>
+                </div>
+                <div class="flex flex-col gap-1 flex-shrink-0">
+                  <button *ngIf="a.status==='PENDING'" (click)="updateActionStatus(selected, a, 'IN_PROGRESS')"
+                    class="text-[10px] px-2 py-1 rounded bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition">Iniciar</button>
+                  <button *ngIf="a.status==='IN_PROGRESS'" (click)="updateActionStatus(selected, a, 'DONE')"
+                    class="text-[10px] px-2 py-1 rounded bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition">Completar</button>
+                  <button *ngIf="a.status==='DONE'" (click)="updateActionStatus(selected, a, 'VERIFIED')"
+                    class="text-[10px] px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition">Verificar</button>
+                </div>
+              </div>
+            </div>
+
+            <p *ngIf="selected.actions.length===0" class="text-center text-slate-500 text-xs py-4">Sin acciones registradas.</p>
+          </div>
+
+          <!-- TAB: Verification -->
+          <div *ngIf="activeTab==='verification'" class="p-4 space-y-4">
+            <div *ngIf="selected.verifiedBy" class="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg space-y-2">
+              <div class="flex items-center gap-2">
+                <i class="pi pi-check-circle text-emerald-400"></i>
+                <p class="text-xs font-semibold text-emerald-400">Verificación completada</p>
+              </div>
+              <p class="text-xs text-slate-300 whitespace-pre-wrap">{{ selected.verificationNotes }}</p>
+              <p class="text-[10px] text-slate-500">por {{ selected.verifiedBy }} · {{ formatDate(selected.verifiedAt!) }}</p>
+            </div>
+            <div *ngIf="selected.closedBy" class="p-3 bg-slate-800/50 rounded-lg space-y-1">
+              <p class="text-xs font-semibold text-slate-400">NC Cerrada</p>
+              <p class="text-[10px] text-slate-500">por {{ selected.closedBy }} · {{ formatDate(selected.closedAt!) }}</p>
+            </div>
+            <p *ngIf="!selected.verifiedBy && !selected.closedBy" class="text-xs text-slate-500 italic">Verificación pendiente. Avance la NC al estado de Verificación para completar.</p>
+          </div>
+
+          <!-- TAB: Timeline -->
+          <div *ngIf="activeTab==='timeline'" class="p-4">
+            <div class="space-y-3">
+              <div *ngFor="let ev of selected.events; let last=last" class="flex gap-3">
+                <div class="flex flex-col items-center flex-shrink-0">
+                  <div class="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
+                    <i class="pi pi-arrow-right text-[8px] text-emerald-400"></i>
+                  </div>
+                  <div *ngIf="!last" class="w-px flex-1 bg-slate-800 my-1 min-h-4"></div>
+                </div>
+                <div class="pb-3 flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="px-1.5 py-0.5 rounded text-[9px]" [class]="statusBadge(ev.from)">{{ statusLabel(ev.from) }}</span>
+                    <i class="pi pi-arrow-right text-[9px] text-slate-600"></i>
+                    <span class="px-1.5 py-0.5 rounded text-[9px]" [class]="statusBadge(ev.to)">{{ statusLabel(ev.to) }}</span>
+                    <span class="text-[10px] text-slate-500">{{ formatDate(ev.at) }}</span>
+                    <span class="text-[10px] text-slate-600">por {{ ev.by }}</span>
+                  </div>
+                  <p *ngIf="ev.note" class="text-[11px] text-slate-400 mt-0.5">{{ ev.note }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>

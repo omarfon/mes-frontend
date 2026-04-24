@@ -19,7 +19,7 @@ export const PRODUCTION_ROUTES: Routes = [
   {
     path: 'wip',
     loadComponent: () =>
-      import('./wip/wip-traceability').then((m) => m.WipTraceabilityComponent),
+      import('./wip/wip').then((m) => m.WipComponent),
   },
   {
     path: 'board',

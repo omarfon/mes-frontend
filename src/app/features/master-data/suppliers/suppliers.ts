@@ -1,16 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-interface Supplier {
-  id: string;
-  ruc: string;
-  name: string;
-  contact: string;
-  phone: string;
-  email: string;
-  active: boolean;
-}
+import { SuppliersService, Supplier, CreateSupplierDto } from './suppliers.service';
 
 @Component({
   standalone: true,
@@ -18,15 +9,26 @@ interface Supplier {
   imports: [CommonModule, FormsModule],
   templateUrl: './suppliers.html',
 })
-export class SuppliersComponent {
-  form: Omit<Supplier, 'id'> = { ruc: '', name: '', contact: '', phone: '', email: '', active: true };
-  items: Supplier[] = [
-    { id: '1', ruc: '20123456789', name: 'Algodones del Perú SAC', contact: 'Carlos Ruiz', phone: '999888777', email: 'ventas@algodones.pe', active: true },
-    { id: '2', ruc: '20456789012', name: 'Tintorería Andina', contact: 'Lucía Salas', phone: '988777666', email: 'contacto@andina.pe', active: true },
-  ];
-
+export class SuppliersComponent implements OnInit {
+  form: CreateSupplierDto = { ruc: '', name: '', contact: '', phone: '', email: '', active: true };
+  items: Supplier[] = [];
   editingId: string | null = null;
   q = '';
+  loading = false;
+  error: string | null = null;
+
+  constructor(private svc: SuppliersService, private cdr: ChangeDetectorRef) {}
+
+  ngOnInit() { this.load(); }
+
+  load() {
+    this.loading = true;
+    this.error = null;
+    this.svc.getAll().subscribe({
+      next: data => { this.items = data; this.loading = false; this.cdr.detectChanges(); },
+      error: err => { this.error = this.extractError(err); this.loading = false; this.cdr.detectChanges(); },
+    });
+  }
 
   get filtered() {
     const t = this.q.trim().toLowerCase();
@@ -36,17 +38,12 @@ export class SuppliersComponent {
 
   submit() {
     if (!this.form.ruc || !this.form.name) return;
-
-    if (this.editingId) {
-      const idx = this.items.findIndex(x => x.id === this.editingId);
-      if (idx >= 0) this.items[idx] = { ...this.items[idx], ...this.form };
-      this.cancelEdit();
-      return;
-    }
-
-    const id = crypto.randomUUID?.() ?? String(Date.now());
-    this.items.unshift({ id, ...this.form });
-    this.resetForm();
+    this.loading = true;
+    const obs = this.editingId ? this.svc.update(this.editingId, this.form) : this.svc.create(this.form);
+    obs.subscribe({
+      next: () => { this.load(); this.editingId ? this.cancelEdit() : this.resetForm(); },
+      error: err => { this.error = this.extractError(err); this.loading = false; },
+    });
   }
 
   edit(it: Supplier) {
@@ -55,16 +52,21 @@ export class SuppliersComponent {
   }
 
   remove(id: string) {
-    this.items = this.items.filter(x => x.id !== id);
-    if (this.editingId === id) this.cancelEdit();
+    if (!confirm('¿Eliminar este proveedor?')) return;
+    this.svc.delete(id).subscribe({
+      next: () => { this.load(); if (this.editingId === id) this.cancelEdit(); },
+      error: err => { this.error = this.extractError(err); },
+    });
   }
 
-  cancelEdit() {
-    this.editingId = null;
-    this.resetForm();
-  }
+  cancelEdit() { this.editingId = null; this.resetForm(); }
 
-  resetForm() {
-    this.form = { ruc: '', name: '', contact: '', phone: '', email: '', active: true };
+  resetForm() { this.form = { ruc: '', name: '', contact: '', phone: '', email: '', active: true }; }
+
+  private extractError(err: any): string {
+    if (typeof err.error?.message === 'string') return err.error.message;
+    if (Array.isArray(err.error?.message)) return err.error.message.join(', ');
+    if (err.error?.error) return err.error.error;
+    return err.message || 'Error desconocido';
   }
 }

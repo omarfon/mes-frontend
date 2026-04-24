@@ -1,0 +1,127 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Maestro · Motivos de Merma / Desperdicio</h3>
+      <p class="ui-subtitle">Clasifica las causas de merma para análisis de eficiencia y trazabilidad.</p>
+    </div>
+    <div class="w-full max-w-sm">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar motivo..." />
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary badges -->
+  <div class="flex flex-wrap gap-2">
+    <button *ngFor="let c of classes"
+      (click)="filterClass = filterClass === c.value ? '' : c.value"
+      class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition"
+      [ngClass]="filterClass === c.value ? c.cls : 'border-slate-700/60 text-slate-400 hover:border-slate-600'">
+      <span class="pi text-[11px]" [ngClass]="c.icon"></span>
+      {{ c.label }} ({{ countByClass(c.value) }})
+    </button>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Form -->
+    <div class="ui-surface p-5">
+      <p class="text-sm font-semibold mb-4">{{ editingId ? 'Editar motivo' : 'Nuevo motivo de merma' }}</p>
+      <form (ngSubmit)="submit()" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Código</label>
+            <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="MRM-ROT" />
+          </div>
+          <div>
+            <label class="ui-label">Clasificación</label>
+            <select [(ngModel)]="form.classification" name="classification" class="ui-select">
+              <option *ngFor="let c of classes" [value]="c.value">{{ c.label }}</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="ui-label">Nombre</label>
+          <input [(ngModel)]="form.name" name="name" required class="ui-input" placeholder="Rotura de hilo" />
+        </div>
+        <div>
+          <label class="ui-label">Descripción</label>
+          <input [(ngModel)]="form.description" name="description" class="ui-input" placeholder="Descripción detallada..." />
+        </div>
+        <div class="space-y-2 pt-1">
+          <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer w-full">
+            <input type="checkbox" [(ngModel)]="form.affectsEfficiency" name="affectsEfficiency" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+            Afecta cálculo de eficiencia
+          </label>
+          <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer w-full">
+            <input type="checkbox" [(ngModel)]="form.reportable" name="reportable" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+            Incluir en informes de calidad
+          </label>
+          <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer w-full">
+            <input type="checkbox" [(ngModel)]="form.active" name="active" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+            Activo
+          </label>
+        </div>
+        <div class="flex gap-2 pt-1">
+          <button type="submit" class="flex-1 ui-btn-primary">{{ editingId ? 'Guardar cambios' : 'Agregar' }}</button>
+          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Table -->
+    <div class="xl:col-span-2 ui-surface p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-semibold">Listado</p>
+        <span class="text-[11px] text-slate-500">{{ filtered.length }} motivo(s)</span>
+      </div>
+
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead class="ui-thead">
+            <tr>
+              <th class="ui-th">Código</th>
+              <th class="ui-th">Nombre</th>
+              <th class="ui-th">Clasificación</th>
+              <th class="ui-th">Descripción</th>
+              <th class="ui-th text-center">Eficiencia</th>
+              <th class="ui-th text-center">Informe</th>
+              <th class="ui-th text-center">Estado</th>
+              <th class="ui-th w-28">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="bg-slate-950/20">
+            <tr *ngFor="let it of filtered" class="ui-tr">
+              <td class="ui-td font-mono text-xs font-bold">{{ it.code }}</td>
+              <td class="ui-td font-semibold text-sm">{{ it.name }}</td>
+              <td class="ui-td">
+                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" [ngClass]="classCls(it.classification)">
+                  {{ classLabel(it.classification) }}
+                </span>
+              </td>
+              <td class="ui-td text-xs text-slate-500">{{ it.description || '-' }}</td>
+              <td class="ui-td text-center">
+                <span class="pi text-sm" [ngClass]="it.affectsEfficiency ? 'pi-chart-bar text-amber-400' : 'pi-minus-circle text-slate-600'"></span>
+              </td>
+              <td class="ui-td text-center">
+                <span class="pi text-sm" [ngClass]="it.reportable ? 'pi-check-circle text-emerald-400' : 'pi-times-circle text-slate-600'"></span>
+              </td>
+              <td class="ui-td text-center">
+                <span [ngClass]="it.active ? 'ui-badge-ok' : 'ui-badge-bad'">{{ it.active ? 'Activo' : 'Inactivo' }}</span>
+              </td>
+              <td class="ui-td">
+                <div class="flex gap-2">
+                  <button (click)="edit(it)" class="ui-btn-ghost text-xs">Editar</button>
+                  <button (click)="remove(it.id)" class="ui-btn-danger text-xs">Del</button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="filtered.length === 0">
+              <td colspan="8" class="px-4 py-10 text-center text-slate-500">Sin motivos.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

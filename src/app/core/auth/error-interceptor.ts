@@ -64,7 +64,13 @@ export class ErrorInterceptor implements HttpInterceptor {
               // Restaurando la eliminación del token en caso de error
               localStorage.removeItem('access_token');
               localStorage.removeItem('current_user');
-              this.router.navigate(['/auth/login']);
+              // Navegar al login preservando la URL actual para volver después
+              try {
+                const returnUrl = this.router.url || window.location.pathname;
+                this.router.navigate(['/auth/login'], { queryParams: { returnUrl } });
+              } catch (e) {
+                this.router.navigate(['/auth/login']);
+              }
             } else {
               console.log('ℹ️ Endpoint no implementado o requiere configuración:', error.url);
             }

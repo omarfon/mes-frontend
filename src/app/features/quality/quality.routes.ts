@@ -31,6 +31,21 @@ export const QUALITY_ROUTES: Routes = [
         loadComponent: () =>
           import('./inspections/inspections').then((m) => m.InspectionsComponent),
       },
+      {
+        path: 'non-conformities',
+        loadComponent: () =>
+          import('./ncapa/ncapa').then((m) => m.NcapaComponent),
+      },
+      {
+        path: 'decision',
+        loadComponent: () =>
+          import('./pages/quality-decision/quality-decision').then((m) => m.QualityDecisionComponent),
+      },
+      {
+        path: 'op-review',
+        loadComponent: () =>
+          import('./op-review/op-review').then((m) => m.OpReviewComponent),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },

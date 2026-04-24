@@ -1,88 +1,222 @@
-<div class="space-y-5">
-  <div class="ui-page-header">
-    <div>
-      <h3 class="ui-title">Auditoría de Acciones</h3>
-      <p class="ui-subtitle">Log completo de acciones del sistema</p>
+<div class="h-full flex flex-col bg-slate-950 overflow-hidden">
+
+  <!-- Header + KPIs -->
+  <div class="px-6 py-4 border-b border-slate-800/60">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h1 class="text-base font-semibold text-slate-100">Auditoría del Sistema</h1>
+        <p class="text-xs text-slate-500 mt-0.5">Registro completo de acciones críticas · Consultable y exportable</p>
+      </div>
+      <button (click)="exportCsv()"
+        class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs hover:bg-emerald-500/20 transition">
+        <i class="pi pi-download text-[11px]"></i> Exportar CSV
+      </button>
+    </div>
+    <!-- KPIs -->
+    <div class="grid grid-cols-4 gap-3">
+      <div class="bg-slate-900 border border-slate-800/60 rounded-lg px-4 py-3">
+        <p class="text-[11px] text-slate-500 uppercase tracking-wide">Total registros</p>
+        <p class="text-2xl font-bold text-slate-100 mt-1">{{ allLogs.length }}</p>
+        <p class="text-[11px] text-slate-500 mt-0.5">{{ filtered.length }} en vista actual</p>
+      </div>
+      <div class="bg-slate-900 border border-amber-500/20 rounded-lg px-4 py-3">
+        <p class="text-[11px] text-slate-500 uppercase tracking-wide">Hoy</p>
+        <p class="text-2xl font-bold text-amber-400 mt-1">{{ todayCount }}</p>
+        <p class="text-[11px] text-slate-500 mt-0.5">acciones registradas</p>
+      </div>
+      <div class="bg-slate-900 border border-red-500/20 rounded-lg px-4 py-3">
+        <p class="text-[11px] text-slate-500 uppercase tracking-wide">Críticos</p>
+        <p class="text-2xl font-bold text-red-400 mt-1">{{ criticalCount }}</p>
+        <p class="text-[11px] text-slate-500 mt-0.5">eventos críticos</p>
+      </div>
+      <div class="bg-slate-900 border border-orange-500/20 rounded-lg px-4 py-3">
+        <p class="text-[11px] text-slate-500 uppercase tracking-wide">Fallos / Denegados</p>
+        <p class="text-2xl font-bold text-orange-400 mt-1">{{ failedCount }}</p>
+        <p class="text-[11px] text-slate-500 mt-0.5">{{ deniedCount }} accesos denegados</p>
+      </div>
     </div>
   </div>
 
   <!-- Filters -->
-  <div class="ui-surface p-4">
-    <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
-      <div class="md:col-span-2 relative">
-        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
-        <input [(ngModel)]="q" class="ui-input pl-9 w-full" placeholder="Buscar usuario o recurso..." />
+  <div class="px-6 py-3 border-b border-slate-800/40 bg-slate-900/30">
+    <div class="grid grid-cols-7 gap-2">
+      <div class="col-span-2 relative">
+        <i class="pi pi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+        <input [(ngModel)]="q" placeholder="Buscar recurso, usuario, detalle…"
+          class="w-full bg-slate-900 border border-slate-700/60 rounded-md pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500/60" />
       </div>
-      <select [(ngModel)]="filterModule" class="ui-select">
-        <option *ngFor="let mod of modules" [value]="mod">{{ mod === 'ALL' ? 'Todos Módulos' : mod }}</option>
+      <input [(ngModel)]="filterUser" placeholder="Filtrar por usuario"
+        class="bg-slate-900 border border-slate-700/60 rounded-md px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500/60" />
+      <select [(ngModel)]="filterModule"
+        class="bg-slate-900 border border-slate-700/60 rounded-md px-2 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500/60">
+        <option *ngFor="let o of moduleOptions" [value]="o.value">{{ o.label }}</option>
       </select>
-      <select [(ngModel)]="filterAction" class="ui-select">
-        <option *ngFor="let act of actions" [value]="act">{{ act === 'ALL' ? 'Todas Acciones' : act }}</option>
+      <select [(ngModel)]="filterAction"
+        class="bg-slate-900 border border-slate-700/60 rounded-md px-2 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500/60">
+        <option *ngFor="let o of actionOptions" [value]="o.value">{{ o.label }}</option>
       </select>
-      <select [(ngModel)]="filterStatus" class="ui-select">
-        <option value="ALL">Todos</option>
-        <option value="SUCCESS">Exitosos</option>
-        <option value="FAILURE">Fallidos</option>
+      <select [(ngModel)]="filterSeverity"
+        class="bg-slate-900 border border-slate-700/60 rounded-md px-2 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500/60">
+        <option value="ALL">Toda severidad</option>
+        <option value="INFO">Info</option>
+        <option value="WARNING">Warning</option>
+        <option value="CRITICAL">Crítico</option>
       </select>
-      <button class="ui-btn-ghost">Exportar CSV</button>
+      <select [(ngModel)]="filterStatus"
+        class="bg-slate-900 border border-slate-700/60 rounded-md px-2 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500/60">
+        <option value="ALL">Todos los estados</option>
+        <option value="SUCCESS">Éxito</option>
+        <option value="FAILURE">Fallo</option>
+        <option value="DENIED">Denegado</option>
+      </select>
+    </div>
+    <div class="flex items-center gap-3 mt-2">
+      <label class="text-[11px] text-slate-500">Desde:</label>
+      <input type="date" [(ngModel)]="filterDateFrom" class="bg-slate-900 border border-slate-700/60 rounded-md px-2 py-1 text-xs text-slate-300 focus:outline-none focus:border-emerald-500/60" />
+      <label class="text-[11px] text-slate-500">Hasta:</label>
+      <input type="date" [(ngModel)]="filterDateTo" class="bg-slate-900 border border-slate-700/60 rounded-md px-2 py-1 text-xs text-slate-300 focus:outline-none focus:border-emerald-500/60" />
+      <button (click)="clearFilters()" class="text-[11px] text-slate-500 hover:text-slate-300 transition ml-2">
+        <i class="pi pi-filter-slash mr-1"></i>Limpiar filtros
+      </button>
+      <span class="ml-auto text-[11px] text-slate-500">{{ filtered.length }} registros</span>
     </div>
   </div>
 
-  <!-- Logs Table -->
-  <div class="ui-surface p-5">
-    <p class="text-sm font-semibold mb-4">Registros ({{ filteredLogs.length }})</p>
-    <div class="ui-table-wrap">
-      <table class="ui-table">
-        <thead class="ui-thead">
+  <!-- Table + Detail -->
+  <div class="flex flex-1 overflow-hidden">
+    <!-- Log Table -->
+    <div class="flex-1 overflow-y-auto">
+      <table class="w-full text-xs">
+        <thead class="sticky top-0 bg-slate-900 z-10 border-b border-slate-800">
           <tr>
-            <th class="ui-th">Timestamp</th>
-            <th class="ui-th">Usuario</th>
-            <th class="ui-th">Módulo</th>
-            <th class="ui-th">Acción</th>
-            <th class="ui-th">Recurso</th>
-            <th class="ui-th">IP</th>
-            <th class="ui-th">Estado</th>
-            <th class="ui-th"></th>
+            <th class="px-3 py-2 text-left text-[11px] text-slate-500 font-medium w-4"></th>
+            <th class="px-3 py-2 text-left text-[11px] text-slate-500 font-medium">Timestamp</th>
+            <th class="px-3 py-2 text-left text-[11px] text-slate-500 font-medium">Usuario</th>
+            <th class="px-3 py-2 text-left text-[11px] text-slate-500 font-medium">Módulo</th>
+            <th class="px-3 py-2 text-left text-[11px] text-slate-500 font-medium">Acción</th>
+            <th class="px-3 py-2 text-left text-[11px] text-slate-500 font-medium">Recurso</th>
+            <th class="px-3 py-2 text-left text-[11px] text-slate-500 font-medium">Severidad</th>
+            <th class="px-3 py-2 text-left text-[11px] text-slate-500 font-medium">Estado</th>
+            <th class="px-3 py-2 text-left text-[11px] text-slate-500 font-medium font-mono">IP</th>
           </tr>
         </thead>
         <tbody>
-          <ng-container *ngFor="let log of filteredLogs">
-            <tr class="ui-tr cursor-pointer hover:bg-slate-900/40" (click)="selectLog(log)" [class.bg-slate-900/40]="selectedLog?.id === log.id">
-              <td class="ui-td text-xs font-mono">{{ log.timestamp }}</td>
-              <td class="ui-td font-medium">{{ log.user }}</td> 
-              <td class="ui-td"><span class="ui-badge">{{ log.module }}</span></td>
-              <td class="ui-td"><span [ngClass]="getActionBadge(log.action)">{{ log.action }}</span></td>
-              <td class="ui-td text-xs">{{ log.resource }}</td>
-              <td class="ui-td text-xs font-mono text-slate-400">{{ log.ip }}</td>
-              <td class="ui-td"><span [ngClass]="getStatusBadge(log.status)">{{ log.status }}</span></td>
-              <td class="ui-td text-center">
-                <span class="pi pi-chevron-right text-xs text-slate-400" *ngIf="selectedLog?.id !== log.id"></span>
-                <span class="pi pi-chevron-down text-xs text-slate-400" *ngIf="selectedLog?.id === log.id"></span>
+          <ng-container *ngFor="let e of filtered">
+            <tr (click)="select(e)"
+              class="border-b border-slate-800/40 cursor-pointer transition hover:bg-slate-900/60"
+              [class]="rowClass(e)"
+              [class.bg-slate-900/40]="selectedId === e.id">
+              <td class="px-3 py-2">
+                <i class="pi text-[10px]" [class]="severityIcon(e.severity)"></i>
               </td>
-            </tr>
-            <tr *ngIf="selectedLog?.id === log.id && selectedLog" class="ui-tr">
-              <td colspan="8" class="ui-td">
-                <div class="bg-slate-950/60 p-4 rounded-lg text-sm space-y-2">
-                  <div class="grid grid-cols-2 gap-4">
-                    <div><span class="text-slate-400">ID:</span> <span class="font-mono">{{ selectedLog.id }}</span></div>
-                    <div><span class="text-slate-400">IP:</span> <span class="font-mono">{{ selectedLog.ip }}</span></div>
-                    <div><span class="text-slate-400">Usuario:</span> {{ selectedLog.user }}</div>
-                    <div><span class="text-slate-400">Módulo:</span> {{ selectedLog.module }}</div>
-                    <div><span class="text-slate-400">Acción:</span> {{ selectedLog.action }}</div>
-                    <div><span class="text-slate-400">Estado:</span> {{ selectedLog.status }}</div>
-                  </div>
-                  <div class="pt-2 border-t border-slate-800/60">
-                    <span class="text-slate-400">Recurso:</span> {{ selectedLog.resource }}
-                  </div>
-                  <div class="pt-2 border-t border-slate-800/60" *ngIf="selectedLog.details">
-                    <span class="text-slate-400">Detalles:</span> {{ selectedLog.details }}
-                  </div>
-                </div>
+              <td class="px-3 py-2 font-mono text-slate-400">{{ formatTs(e.timestamp) }}</td>
+              <td class="px-3 py-2">
+                <p class="text-slate-200 font-medium">{{ e.username }}</p>
+                <p class="text-[10px] text-slate-500">{{ e.role }}</p>
               </td>
+              <td class="px-3 py-2 text-slate-400">{{ moduleLabel(e.module) }}</td>
+              <td class="px-3 py-2">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-medium" [class]="actionBadge(e.action)">
+                  {{ actionLabel(e.action) }}
+                </span>
+              </td>
+              <td class="px-3 py-2">
+                <p class="text-slate-300">{{ e.resource }}</p>
+                <p class="text-[10px] text-slate-500 font-mono">{{ e.resourceId }}</p>
+              </td>
+              <td class="px-3 py-2">
+                <span class="px-1.5 py-0.5 rounded text-[10px]" [class]="severityBadge(e.severity)">
+                  {{ e.severity }}
+                </span>
+              </td>
+              <td class="px-3 py-2">
+                <span class="px-1.5 py-0.5 rounded text-[10px]" [class]="statusBadge(e.status)">
+                  {{ e.status === 'SUCCESS' ? 'Éxito' : e.status === 'FAILURE' ? 'Fallo' : 'Denegado' }}
+                </span>
+              </td>
+              <td class="px-3 py-2 font-mono text-slate-500">{{ e.ip }}</td>
             </tr>
           </ng-container>
+          <tr *ngIf="filtered.length === 0">
+            <td colspan="9" class="px-6 py-12 text-center text-slate-600">
+              <i class="pi pi-inbox text-2xl block mb-2"></i>
+              Sin registros que coincidan con los filtros
+            </td>
+          </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Detail panel -->
+    <div *ngIf="selected" class="w-80 flex-shrink-0 border-l border-slate-800/60 overflow-y-auto bg-slate-900/20 p-4 space-y-4">
+      <div class="flex items-start justify-between">
+        <h3 class="text-xs font-semibold text-slate-200">Detalle del evento</h3>
+        <button (click)="selectedId = null" class="text-slate-500 hover:text-slate-300 transition">
+          <i class="pi pi-times text-xs"></i>
+        </button>
+      </div>
+
+      <!-- Severity + Status -->
+      <div class="flex gap-2">
+        <span class="px-2 py-0.5 rounded text-[10px]" [class]="severityBadge(selected.severity)">{{ selected.severity }}</span>
+        <span class="px-2 py-0.5 rounded text-[10px]" [class]="statusBadge(selected.status)">
+          {{ selected.status === 'SUCCESS' ? 'Éxito' : selected.status === 'FAILURE' ? 'Fallo' : 'Denegado' }}
+        </span>
+        <span class="px-2 py-0.5 rounded text-[10px]" [class]="actionBadge(selected.action)">{{ actionLabel(selected.action) }}</span>
+      </div>
+
+      <!-- Meta -->
+      <div class="space-y-2 text-[11px]">
+        <div class="flex justify-between">
+          <span class="text-slate-500">ID</span>
+          <span class="font-mono text-slate-300">{{ selected.id }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500">Timestamp</span>
+          <span class="font-mono text-slate-300">{{ formatTs(selected.timestamp) }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500">Sesión</span>
+          <span class="font-mono text-slate-400">{{ selected.sessionId || '—' }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500">IP</span>
+          <span class="font-mono text-slate-300">{{ selected.ip }}</span>
+        </div>
+      </div>
+
+      <div class="border-t border-slate-800/60 pt-3 space-y-2 text-[11px]">
+        <div>
+          <p class="text-slate-500 mb-0.5">Usuario</p>
+          <p class="text-slate-200 font-medium">{{ selected.fullName }}</p>
+          <p class="text-slate-500">{{ selected.username }} · {{ selected.role }}</p>
+        </div>
+        <div>
+          <p class="text-slate-500 mb-0.5">Módulo</p>
+          <p class="text-slate-300">{{ moduleLabel(selected.module) }}</p>
+        </div>
+        <div>
+          <p class="text-slate-500 mb-0.5">Recurso</p>
+          <p class="text-slate-300">{{ selected.resource }}</p>
+          <p class="font-mono text-slate-400">{{ selected.resourceId }}</p>
+        </div>
+      </div>
+
+      <div class="border-t border-slate-800/60 pt-3 text-[11px]">
+        <p class="text-slate-500 mb-1">Detalles</p>
+        <p class="text-slate-300 leading-relaxed">{{ selected.details }}</p>
+      </div>
+
+      <div *ngIf="selected.before || selected.after" class="border-t border-slate-800/60 pt-3 space-y-2 text-[11px]">
+        <div *ngIf="selected.before">
+          <p class="text-slate-500 mb-1">Antes</p>
+          <pre class="bg-slate-900 border border-slate-800 rounded p-2 text-slate-400 text-[10px] overflow-x-auto whitespace-pre-wrap">{{ selected.before }}</pre>
+        </div>
+        <div *ngIf="selected.after">
+          <p class="text-slate-500 mb-1">Después</p>
+          <pre class="bg-slate-900 border border-emerald-800/30 rounded p-2 text-emerald-300 text-[10px] overflow-x-auto whitespace-pre-wrap">{{ selected.after }}</pre>
+        </div>
+      </div>
     </div>
   </div>
 </div>

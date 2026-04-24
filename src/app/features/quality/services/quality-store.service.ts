@@ -207,9 +207,15 @@ export class QualityStoreService {
   loadInspections(): Observable<Inspection[]> {
     console.log('🔄 Intentando cargar inspecciones desde backend...');
     return this.api.getInspections().pipe(
-      tap((data: Inspection[]) => {
-        this.inspectionsSubject.next(data);
-        console.log('✅ Inspecciones cargadas:', data.length);
+      tap(response => {
+        console.log('📦 Respuesta RAW de inspecciones:', response);
+        console.log('📦 Tipo de respuesta:', typeof response);
+        console.log('📦 Es array?:', Array.isArray(response));
+        
+        // Verificar si la respuesta tiene estructura {data: []} o es array directo
+        const inspections = (response as any)?.data || response || [];
+        console.log('✅ Inspecciones procesadas:', inspections.length);
+        this.inspectionsSubject.next(inspections);
       }),
       catchError((err: any) => {
         console.error('❌ Error cargando inspecciones:', err);
@@ -282,7 +288,28 @@ export class QualityStoreService {
   // ===== OPERACIONES CRUD INSPECTIONS =====
   
   createInspection(dto: CreateInspectionDto): Observable<Inspection> {
-    return this.api.createInspection(dto).pipe(
+    // Mapear DTO del frontend al formato esperado por el backend
+    const backendDto: any = {
+      type: dto.type,
+      // Preferir `nodeId` si viene desde el formulario, si no, intentar usar lotId/productionOrderId/productId
+      nodeId: (dto as any).nodeId || dto.lotId || dto.productionOrderId || dto.productId || '',
+    };
+
+    // Mapear estado/resultados
+    if ((dto as any).status) backendDto.status = (dto as any).status;
+    if (dto.result) backendDto.status = dto.result;
+
+    // Cantidad inspeccionada
+    if ((dto as any).inspectedQuantity !== undefined) backendDto.inspectedQuantity = (dto as any).inspectedQuantity;
+    if (dto.quantityInspected !== undefined) backendDto.inspectedQuantity = dto.quantityInspected;
+
+    // Notas
+    if ((dto as any).notes) backendDto.notes = (dto as any).notes;
+    if (dto.observations) backendDto.notes = dto.observations;
+
+    console.log('📤 Enviando DTO de inspección al backend (mapeado):', backendDto);
+
+    return this.api.createInspection(backendDto).pipe(
       tap((inspection: Inspection) => {
         const current = this.inspectionsSubject.value;
         this.inspectionsSubject.next([...current, inspection]);

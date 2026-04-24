@@ -1,0 +1,96 @@
+<div class="space-y-5">
+
+  <!-- Header -->
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Historial de Factibilidad</h3>
+      <p class="ui-subtitle">Estudios aprobados que se convirtieron en órdenes de producción o solicitudes de pedido.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9 w-64" placeholder="Buscar por código, cliente, producto..." />
+      </div>
+      <select [(ngModel)]="filterType" class="ui-select w-52">
+        <option value="">Todos los tipos</option>
+        <option value="PRODUCTION_ORDER">Orden de Producción</option>
+        <option value="PURCHASE_REQUEST">Solicitud de Pedido</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="ui-surface p-4 rounded-xl text-center">
+      <p class="text-[10px] text-slate-500 uppercase tracking-wide">Total aprobados</p>
+      <p class="text-2xl font-bold mt-1">{{ items.length }}</p>
+    </div>
+    <div class="ui-surface p-4 rounded-xl text-center">
+      <p class="text-[10px] text-blue-400 uppercase tracking-wide">Órdenes de producción</p>
+      <p class="text-2xl font-bold mt-1 text-blue-400">{{ countByType('PRODUCTION_ORDER') }}</p>
+    </div>
+    <div class="ui-surface p-4 rounded-xl text-center">
+      <p class="text-[10px] text-violet-400 uppercase tracking-wide">Solicitudes de pedido</p>
+      <p class="text-2xl font-bold mt-1 text-violet-400">{{ countByType('PURCHASE_REQUEST') }}</p>
+    </div>
+    <div class="ui-surface p-4 rounded-xl text-center">
+      <p class="text-[10px] text-emerald-400 uppercase tracking-wide">Completados</p>
+      <p class="text-2xl font-bold mt-1 text-emerald-400">{{ countByStatus('COMPLETED') }}</p>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="ui-surface p-5">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-sm font-semibold">Registros de historial</p>
+      <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
+    </div>
+
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead class="ui-thead">
+          <tr>
+            <th class="ui-th">Estudio</th>
+            <th class="ui-th">Cliente</th>
+            <th class="ui-th">Producto</th>
+            <th class="ui-th">Cantidad</th>
+            <th class="ui-th">Cotización</th>
+            <th class="ui-th">Aprobado</th>
+            <th class="ui-th">Tipo resultado</th>
+            <th class="ui-th">Código resultado</th>
+            <th class="ui-th">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let it of filtered" class="ui-tr">
+            <td class="ui-td font-medium">{{ it.studyCode }}</td>
+            <td class="ui-td">{{ it.clientName }}</td>
+            <td class="ui-td">{{ it.productName }}</td>
+            <td class="ui-td">{{ it.quantity }} {{ it.uom }}</td>
+            <td class="ui-td">{{ it.currency }} {{ it.quotePrice | number:'1.2-2' }}</td>
+            <td class="ui-td">
+              <div>{{ it.approvedDate | date:'dd/MM/yyyy' }}</div>
+              <div class="text-[10px] text-slate-500">{{ it.approvedBy }}</div>
+            </td>
+            <td class="ui-td">
+              <span class="ui-badge border" [ngClass]="resultTypeBadge(it.resultType)">
+                {{ resultTypeLabel(it.resultType) }}
+              </span>
+            </td>
+            <td class="ui-td font-medium">{{ it.resultCode }}</td>
+            <td class="ui-td">
+              <span class="text-xs font-medium" [ngClass]="statusColor(it.status)">
+                {{ statusLabel(it.status) }}
+              </span>
+            </td>
+          </tr>
+          <tr *ngIf="filtered.length === 0">
+            <td colspan="9" class="px-4 py-10 text-center text-slate-500">
+              No hay registros en el historial.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

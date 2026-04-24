@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/auth/auth.service';
 
@@ -17,7 +17,7 @@ export class LoginComponent {
   error: string | null = null;
   Date = new Date; // Agregar esta línea
 
-  constructor(private auth: AuthService, private router: Router) {}
+  constructor(private auth: AuthService, private router: Router, private route: ActivatedRoute) {}
 
   submit(email: string, password: string) {
   console.log('Intentando iniciar sesión con', email, password);
@@ -38,7 +38,8 @@ export class LoginComponent {
 
   this.auth.login({ email: email, password: password }).subscribe({
     next: () => {
-      this.router.navigate(['/dashboard']);
+      const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+      this.router.navigateByUrl(returnUrl);
       this.loading = false;
     },
     error: (err) => {

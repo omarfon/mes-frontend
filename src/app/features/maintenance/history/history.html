@@ -1,49 +1,102 @@
-<div class="space-y-5">
+﻿<div class="space-y-4">
+  <!-- Header -->
   <div class="ui-page-header">
     <div>
       <h3 class="ui-title">Historial por Activo</h3>
-      <p class="ui-subtitle">Vista unificada: WOs, paradas (DT) e intervenciones (INT).</p>
+      <p class="ui-subtitle">Timeline unificado: OTs, paradas (DT) e intervenciones (INT)</p>
+    </div>
+    <button (click)="exportCsv()" class="ui-btn-ghost text-sm" [disabled]="filteredRows.length===0">
+      <span class="pi pi-download text-xs mr-1"></span> Exportar CSV
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="ui-surface p-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3 items-end">
+      <div class="xl:col-span-2">
+        <label class="ui-label">Activo</label>
+        <select [(ngModel)]="assetCode" (ngModelChange)="onFilterChange()" class="ui-select">
+          <option *ngFor="let a of assets" [value]="a.code">{{ a.code }} &middot; {{ a.name }}</option>
+        </select>
+      </div>
+      <div>
+        <label class="ui-label">Tipo de evento</label>
+        <select [(ngModel)]="filterType" (ngModelChange)="onFilterChange()" class="ui-select">
+          <option value="ALL">Todos</option>
+          <option value="WO">Solo OTs</option>
+          <option value="DT">Solo Paradas</option>
+          <option value="INT">Solo Intervenciones</option>
+        </select>
+      </div>
+      <div>
+        <label class="ui-label">Desde</label>
+        <input type="date" [(ngModel)]="filterFrom" (ngModelChange)="onFilterChange()" class="ui-input" />
+      </div>
+      <div>
+        <label class="ui-label">Hasta</label>
+        <input type="date" [(ngModel)]="filterTo" (ngModelChange)="onFilterChange()" class="ui-input" />
+      </div>
+    </div>
+
+    <!-- Botones de limpiar y contadores activos -->
+    <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-800/60">
+      <div class="flex gap-3 text-xs text-slate-500">
+        <span class="bg-amber-500/10 text-amber-300 border border-amber-500/20 rounded-full px-2 py-0.5">
+          OTs: {{ rawData.wos.length }}
+        </span>
+        <span class="bg-rose-500/10 text-rose-300 border border-rose-500/20 rounded-full px-2 py-0.5">
+          Paradas: {{ rawData.dts.length }}
+        </span>
+        <span class="bg-blue-500/10 text-blue-300 border border-blue-500/20 rounded-full px-2 py-0.5">
+          Intervenciones: {{ rawData.ints.length }}
+        </span>
+        <span class="text-slate-400">Mostrando {{ filteredRows.length }} evento(s)</span>
+      </div>
+      <button (click)="clearFilters()" class="ui-btn-ghost text-xs" *ngIf="filterType!=='ALL' || filterFrom || filterTo">
+        <span class="pi pi-filter-slash text-[10px] mr-1"></span> Limpiar filtros
+      </button>
     </div>
   </div>
 
+  <!-- Timeline -->
   <div class="ui-surface p-5">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-      <div>
-        <label class="ui-label">Activo</label>
-        <select [(ngModel)]="assetCode" class="ui-select">
-          <option *ngFor="let a of assets" [value]="a.code">{{ a.code }} · {{ a.name }}</option>
-        </select>
-      </div>
-
-      <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
-        <div class="text-[11px] text-slate-400">WO</div>
-        <div class="text-lg font-semibold text-slate-100 mt-1">{{ data.wos.length }}</div>
-      </div>
-
-      <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
-        <div class="text-[11px] text-slate-400">Paradas</div>
-        <div class="text-lg font-semibold text-slate-100 mt-1">{{ data.dts.length }}</div>
-      </div>
-    </div>
-
-    <div class="my-4 border-t border-slate-800/70"></div>
-
-    <p class="text-sm font-semibold mb-3">Timeline</p>
-
     <div class="space-y-2">
-      <div *ngFor="let r of data.rows"
-           class="rounded-xl border border-slate-800/70 bg-slate-950/30 p-3">
-        <div class="flex items-start justify-between gap-2">
-          <div>
-            <div class="text-[11px] text-slate-500">{{ r.at }}</div>
-            <div class="text-sm font-semibold text-slate-100 mt-1">{{ r.title }}</div>
-            <div class="text-xs text-slate-400 mt-1">{{ r.meta }}</div>
+      <div *ngFor="let r of pagedRows"
+           class="rounded-xl border border-slate-800/70 bg-slate-950/30 p-3.5 hover:bg-slate-900/40 transition-all">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span [ngClass]="badgeType(r.type)">{{ r.type }}</span>
+              <span class="text-[11px] text-slate-500">{{ fmtDate(r.at) }}</span>
+            </div>
+            <div class="text-sm font-semibold text-slate-100">{{ r.title }}</div>
+            <div class="text-xs text-slate-400 mt-0.5">{{ r.meta }}</div>
           </div>
-          <span [ngClass]="badgeType(r.type)">{{ r.type }}</span>
+          <div class="shrink-0 text-[11px] text-slate-600 text-right">
+            <div class="text-slate-500">{{ typeLabel(r.type) }}</div>
+          </div>
         </div>
       </div>
 
-      <div *ngIf="data.rows.length===0" class="text-center text-slate-500 py-10">Sin historial.</div>
+      <div *ngIf="filteredRows.length===0" class="text-center py-12 text-slate-500 text-sm">
+        <span class="pi pi-inbox text-2xl block mb-2 text-slate-700"></span>
+        Sin historial para los filtros seleccionados
+      </div>
+    </div>
+
+    <!-- Paginación -->
+    <div *ngIf="filteredRows.length > pageSize" class="flex items-center justify-between mt-4 pt-4 border-t border-slate-800/60">
+      <span class="text-xs text-slate-500">
+        Página {{ page }} de {{ totalPages }} &middot; {{ filteredRows.length }} eventos
+      </span>
+      <div class="flex gap-2">
+        <button class="ui-btn-ghost text-xs px-3" (click)="prevPage()" [disabled]="page===1">
+          <span class="pi pi-chevron-left text-[10px] mr-1"></span> Anterior
+        </button>
+        <button class="ui-btn-ghost text-xs px-3" (click)="nextPage()" [disabled]="page===totalPages">
+          Siguiente <span class="pi pi-chevron-right text-[10px] ml-1"></span>
+        </button>
+      </div>
     </div>
   </div>
 </div>

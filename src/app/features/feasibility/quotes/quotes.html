@@ -1,0 +1,173 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Cotizaciones</h3>
+      <p class="ui-subtitle">Gestión de cotizaciones formales derivadas de estudios de factibilidad.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9 w-64" placeholder="Buscar cotización..." />
+      </div>
+      <select [(ngModel)]="filterStatus" class="ui-select w-36">
+        <option value="">Todos</option>
+        <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
+      </select>
+      <button type="button" (click)="openNew()" class="ui-btn-primary flex items-center gap-2">
+        <i class="pi pi-plus text-xs"></i> Nueva cotización
+      </button>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div *ngIf="showForm" class="ui-surface p-6 space-y-4">
+    <div class="flex items-center justify-between">
+      <p class="text-sm font-semibold">{{ editingId ? 'Editar cotización' : 'Nueva cotización' }}</p>
+      <button type="button" (click)="cancel()" class="ui-btn-ghost text-xs">✕ Cerrar</button>
+    </div>
+    <div *ngIf="error" class="px-3 py-2 bg-rose-500/10 border border-rose-500/30 rounded-lg text-xs text-rose-400">{{ error }}</div>
+    <form (ngSubmit)="submit()">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div>
+          <label class="ui-label">Código cotización *</label>
+          <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="COT-0001" />
+        </div>
+        <div>
+          <label class="ui-label">Estudio origen</label>
+          <input [(ngModel)]="form.studyCode" name="studyCode" class="ui-input" placeholder="FAC-0001" />
+        </div>
+        <div>
+          <label class="ui-label">Cliente *</label>
+          <input [(ngModel)]="form.clientName" name="clientName" required class="ui-input" placeholder="Empresa S.A." />
+        </div>
+        <div>
+          <label class="ui-label">Estado</label>
+          <select [(ngModel)]="form.status" name="status" class="ui-select">
+            <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+        <div class="col-span-2">
+          <label class="ui-label">Producto</label>
+          <input [(ngModel)]="form.productName" name="productName" class="ui-input" placeholder="Nombre del producto" />
+        </div>
+        <div>
+          <label class="ui-label">Cantidad</label>
+          <input [(ngModel)]="form.quantity" name="quantity" type="number" class="ui-input" />
+        </div>
+        <div>
+          <label class="ui-label">Unidad</label>
+          <input [(ngModel)]="form.uom" name="uom" class="ui-input" placeholder="pzas, kg..." />
+        </div>
+      </div>
+      <div class="my-3 border-t border-slate-800/50"></div>
+      <p class="text-[11px] text-slate-500 uppercase tracking-wide">Costos</p>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+        <div>
+          <label class="ui-label">Materiales</label>
+          <input [(ngModel)]="form.materialCost" name="materialCost" type="number" step="0.01" class="ui-input" (ngModelChange)="recalc()" />
+        </div>
+        <div>
+          <label class="ui-label">Mano de obra</label>
+          <input [(ngModel)]="form.laborCost" name="laborCost" type="number" step="0.01" class="ui-input" (ngModelChange)="recalc()" />
+        </div>
+        <div>
+          <label class="ui-label">Indirectos</label>
+          <input [(ngModel)]="form.overheadCost" name="overheadCost" type="number" step="0.01" class="ui-input" (ngModelChange)="recalc()" />
+        </div>
+        <div>
+          <label class="ui-label">Margen (%)</label>
+          <input [(ngModel)]="form.margin" name="margin" type="number" class="ui-input" (ngModelChange)="recalc()" />
+        </div>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+        <div class="ui-surface p-3 rounded-lg text-center">
+          <p class="text-[10px] text-slate-500 uppercase">Costo total</p>
+          <p class="text-lg font-bold">{{ form.currency }} {{ form.totalCost | number:'1.2-2' }}</p>
+        </div>
+        <div class="ui-surface p-3 rounded-lg text-center border-2 border-emerald-500/30">
+          <p class="text-[10px] text-emerald-400 uppercase font-medium">Precio cotización</p>
+          <p class="text-lg font-bold text-emerald-400">{{ form.currency }} {{ form.quotePrice | number:'1.2-2' }}</p>
+        </div>
+        <div>
+          <label class="ui-label">Moneda</label>
+          <select [(ngModel)]="form.currency" name="currency" class="ui-select">
+            <option value="USD">USD</option><option value="EUR">EUR</option><option value="COP">COP</option>
+            <option value="MXN">MXN</option><option value="PEN">PEN</option><option value="BRL">BRL</option>
+          </select>
+        </div>
+        <div>
+          <label class="ui-label">Días de entrega</label>
+          <input [(ngModel)]="form.deliveryDays" name="deliveryDays" type="number" class="ui-input" placeholder="15" />
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3 mt-3">
+        <div>
+          <label class="ui-label">Vigencia hasta</label>
+          <input [(ngModel)]="form.validUntil" name="validUntil" type="date" class="ui-input" />
+        </div>
+        <div>
+          <label class="ui-label">Notas</label>
+          <input [(ngModel)]="form.notes" name="notes" class="ui-input" placeholder="Observaciones..." />
+        </div>
+      </div>
+      <div class="flex gap-2 pt-4 border-t border-slate-800/50 mt-4">
+        <button type="submit" class="ui-btn-primary flex items-center gap-2">
+          <i class="pi pi-check text-xs"></i> {{ editingId ? 'Guardar' : 'Crear' }}
+        </button>
+        <button type="button" (click)="cancel()" class="ui-btn-ghost">Cancelar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- TABLE -->
+  <div class="ui-surface p-5">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-sm font-semibold">Listado de cotizaciones</p>
+      <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
+    </div>
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead class="ui-thead">
+          <tr>
+            <th class="ui-th">Código</th>
+            <th class="ui-th">Cliente</th>
+            <th class="ui-th">Producto</th>
+            <th class="ui-th">Cantidad</th>
+            <th class="ui-th">Precio</th>
+            <th class="ui-th">Entrega</th>
+            <th class="ui-th">Vigencia</th>
+            <th class="ui-th">Estado</th>
+            <th class="ui-th w-32">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of filtered" class="ui-tr">
+            <td class="ui-td font-medium">{{ c.code }}</td>
+            <td class="ui-td">{{ c.clientName }}</td>
+            <td class="ui-td">{{ c.productName }}</td>
+            <td class="ui-td">{{ c.quantity }} {{ c.uom }}</td>
+            <td class="ui-td font-medium">{{ c.currency }} {{ c.quotePrice | number:'1.2-2' }}</td>
+            <td class="ui-td">{{ c.deliveryDays }} días</td>
+            <td class="ui-td text-xs">{{ c.validUntil | date:'dd/MM/yyyy' }}</td>
+            <td class="ui-td">
+              <span class="text-xs font-medium" [ngClass]="statusColor(c.status)">{{ statusLabel(c.status) }}</span>
+            </td>
+            <td class="ui-td">
+              <div class="flex gap-2">
+                <button (click)="edit(c)" class="ui-btn-ghost text-xs">Editar</button>
+                <button (click)="remove(c.id)" class="ui-btn-danger text-xs">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filtered.length === 0">
+            <td colspan="9" class="px-4 py-10 text-center text-slate-500">
+              {{ loading ? 'Cargando...' : 'No hay cotizaciones registradas.' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

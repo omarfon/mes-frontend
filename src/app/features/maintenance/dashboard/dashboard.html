@@ -1,247 +1,172 @@
-<div class="space-y-5">
+﻿<div class="space-y-5">
   <!-- Header -->
   <div class="ui-page-header">
     <div>
-      <h3 class="ui-title">Panel de Control · Mantenimiento</h3>
-      <p class="ui-subtitle">Resumen de órdenes de trabajo, estado de activos y métricas clave</p>
+      <h3 class="ui-title">Panel de Control &middot; Mantenimiento</h3>
+      <p class="ui-subtitle">Estado en tiempo real del parque de activos y OTs</p>
     </div>
-
     <div class="flex gap-2">
-      <button class="ui-btn-ghost text-sm">
-        <span class="pi pi-calendar text-xs mr-2"></span>
-        Este mes
+      <button class="ui-btn-ghost text-sm" (click)="navTo('work-orders')">
+        <span class="pi pi-clipboard text-xs mr-1"></span> Ver OTs
       </button>
-      <button class="ui-btn-primary text-sm">
-        <span class="pi pi-plus text-xs mr-2"></span>
-        Nueva Orden
+      <button class="ui-btn-primary text-sm" (click)="navTo('work-orders')">
+        <span class="pi pi-plus text-xs mr-1"></span> Nueva OT
       </button>
     </div>
   </div>
 
-  <!-- Metrics Grid -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-    <div *ngFor="let metric of metrics" 
-         class="ui-surface p-4 bg-gradient-to-br border"
-         [ngClass]="getMetricColor(metric.color)">
-      <div class="flex items-start justify-between mb-3">
-        <div class="p-2 rounded-lg bg-slate-950/40">
-          <span class="pi text-lg" [ngClass]="metric.icon"></span>
-        </div>
-        <div *ngIf="metric.trend" class="flex items-center gap-1 text-xs">
-          <span class="pi" [ngClass]="metric.trend > 0 ? 'pi-arrow-up text-emerald-400' : 'pi-arrow-down text-rose-400'"></span>
-          <span [ngClass]="metric.trend > 0 ? 'text-emerald-400' : 'text-rose-400'">
-            {{ metric.trend > 0 ? '+' : '' }}{{ metric.trend }}%
-          </span>
-        </div>
+  <!-- KPI Cards Row 1: OTs -->
+  <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3">
+    <div class="ui-surface p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="pi pi-clipboard text-amber-400 text-sm"></span>
+        <span class="text-[11px] text-slate-500">OTs Abiertas</span>
       </div>
-      
-      <div class="space-y-1">
-        <div class="text-2xl font-bold">
-          {{ metric.value }}<span *ngIf="metric.unit" class="text-base font-normal text-slate-400 ml-1">{{ metric.unit }}</span>
-        </div>
-        <p class="text-xs text-slate-400">{{ metric.label }}</p>
+      <div class="text-2xl font-bold text-amber-400">{{ kpis.open }}</div>
+    </div>
+    <div class="ui-surface p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="pi pi-check-circle text-emerald-400 text-sm"></span>
+        <span class="text-[11px] text-slate-500">OTs Cerradas</span>
       </div>
+      <div class="text-2xl font-bold text-emerald-400">{{ kpis.closed }}</div>
+    </div>
+    <div class="ui-surface p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="pi pi-exclamation-triangle text-rose-400 text-sm"></span>
+        <span class="text-[11px] text-slate-500">Críticas abiertas</span>
+      </div>
+      <div class="text-2xl font-bold text-rose-400">{{ kpis.critical }}</div>
+    </div>
+    <div class="ui-surface p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="pi pi-stop-circle text-orange-400 text-sm"></span>
+        <span class="text-[11px] text-slate-500">Paradas activas</span>
+      </div>
+      <div class="text-2xl font-bold text-orange-400">{{ openDowntimes.length }}</div>
+    </div>
+    <div class="ui-surface p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="pi pi-chart-line text-emerald-400 text-sm"></span>
+        <span class="text-[11px] text-slate-500">Disponibilidad</span>
+      </div>
+      <div class="text-2xl font-bold text-emerald-400">{{ availabilityPct }}%</div>
+    </div>
+    <div class="ui-surface p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="pi pi-box text-blue-400 text-sm"></span>
+        <span class="text-[11px] text-slate-500">SKUs bajo mínimo</span>
+      </div>
+      <div class="text-2xl font-bold" [ngClass]="invKpis.low > 0 ? 'text-rose-400' : 'text-slate-400'">{{ invKpis.low }}</div>
     </div>
   </div>
 
-  <!-- Main Content Grid -->
+  <!-- Main Content -->
   <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-    
-    <!-- Recent Work Orders -->
+
+    <!-- OTs Recientes (2/3) -->
     <div class="xl:col-span-2 ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
-        <div>
-          <h4 class="text-base font-semibold">Órdenes de Trabajo Recientes</h4>
-          <p class="text-xs text-slate-400 mt-0.5">Últimas órdenes creadas o actualizadas</p>
-        </div>
-        <button class="text-xs text-blue-400 hover:text-blue-300 transition">
-          Ver todas
-          <span class="pi pi-arrow-right text-[10px] ml-1"></span>
+        <h4 class="text-sm font-semibold">Órdenes de Trabajo Recientes</h4>
+        <button class="text-xs text-emerald-400 hover:text-emerald-300" (click)="navTo('work-orders')">
+          Ver todas <span class="pi pi-arrow-right text-[10px] ml-1"></span>
         </button>
       </div>
-
-      <div class="space-y-3">
-        <div *ngFor="let order of recentWorkOrders" 
-             class="ui-surface-inner p-4 hover:bg-slate-800/40 transition cursor-pointer">
-          <div class="flex items-start justify-between gap-3">
+      <div class="space-y-2">
+        <div *ngFor="let wo of recentWos"
+             class="ui-surface-inner p-3 cursor-pointer hover:bg-slate-800/40 transition"
+             (click)="navTo('work-orders/'+wo.id)">
+          <div class="flex items-start justify-between gap-2">
             <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-2">
-                <span class="font-mono text-sm font-semibold">{{ order.code }}</span>
-                <span class="text-xs" [ngClass]="getPriorityBadgeClass(order.priority)">
-                  {{ order.priority }}
-                </span>
-                <span class="text-xs" [ngClass]="getStatusBadgeClass(order.status)">
-                  {{ order.status }}
-                </span>
+              <div class="flex flex-wrap items-center gap-2 mb-1">
+                <span class="font-mono text-xs font-bold text-slate-200">{{ wo.code }}</span>
+                <span [ngClass]="priorityBadge(wo.priority)">{{ wo.priority }}</span>
+                <span [ngClass]="statusBadge(wo.status)">{{ wo.status }}</span>
               </div>
-              
-              <p class="text-sm text-slate-200 mb-1">{{ order.asset }}</p>
-              
-              <div class="flex items-center gap-4 text-xs text-slate-400">
-                <div class="flex items-center gap-1">
-                  <span class="pi pi-wrench text-[10px]"></span>
-                  <span>{{ order.type }}</span>
-                </div>
-                <div class="flex items-center gap-1">
-                  <span class="pi pi-user text-[10px]"></span>
-                  <span>{{ order.assignedTo }}</span>
-                </div>
-                <div class="flex items-center gap-1">
-                  <span class="pi pi-calendar text-[10px]"></span>
-                  <span>{{ order.dueDate }}</span>
-                </div>
+              <p class="text-sm text-slate-200 truncate">{{ wo.title }}</p>
+              <div class="flex items-center gap-3 text-[11px] text-slate-500 mt-1">
+                <span><span class="pi pi-cog text-[10px] mr-1"></span>{{ wo.assetName }}</span>
+                <span *ngIf="wo.assignedTo"><span class="pi pi-user text-[10px] mr-1"></span>{{ wo.assignedTo }}</span>
               </div>
             </div>
-            
-            <button class="ui-btn-ghost text-xs px-3 py-2">
-              <span class="pi pi-ellipsis-v text-xs"></span>
-            </button>
+            <span class="pi pi-chevron-right text-slate-600 text-xs mt-1"></span>
           </div>
         </div>
-
-        <div *ngIf="recentWorkOrders.length === 0" class="text-center py-8 text-slate-500 text-sm">
-          No hay órdenes recientes
-        </div>
+        <div *ngIf="recentWos.length===0" class="text-center py-8 text-slate-500 text-sm">Sin OTs registradas</div>
       </div>
     </div>
 
-    <!-- Asset Health Status -->
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h4 class="text-base font-semibold">Estado de Activos</h4>
-          <p class="text-xs text-slate-400 mt-0.5">Salud y próximo mantenimiento</p>
+    <!-- Sidebar: salud de activos + PMs próximos -->
+    <div class="space-y-4">
+      <!-- Salud de activos -->
+      <div class="ui-surface p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="text-sm font-semibold">Estado de Activos</h4>
+          <button class="text-xs text-emerald-400 hover:text-emerald-300" (click)="navTo('assets')">
+            Ver activos <span class="pi pi-arrow-right text-[10px] ml-1"></span>
+          </button>
+        </div>
+        <div class="space-y-3">
+          <div *ngFor="let a of assetHealth" class="space-y-1">
+            <div class="flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="pi text-sm" [ngClass]="healthIcon(a.status)"></span>
+                <span class="text-slate-200 truncate">{{ a.name }}</span>
+              </div>
+              <span class="text-slate-400 shrink-0 ml-2">{{ a.score }}%</span>
+            </div>
+            <div class="h-1.5 rounded-full bg-slate-800">
+              <div class="h-1.5 rounded-full transition-all" [ngClass]="healthBarClass(a.status)" [style.width]="a.score+'%'"></div>
+            </div>
+          </div>
+          <div *ngIf="assetHealth.length===0" class="text-center py-4 text-slate-500 text-xs">Sin activos</div>
         </div>
       </div>
 
-      <div class="space-y-4">
-        <div *ngFor="let asset of assetHealth" class="space-y-2">
-          <div class="flex items-center justify-between">
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium truncate">{{ asset.asset }}</p>
-              <p class="text-xs text-slate-400 mt-0.5">Próximo: {{ asset.nextMaintenance }}</p>
-            </div>
-            <span class="text-xs ml-2" [ngClass]="getHealthStatusClass(asset.status)">
-              {{ asset.status }}
-            </span>
-          </div>
-          
-          <!-- Health Score Bar -->
-          <div class="space-y-1">
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-slate-500">Salud</span>
-              <span class="font-medium">{{ asset.healthScore }}%</span>
-            </div>
-            <div class="h-2 bg-slate-900/60 rounded-full overflow-hidden">
-              <div 
-                class="h-full transition-all duration-500 rounded-full"
-                [ngClass]="getHealthBarColor(asset.healthScore)"
-                [style.width.%]="asset.healthScore">
-              </div>
-            </div>
-          </div>
+      <!-- PMs próximos -->
+      <div class="ui-surface p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="text-sm font-semibold">PMs Próximos</h4>
+          <button class="text-xs text-emerald-400 hover:text-emerald-300" (click)="navTo('preventive')">
+            Ver todos <span class="pi pi-arrow-right text-[10px] ml-1"></span>
+          </button>
         </div>
-
-        <div *ngIf="assetHealth.length === 0" class="text-center py-8 text-slate-500 text-sm">
-          No hay activos registrados
+        <div class="space-y-2">
+          <div *ngFor="let p of upcomingPMs"
+               class="flex items-center justify-between text-xs cursor-pointer hover:bg-slate-800/30 px-2 py-1.5 rounded-lg"
+               (click)="navTo('preventive')">
+            <div class="min-w-0">
+              <p class="text-slate-200 truncate font-medium">{{ p.name }}</p>
+              <p class="text-slate-500 text-[11px]">{{ p.assetCode }} &middot; {{ freqLabel(p.frequency) }}</p>
+            </div>
+            <div class="shrink-0 ml-2 text-right">
+              <div [ngClass]="isOverdue(p.nextAt) ? 'text-rose-400 font-semibold' : 'text-slate-300'">{{ fmtDate(p.nextAt) }}</div>
+              <div *ngIf="isOverdue(p.nextAt)" class="text-rose-500 text-[10px]">Vencido</div>
+            </div>
+          </div>
+          <div *ngIf="upcomingPMs.length===0" class="text-center py-4 text-slate-500 text-xs">Sin PMs activos</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Additional Stats Row -->
-  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-    <!-- Maintenance Type Distribution -->
-    <div class="ui-surface p-5">
-      <h4 class="text-sm font-semibold mb-4">Tipo de Mantenimiento</h4>
-      <div class="space-y-3">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-            <span class="text-xs text-slate-300">Preventivo</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-sm font-semibold">65%</span>
-            <span class="text-xs text-slate-500">29</span>
-          </div>
-        </div>
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full bg-amber-500"></div>
-            <span class="text-xs text-slate-300">Correctivo</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-sm font-semibold">28%</span>
-            <span class="text-xs text-slate-500">13</span>
-          </div>
-        </div>
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full bg-rose-500"></div>
-            <span class="text-xs text-slate-300">Emergencia</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-sm font-semibold">7%</span>
-            <span class="text-xs text-slate-500">3</span>
-          </div>
-        </div>
-      </div>
+  <!-- Paradas activas -->
+  <div *ngIf="openDowntimes.length > 0" class="ui-surface p-5 border-rose-500/30">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="pi pi-exclamation-triangle text-rose-400"></span>
+      <h4 class="text-sm font-semibold text-rose-300">Paradas Activas ({{ openDowntimes.length }})</h4>
+      <button class="ml-auto text-xs text-rose-400 hover:text-rose-300" (click)="navTo('downtime')">
+        Gestionar <span class="pi pi-arrow-right text-[10px] ml-1"></span>
+      </button>
     </div>
-
-    <!-- Top Assets by Downtime -->
-    <div class="ui-surface p-5">
-      <h4 class="text-sm font-semibold mb-4">Mayor Tiempo Inactivo</h4>
-      <div class="space-y-3">
-        <div class="flex items-center justify-between">
-          <span class="text-xs text-slate-300">Hiladora 01</span>
-          <span class="text-sm font-semibold">24.5h</span>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+      <div *ngFor="let dt of openDowntimes"
+           class="flex items-center gap-3 px-3 py-2 rounded-xl bg-rose-500/5 border border-rose-500/20">
+        <span class="pi pi-stop-circle text-rose-400 text-lg"></span>
+        <div class="min-w-0">
+          <p class="text-xs font-semibold text-rose-300">{{ dt.assetName }}</p>
+          <p class="text-[11px] text-slate-500">{{ dt.reason }} &middot; desde {{ fmtDate(dt.startAt) }}</p>
         </div>
-        <div class="flex items-center justify-between">
-          <span class="text-xs text-slate-300">Compresor A1</span>
-          <span class="text-sm font-semibold">18.2h</span>
-        </div>
-        <div class="flex items-center justify-between">
-          <span class="text-xs text-slate-300">Carda 02</span>
-          <span class="text-sm font-semibold">12.8h</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Cost Summary -->
-    <div class="ui-surface p-5">
-      <h4 class="text-sm font-semibold mb-4">Costos del Mes</h4>
-      <div class="space-y-3">
-        <div class="flex items-center justify-between">
-          <span class="text-xs text-slate-300">Mano de obra</span>
-          <span class="text-sm font-semibold">$12,450</span>
-        </div>
-        <div class="flex items-center justify-between">
-          <span class="text-xs text-slate-300">Repuestos</span>
-          <span class="text-sm font-semibold">$8,320</span>
-        </div>
-        <div class="flex items-center justify-between pt-2 border-t border-slate-800/60">
-          <span class="text-xs font-semibold text-slate-200">Total</span>
-          <span class="text-sm font-bold text-blue-400">$20,770</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="ui-surface p-5">
-      <h4 class="text-sm font-semibold mb-4">Acciones Rápidas</h4>
-      <div class="space-y-2">
-        <button class="w-full ui-btn-ghost text-xs text-left justify-start">
-          <span class="pi pi-plus text-[10px] mr-2"></span>
-          Nueva Orden
-        </button>
-        <button class="w-full ui-btn-ghost text-xs text-left justify-start">
-          <span class="pi pi-calendar text-[10px] mr-2"></span>
-          Programar Preventivo
-        </button>
-        <button class="w-full ui-btn-ghost text-xs text-left justify-start">
-          <span class="pi pi-file text-[10px] mr-2"></span>
-          Generar Reporte
-        </button>
       </div>
     </div>
   </div>

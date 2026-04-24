@@ -1,1 +1,217 @@
-<p>quarantine works!</p>
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Cuarentena y Bloqueos</h3>
+      <p class="ui-subtitle">Gestión de lotes retenidos, bloqueados y decisiones de disposición.</p>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div class="ui-surface p-4 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+        <i class="pi pi-lock text-amber-400 text-sm"></i>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500">Pendientes decisión</p>
+        <p class="text-2xl font-bold text-amber-400">{{ pendingCount }}</p>
+      </div>
+    </div>
+    <div class="ui-surface p-4 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0">
+        <i class="pi pi-box text-slate-400 text-sm"></i>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500">Cantidad retenida</p>
+        <p class="text-2xl font-bold text-slate-200">{{ totalQty | number }}</p>
+      </div>
+    </div>
+    <div class="ui-surface p-4 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+        <i class="pi pi-check-circle text-emerald-400 text-sm"></i>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500">Liberados</p>
+        <p class="text-2xl font-bold text-emerald-400">{{ releasedCount }}</p>
+      </div>
+    </div>
+    <div class="ui-surface p-4 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
+        <i class="pi pi-times-circle text-red-400 text-sm"></i>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500">Rechazados/Desechados</p>
+        <p class="text-2xl font-bold text-red-400">{{ rejectedCount }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="ui-surface p-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar lote, código, responsable..." />
+      </div>
+      <select [(ngModel)]="statusFilter" class="ui-select">
+        <option value="ALL">Todos los estados</option>
+        <option value="QUARANTINE">Cuarentena</option>
+        <option value="BLOCKED">Bloqueado</option>
+        <option value="RELEASED">Liberado</option>
+        <option value="REJECTED">Rechazado</option>
+        <option value="SCRAPPED">Desechado</option>
+      </select>
+      <select [(ngModel)]="reasonFilter" class="ui-select">
+        <option value="ALL">Todas las razones</option>
+        <option value="QUALITY_FAIL">Falla de calidad</option>
+        <option value="SUPPLIER_DEFECT">Defecto proveedor</option>
+        <option value="PROCESS_DEVIATION">Desviación de proceso</option>
+        <option value="CONTAMINATION">Contaminación</option>
+        <option value="EXPIRED">Vencido</option>
+        <option value="PENDING_ANALYSIS">Análisis pendiente</option>
+        <option value="OTHER">Otro</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- List -->
+    <div class="xl:col-span-2 space-y-2">
+      <p class="text-xs text-slate-500">{{ filtered.length }} registros</p>
+      <div *ngFor="let r of filtered"
+        class="ui-surface p-4 cursor-pointer border transition-all"
+        [class.border-emerald-500/30]="selectedId === r.id"
+        [class.bg-emerald-500/5]="selectedId === r.id"
+        [class.border-slate-800]="selectedId !== r.id"
+        (click)="select(r)">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-mono text-sm text-white">{{ r.lotCode }}</span>
+              <span class="text-xs font-semibold" [class]="typeBadge(r.lotType)">{{ r.lotType }}</span>
+              <span class="px-2 py-0.5 rounded text-[11px] font-medium" [class]="statusBadge(r.status)">{{ statusLabel(r.status) }}</span>
+            </div>
+            <p class="text-xs text-slate-300 mt-0.5 truncate">{{ r.description }}</p>
+            <div class="flex items-center gap-3 mt-1 text-[11px] text-slate-500 flex-wrap">
+              <span><i class="pi pi-box mr-1"></i>{{ r.qty | number }} {{ r.uom }}</span>
+              <span><i class="pi pi-map-marker mr-1"></i>{{ r.location }}</span>
+              <span class="text-amber-400/80">{{ reasonLabel(r.reason) }}</span>
+            </div>
+            <div class="flex items-center gap-3 mt-1 text-[11px] text-slate-600 flex-wrap">
+              <span *ngIf="r.originInspectionId" class="text-blue-400/70"><i class="pi pi-clipboard mr-1"></i>{{ r.originInspectionId }}</span>
+              <span *ngIf="r.ncapaId" class="text-orange-400/70"><i class="pi pi-exclamation-circle mr-1"></i>{{ r.ncapaId }}</span>
+              <span>Desde: {{ formatDate(r.enteredAt) }}</span>
+              <span *ngIf="r.resolvedAt" class="text-emerald-400/70">Resuelto: {{ formatDate(r.resolvedAt) }}</span>
+            </div>
+          </div>
+          <i class="pi pi-chevron-down text-slate-500 text-xs flex-shrink-0 transition" [class.rotate-180]="selectedId === r.id"></i>
+        </div>
+
+        <!-- Notes preview -->
+        <p *ngIf="r.notes" class="text-[11px] text-slate-400 mt-2 italic border-t border-slate-800 pt-2">{{ r.notes }}</p>
+      </div>
+      <p *ngIf="filtered.length === 0" class="text-center text-slate-500 text-sm py-8">Sin registros</p>
+    </div>
+
+    <!-- Detail Panel -->
+    <div class="space-y-4">
+      <div *ngIf="!selected" class="ui-surface p-6 text-center">
+        <i class="pi pi-lock text-4xl text-slate-700 mb-3"></i>
+        <p class="text-slate-500 text-sm">Selecciona un registro para ver el detalle y tomar una decisión.</p>
+      </div>
+
+      <ng-container *ngIf="selected">
+        <!-- Header info -->
+        <div class="ui-surface p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-semibold">{{ selected.lotCode }}</p>
+            <span class="px-2 py-0.5 rounded text-[11px] font-medium" [class]="statusBadge(selected.status)">{{ statusLabel(selected.status) }}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div><span class="text-slate-500">Artículo:</span> <span class="text-slate-200 ml-1">{{ selected.itemCode }}</span></div>
+            <div><span class="text-slate-500">Tipo:</span> <span class="font-semibold ml-1" [class]="typeBadge(selected.lotType)">{{ selected.lotType }}</span></div>
+            <div><span class="text-slate-500">Cantidad:</span> <span class="text-slate-200 ml-1">{{ selected.qty | number }} {{ selected.uom }}</span></div>
+            <div><span class="text-slate-500">Ubicación:</span> <span class="text-slate-200 ml-1">{{ selected.location }}</span></div>
+            <div><span class="text-slate-500">Razón:</span> <span class="text-amber-400 ml-1">{{ reasonLabel(selected.reason) }}</span></div>
+            <div><span class="text-slate-500">Responsable:</span> <span class="text-slate-200 ml-1">{{ selected.responsibleId }}</span></div>
+            <div *ngIf="selected.originInspectionId"><span class="text-slate-500">Inspección:</span> <span class="text-blue-400 ml-1">{{ selected.originInspectionId }}</span></div>
+            <div *ngIf="selected.ncapaId"><span class="text-slate-500">NC/CAPA:</span> <span class="text-orange-400 ml-1">{{ selected.ncapaId }}</span></div>
+          </div>
+          <p *ngIf="selected.notes" class="text-[11px] text-slate-400 italic">{{ selected.notes }}</p>
+        </div>
+
+        <!-- Actions (only if pending) -->
+        <div *ngIf="selected.status === 'QUARANTINE' || selected.status === 'BLOCKED'" class="ui-surface p-4">
+          <p class="text-xs font-semibold mb-3">Decisión de disposición</p>
+
+          <div *ngIf="!actionMode" class="space-y-2">
+            <button (click)="openAction('release')" class="w-full flex items-center gap-2 p-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5 text-emerald-400 text-xs hover:bg-emerald-500/10 transition">
+              <i class="pi pi-check-circle"></i> Liberar lote
+            </button>
+            <button (click)="openAction('reject')" class="w-full flex items-center gap-2 p-2.5 rounded-lg border border-orange-500/30 bg-orange-500/5 text-orange-400 text-xs hover:bg-orange-500/10 transition">
+              <i class="pi pi-times-circle"></i> Rechazar lote
+            </button>
+            <button (click)="openAction('scrap')" class="w-full flex items-center gap-2 p-2.5 rounded-lg border border-red-500/30 bg-red-500/5 text-red-400 text-xs hover:bg-red-500/10 transition">
+              <i class="pi pi-trash"></i> Desechar (scrap)
+            </button>
+          </div>
+
+          <div *ngIf="actionMode" class="space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded text-[11px] font-semibold"
+                [class.bg-emerald-500]="actionMode==='release'"
+                [class.text-white]="true"
+                [class.bg-orange-500]="actionMode==='reject'"
+                [class.bg-red-600]="actionMode==='scrap'">
+                {{ actionMode === 'release' ? 'LIBERAR' : actionMode === 'reject' ? 'RECHAZAR' : 'DESECHAR' }}
+              </span>
+              <span class="text-xs text-slate-400">{{ selected.lotCode }}</span>
+            </div>
+            <div>
+              <label class="ui-label">Nota / Justificación *</label>
+              <textarea [(ngModel)]="actionNote" class="ui-input resize-none" rows="3" placeholder="Indique el motivo de la decisión..."></textarea>
+            </div>
+            <div class="flex gap-2">
+              <button (click)="confirmAction()" [disabled]="!actionNote.trim()"
+                class="flex-1 ui-btn-primary text-xs disabled:opacity-40">Confirmar</button>
+              <button (click)="actionMode=null" class="flex-1 ui-btn-ghost text-xs">Cancelar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add note -->
+        <div class="ui-surface p-4">
+          <p class="text-xs font-semibold mb-2">Añadir nota</p>
+          <textarea [(ngModel)]="actionNote" class="ui-input resize-none text-xs" rows="2" placeholder="Comentario..."></textarea>
+          <button (click)="addNote()" [disabled]="!actionNote.trim()" class="mt-2 ui-btn-ghost text-xs disabled:opacity-40">
+            <i class="pi pi-plus mr-1"></i>Agregar nota
+          </button>
+        </div>
+
+        <!-- Event timeline -->
+        <div class="ui-surface p-4">
+          <p class="text-xs font-semibold mb-3">Historial de eventos</p>
+          <div class="space-y-3">
+            <div *ngFor="let ev of selected.events; let last = last" class="flex gap-3">
+              <div class="flex flex-col items-center flex-shrink-0">
+                <div class="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
+                  <i class="pi text-[9px]" [class]="eventIcon(ev.action)"></i>
+                </div>
+                <div *ngIf="!last" class="w-px flex-1 bg-slate-800 my-1"></div>
+              </div>
+              <div class="pb-3 min-w-0 flex-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-[11px] font-semibold text-slate-300">{{ ev.action }}</span>
+                  <span class="text-[10px] text-slate-500">{{ formatDate(ev.at) }}</span>
+                  <span class="text-[10px] text-slate-600">por {{ ev.by }}</span>
+                </div>
+                <p *ngIf="ev.note" class="text-[11px] text-slate-400 mt-0.5">{{ ev.note }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>
+

@@ -1,0 +1,195 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Maestro · Listas de Materiales (BOM)</h3>
+      <p class="ui-subtitle">Define los insumos y cantidades necesarias para fabricar cada producto.</p>
+    </div>
+    <div class="w-full max-w-sm">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar BOM o producto..." />
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Left: form + list -->
+    <div class="space-y-4">
+      <div class="ui-surface p-5">
+        <p class="text-sm font-semibold mb-4">{{ editingId ? 'Editar BOM' : 'Nuevo BOM' }}</p>
+        <form (ngSubmit)="submit()" class="space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="ui-label">Código BOM</label>
+              <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="BOM-HIL-100" />
+            </div>
+            <div>
+              <label class="ui-label">Versión</label>
+              <input [(ngModel)]="form.version" name="version" class="ui-input" placeholder="1.0" />
+            </div>
+          </div>
+          <div>
+            <label class="ui-label">Cód. Producto</label>
+            <input [(ngModel)]="form.productCode" name="productCode" required class="ui-input" placeholder="PRD-HIL-100" />
+          </div>
+          <div>
+            <label class="ui-label">Nombre Producto</label>
+            <input [(ngModel)]="form.productName" name="productName" class="ui-input" placeholder="Hilo Nm 8/1" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="ui-label">Qtd. base</label>
+              <input type="number" [(ngModel)]="form.baseQty" name="baseQty" min="0.001" step="0.001" class="ui-input" />
+            </div>
+            <div>
+              <label class="ui-label">UoM base</label>
+              <input [(ngModel)]="form.baseUom" name="baseUom" class="ui-input" placeholder="kg" />
+            </div>
+          </div>
+          <div>
+            <label class="ui-label">Válido desde</label>
+            <input type="date" [(ngModel)]="form.validFrom" name="validFrom" class="ui-input" />
+          </div>
+          <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+            <input type="checkbox" [(ngModel)]="form.active" name="active" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+            Activo
+          </label>
+          <div class="flex gap-2 pt-1">
+            <button type="submit" class="flex-1 ui-btn-primary">{{ editingId ? 'Guardar' : 'Agregar BOM' }}</button>
+            <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- BOM list -->
+      <div class="ui-surface p-4 space-y-2">
+        <p class="text-xs font-semibold text-slate-400 mb-2">{{ filtered.length }} BOM(s)</p>
+        <div *ngFor="let b of filtered"
+             class="rounded-lg border transition cursor-pointer p-3"
+             [ngClass]="selectedId === b.id ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-slate-800/60 hover:bg-slate-800/30'"
+             (click)="selectBom(b.id)">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <p class="text-sm font-semibold truncate">{{ b.code }}</p>
+              <p class="text-xs text-slate-400 truncate">{{ b.productCode }} · v{{ b.version }}</p>
+              <p class="text-[11px] text-slate-500 mt-0.5">{{ b.lines.length }} componente(s) · base {{ b.baseQty }} {{ b.baseUom }}</p>
+            </div>
+            <div class="flex gap-1 shrink-0">
+              <button (click)="$event.stopPropagation(); edit(b)" class="ui-btn-ghost text-xs">Edit</button>
+              <button (click)="$event.stopPropagation(); remove(b.id)" class="ui-btn-danger text-xs">Del</button>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="filtered.length === 0" class="text-center py-6 text-slate-600 text-xs">Sin BOMs.</div>
+      </div>
+    </div>
+
+    <!-- Right: lines detail -->
+    <div class="xl:col-span-2 space-y-4">
+      <div *ngIf="!selectedBom" class="ui-surface p-10 text-center text-slate-500 text-sm">
+        <span class="pi pi-list text-3xl block mb-2 text-slate-700"></span>
+        Selecciona un BOM para ver y editar sus componentes.
+      </div>
+
+      <ng-container *ngIf="selectedBom">
+        <!-- Lines table -->
+        <div class="ui-surface p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <p class="text-sm font-semibold">{{ selectedBom.code }} · Componentes</p>
+              <p class="text-xs text-slate-500">Total insumos: {{ totalMaterialQty | number:'1.2-3' }} unidades mixtas · base {{ selectedBom.baseQty }} {{ selectedBom.baseUom }}</p>
+            </div>
+          </div>
+          <div class="ui-table-wrap">
+            <table class="ui-table">
+              <thead class="ui-thead">
+                <tr>
+                  <th class="ui-th">Material</th>
+                  <th class="ui-th text-center">Cantidad</th>
+                  <th class="ui-th text-center">UoM</th>
+                  <th class="ui-th text-center">Merma %</th>
+                  <th class="ui-th">Etapa/Op.</th>
+                  <th class="ui-th text-center">Opcional</th>
+                  <th class="ui-th">Notas</th>
+                  <th class="ui-th w-24">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="bg-slate-950/20">
+                <tr *ngFor="let l of selectedBom.lines" class="ui-tr">
+                  <td class="ui-td">
+                    <p class="text-sm font-semibold">{{ l.materialName }}</p>
+                    <p class="text-[11px] text-slate-500 font-mono">{{ l.materialCode }}</p>
+                  </td>
+                  <td class="ui-td text-center font-semibold text-emerald-300">{{ l.qty }}</td>
+                  <td class="ui-td text-center text-xs text-slate-400">{{ l.uom }}</td>
+                  <td class="ui-td text-center text-xs" [ngClass]="l.scrapPct > 0 ? 'text-amber-400' : 'text-slate-600'">
+                    {{ l.scrapPct > 0 ? (l.scrapPct + '%') : '-' }}
+                  </td>
+                  <td class="ui-td text-xs text-slate-400">{{ l.phase || '-' }}</td>
+                  <td class="ui-td text-center">
+                    <span class="pi" [ngClass]="l.optional ? 'pi-minus-circle text-slate-500' : 'pi-check-circle text-emerald-400'"></span>
+                  </td>
+                  <td class="ui-td text-xs text-slate-500">{{ l.notes || '-' }}</td>
+                  <td class="ui-td">
+                    <div class="flex gap-1">
+                      <button (click)="editLine(l)" class="ui-btn-ghost text-xs">Edit</button>
+                      <button (click)="l.id && removeLine(l.id)" class="ui-btn-danger text-xs">Del</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngIf="selectedBom.lines.length === 0">
+                  <td colspan="8" class="px-4 py-8 text-center text-slate-500 text-xs">Sin componentes. Agrega el primero.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Add/Edit line form -->
+        <div class="ui-surface p-5">
+          <p class="text-sm font-semibold mb-4">{{ editingLineId ? 'Editar componente' : 'Agregar componente' }}</p>
+          <form (ngSubmit)="addLine()" class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3 items-end">
+            <div class="col-span-2">
+              <label class="ui-label">Cód. Material</label>
+              <input [(ngModel)]="lineForm.materialCode" name="lMatCode" required class="ui-input" placeholder="MAT-ALG" />
+            </div>
+            <div class="col-span-2">
+              <label class="ui-label">Nombre Material</label>
+              <input [(ngModel)]="lineForm.materialName" name="lMatName" class="ui-input" placeholder="Algodón peinado" />
+            </div>
+            <div>
+              <label class="ui-label">Cantidad</label>
+              <input type="number" [(ngModel)]="lineForm.qty" name="lQty" min="0.001" step="0.001" class="ui-input" />
+            </div>
+            <div>
+              <label class="ui-label">UoM</label>
+              <input [(ngModel)]="lineForm.uom" name="lUom" class="ui-input" placeholder="kg" />
+            </div>
+            <div>
+              <label class="ui-label">Merma %</label>
+              <input type="number" [(ngModel)]="lineForm.scrapPct" name="lScrap" min="0" max="100" step="0.1" class="ui-input" />
+            </div>
+            <div>
+              <label class="ui-label">Etapa/Op.</label>
+              <input [(ngModel)]="lineForm.phase" name="lPhase" class="ui-input" placeholder="OP-APERT" />
+            </div>
+            <div class="col-span-2">
+              <label class="ui-label">Notas</label>
+              <input [(ngModel)]="lineForm.notes" name="lNotes" class="ui-input" placeholder="Obs..." />
+            </div>
+            <div class="flex items-center gap-2 pt-5">
+              <label class="inline-flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                <input type="checkbox" [(ngModel)]="lineForm.optional" name="lOpt" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+                Opcional
+              </label>
+            </div>
+            <div class="flex gap-2 pt-5 col-span-2 md:col-span-1">
+              <button type="submit" class="flex-1 ui-btn-primary text-xs">{{ editingLineId ? 'Guardar' : '+ Agregar' }}</button>
+              <button *ngIf="editingLineId" type="button" (click)="cancelLineEdit()" class="ui-btn-ghost text-xs">×</button>
+            </div>
+          </form>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>

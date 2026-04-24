@@ -1,0 +1,50 @@
+<div class="space-y-3" *ngIf="template; else noTemplate">
+  <div class="flex items-center justify-between">
+    <p class="text-sm font-semibold text-slate-200">{{ template.name }}</p>
+    <span class="text-[11px] text-slate-500">Formulario dinamico</span>
+  </div>
+
+  <div class="grid gap-3" [class.md:grid-cols-2]="compact">
+    <div *ngFor="let field of visibleFields()" class="space-y-1" [class.md:col-span-2]="compact && (field.uiType === 'file' || field.uiType === 'scanner')">
+      <label class="ui-label">
+        {{ field.label }}
+        <span *ngIf="field.required" class="text-rose-400">*</span>
+      </label>
+
+      <ng-container [ngSwitch]="field.uiType">
+        <select *ngSwitchCase="'select'"
+          class="ui-select"
+          [ngModel]="values[field.key]"
+          (ngModelChange)="onFieldChange(field, $event)">
+          <option [ngValue]="''">Seleccione...</option>
+          <option *ngFor="let option of field.options ?? []" [ngValue]="option">{{ option }}</option>
+        </select>
+
+        <div *ngSwitchCase="'file'" class="space-y-1">
+          <input type="file" class="ui-input" (change)="onFileChange(field, $event)" />
+          <p *ngIf="values[field.key]" class="text-[10px] text-slate-400">Archivo: {{ values[field.key] }}</p>
+        </div>
+
+        <div *ngSwitchCase="'scanner'" class="flex gap-2">
+          <input class="ui-input flex-1" [ngModel]="values[field.key]" (ngModelChange)="onFieldChange(field, $event)" placeholder="Codigo escaneado" />
+          <button type="button" class="ui-btn-ghost" (click)="simulateScanner(field)">Simular scan</button>
+        </div>
+
+        <input *ngSwitchDefault
+          class="ui-input"
+          [type]="inputType(field)"
+          [placeholder]="field.placeholder || ''"
+          [ngModel]="values[field.key]"
+          (ngModelChange)="onFieldChange(field, $event)" />
+      </ng-container>
+
+      <p *ngIf="isFieldInvalid(field)" class="text-[11px] text-rose-300">Campo invalido o incompleto.</p>
+      <p *ngIf="field.visibilityCondition" class="text-[10px] text-slate-500">Regla visibilidad: {{ field.visibilityCondition }}</p>
+      <p *ngIf="field.calculationExpression" class="text-[10px] text-slate-500">Regla calculo: {{ field.calculationExpression }}</p>
+    </div>
+  </div>
+</div>
+
+<ng-template #noTemplate>
+  <p class="text-xs text-slate-500">No hay template seleccionado.</p>
+</ng-template>

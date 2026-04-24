@@ -1,1 +1,317 @@
-<p>reports works!</p>
+﻿<div class="space-y-5">
+  <!-- Header -->
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Reportes &middot; Mantenimiento</h3>
+      <p class="ui-subtitle">KPIs de OTs, paradas, preventivos e inventario de repuestos</p>
+    </div>
+    <div class="flex gap-2">
+      <button class="ui-btn-ghost text-sm" (click)="exportWosCsv()">
+        <span class="pi pi-download text-xs mr-1"></span> Export OTs
+      </button>
+      <button class="ui-btn-ghost text-sm" (click)="exportDtCsv()">
+        <span class="pi pi-download text-xs mr-1"></span> Export Paradas
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-1 bg-slate-900/50 p-1 rounded-xl w-fit">
+    <button *ngFor="let t of tabs"
+            class="px-4 py-2 rounded-lg text-sm transition-all flex items-center gap-1.5"
+            [ngClass]="section === t.id ? 'bg-slate-700 text-slate-100 shadow' : 'text-slate-500 hover:text-slate-300'"
+            (click)="setSection(t.id)">
+      <span class="pi text-xs" [ngClass]="t.icon"></span> {{ t.label }}
+    </button>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div *ngIf="section==='OVERVIEW'" class="space-y-4">
+    <!-- Overview KPI Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">Total OTs</div>
+        <div class="text-2xl font-bold text-slate-100">{{ wos.length }}</div>
+      </div>
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">MTTR</div>
+        <div class="text-2xl font-bold text-orange-400">{{ mttr }} <span class="text-sm text-slate-400">hrs</span></div>
+      </div>
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">Disponibilidad (30d)</div>
+        <div class="text-2xl font-bold text-emerald-400">{{ availabilityPct }}%</div>
+      </div>
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">Horas parada total</div>
+        <div class="text-2xl font-bold text-rose-400">{{ totalDowntimeHrs }} <span class="text-sm text-slate-400">hrs</span></div>
+      </div>
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">PMs activos</div>
+        <div class="text-2xl font-bold text-blue-400">{{ pmKpis.active }}</div>
+      </div>
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">PMs vencidos</div>
+        <div class="text-2xl font-bold" [ngClass]="pmKpis.overdue > 0 ? 'text-rose-400' : 'text-slate-400'">{{ pmKpis.overdue }}</div>
+      </div>
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">Cumplimiento PM</div>
+        <div class="text-2xl font-bold" [ngClass]="pmKpis.compliant >= 80 ? 'text-emerald-400' : 'text-amber-400'">{{ pmKpis.compliant }}%</div>
+      </div>
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">Repuestos bajo mín.</div>
+        <div class="text-2xl font-bold" [ngClass]="inventoryKpis.low > 0 ? 'text-rose-400' : 'text-slate-400'">{{ inventoryKpis.low }}</div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- OTs by type -->
+      <div class="ui-surface p-5">
+        <h4 class="text-sm font-semibold mb-4">OTs por Tipo</h4>
+        <div class="space-y-3">
+          <div *ngFor="let t of woByType" class="space-y-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-300">{{ t.label }}</span>
+              <span class="text-slate-400">{{ t.value }} ({{ t.pct }}%)</span>
+            </div>
+            <div class="h-2 rounded-full bg-slate-800">
+              <div class="h-2 rounded-full bg-emerald-500 transition-all" [style.width]="t.pct+'%'"></div>
+            </div>
+          </div>
+          <div *ngIf="woByType.length===0" class="text-center text-slate-600 py-4 text-sm">Sin datos</div>
+        </div>
+      </div>
+
+      <!-- Downtime by reason -->
+      <div class="ui-surface p-5">
+        <h4 class="text-sm font-semibold mb-4">Paradas por Causa</h4>
+        <div class="space-y-3">
+          <div *ngFor="let r of downtimeByReason" class="space-y-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-300">{{ r.reason }}</span>
+              <span class="text-slate-400">{{ r.hrs }} hrs ({{ r.pct }}%)</span>
+            </div>
+            <div class="h-2 rounded-full bg-slate-800">
+              <div class="h-2 rounded-full bg-rose-500 transition-all" [style.width]="r.pct+'%'"></div>
+            </div>
+          </div>
+          <div *ngIf="downtimeByReason.length===0" class="text-center text-slate-600 py-4 text-sm">Sin paradas registradas</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WO SECTION -->
+  <div *ngIf="section==='WO'" class="space-y-4">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div *ngFor="let s of woByStatus" class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">{{ s.label }}</div>
+        <div class="text-2xl font-bold" [ngClass]="s.color">{{ s.value }}</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="ui-surface p-5">
+        <h4 class="text-sm font-semibold mb-4">OTs por Tipo</h4>
+        <div class="space-y-3">
+          <div *ngFor="let t of woByType" class="space-y-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-300">{{ t.label }}</span>
+              <span class="text-slate-400">{{ t.value }} ({{ t.pct }}%)</span>
+            </div>
+            <div class="h-2 rounded-full bg-slate-800">
+              <div class="h-2 rounded-full bg-blue-500 transition-all" [style.width]="t.pct+'%'"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ui-surface p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="text-sm font-semibold">Listado de OTs</h4>
+          <button class="ui-btn-ghost text-xs" (click)="exportWosCsv()">
+            <span class="pi pi-download text-[10px] mr-1"></span> CSV
+          </button>
+        </div>
+        <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+          <div *ngFor="let w of wos" class="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-900/40 text-xs">
+            <div>
+              <span class="font-mono font-bold text-slate-200">{{ w.code }}</span>
+              <span class="ml-2 text-slate-400">{{ w.assetName }}</span>
+            </div>
+            <div class="flex gap-1.5">
+              <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] bg-slate-700/40 text-slate-300">{{ typeLabel(w.type) }}</span>
+              <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] bg-slate-700/40 text-slate-300">{{ statusLabel(w.status) }}</span>
+            </div>
+          </div>
+          <div *ngIf="wos.length===0" class="text-center py-4 text-slate-500 text-sm">Sin OTs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOWNTIME SECTION -->
+  <div *ngIf="section==='DOWNTIME'" class="space-y-4">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">Total paradas</div>
+        <div class="text-2xl font-bold text-slate-100">{{ dts.length }}</div>
+      </div>
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">Paradas activas</div>
+        <div class="text-2xl font-bold text-rose-400">{{ ms.downtimeKpis().open }}</div>
+      </div>
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">Total horas parada</div>
+        <div class="text-2xl font-bold text-orange-400">{{ totalDowntimeHrs }} <span class="text-sm text-slate-400">hrs</span></div>
+      </div>
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">Disponibilidad</div>
+        <div class="text-2xl font-bold text-emerald-400">{{ availabilityPct }}%</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="ui-surface p-5">
+        <h4 class="text-sm font-semibold mb-4">Paradas por Causa</h4>
+        <div class="space-y-3">
+          <div *ngFor="let r of downtimeByReason" class="space-y-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-300">{{ r.reason }}</span>
+              <span class="text-slate-400">{{ r.hrs }} hrs &middot; {{ r.pct }}%</span>
+            </div>
+            <div class="h-2.5 rounded-full bg-slate-800">
+              <div class="h-2.5 rounded-full bg-rose-500 transition-all" [style.width]="r.pct+'%'"></div>
+            </div>
+          </div>
+          <div *ngIf="downtimeByReason.length===0" class="text-center py-4 text-slate-500 text-sm">Sin paradas registradas</div>
+        </div>
+      </div>
+
+      <div class="ui-surface p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="text-sm font-semibold">Registro de Paradas</h4>
+          <button class="ui-btn-ghost text-xs" (click)="exportDtCsv()">
+            <span class="pi pi-download text-[10px] mr-1"></span> CSV
+          </button>
+        </div>
+        <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+          <div *ngFor="let d of dts" class="px-3 py-2 rounded-xl bg-slate-900/40 text-xs">
+            <div class="flex items-center justify-between mb-1">
+              <span class="font-mono font-bold text-slate-200">{{ d.code }}</span>
+              <span [ngClass]="d.endAt ? 'text-slate-400' : 'text-rose-400 font-semibold'">{{ d.endAt ? 'Cerrada' : 'ACTIVA' }}</span>
+            </div>
+            <div class="text-slate-400">{{ d.assetName }} &middot; {{ reasonLabel(d.reason) }} &middot; {{ d.minutes ?? '?' }} min</div>
+          </div>
+          <div *ngIf="dts.length===0" class="text-center py-4 text-slate-500 text-sm">Sin paradas registradas</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PM SECTION -->
+  <div *ngIf="section==='PM'" class="space-y-4">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">Total planes</div>
+        <div class="text-2xl font-bold text-slate-100">{{ pmKpis.total }}</div>
+      </div>
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">Activos</div>
+        <div class="text-2xl font-bold text-emerald-400">{{ pmKpis.active }}</div>
+      </div>
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">Vencidos</div>
+        <div class="text-2xl font-bold" [ngClass]="pmKpis.overdue > 0 ? 'text-rose-400' : 'text-slate-400'">{{ pmKpis.overdue }}</div>
+      </div>
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">Cumplimiento</div>
+        <div class="text-2xl font-bold" [ngClass]="pmKpis.compliant >= 80 ? 'text-emerald-400' : 'text-amber-400'">{{ pmKpis.compliant }}%</div>
+      </div>
+    </div>
+
+    <div class="ui-surface p-5">
+      <h4 class="text-sm font-semibold mb-4">Planes de Mantenimiento</h4>
+      <div class="space-y-2">
+        <div *ngFor="let p of plans" class="flex items-center justify-between px-4 py-3 rounded-xl border transition-all"
+             [ngClass]="isOverdue(p.nextAt) ? 'border-rose-500/30 bg-rose-500/5' : 'border-slate-800/70 bg-slate-950/20'">
+          <div>
+            <div class="flex items-center gap-2 mb-0.5">
+              <span class="font-mono text-xs font-bold text-slate-200">{{ p.code }}</span>
+              <span class="text-[10px] text-slate-500 border border-slate-700/40 rounded px-1.5 py-0.5">{{ freqLabel(p.frequency) }}</span>
+              <span *ngIf="!p.active" class="text-[10px] text-slate-500">Inactivo</span>
+            </div>
+            <p class="text-sm text-slate-300">{{ p.name }}</p>
+            <p class="text-[11px] text-slate-500 mt-0.5">{{ p.assetCode }} &middot; {{ p.assetName }}</p>
+          </div>
+          <div class="text-right">
+            <div class="text-xs" [ngClass]="isOverdue(p.nextAt) ? 'text-rose-400 font-semibold' : 'text-slate-300'">{{ fmtDate(p.nextAt) }}</div>
+            <div class="text-[11px]" [ngClass]="isOverdue(p.nextAt) ? 'text-rose-500' : 'text-slate-500'">
+              {{ isOverdue(p.nextAt) ? 'Vencido' : 'Próxima ejecución' }}
+            </div>
+          </div>
+        </div>
+        <div *ngIf="plans.length===0" class="text-center py-8 text-slate-500 text-sm">Sin planes de mantenimiento</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INVENTORY SECTION -->
+  <div *ngIf="section==='INVENTORY'" class="space-y-4">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">Total SKUs activos</div>
+        <div class="text-2xl font-bold text-slate-100">{{ inventoryKpis.totalSkus }}</div>
+      </div>
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">SKUs bajo mínimo</div>
+        <div class="text-2xl font-bold" [ngClass]="inventoryKpis.low > 0 ? 'text-rose-400' : 'text-emerald-400'">{{ inventoryKpis.low }}</div>
+      </div>
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">Valor de stock</div>
+        <div class="text-2xl font-bold text-blue-400">S/. {{ inventoryKpis.stockValue | number:'1.2-2' }}</div>
+      </div>
+      <div class="ui-surface p-4 space-y-1">
+        <div class="text-[11px] text-slate-500">Transacciones OUT</div>
+        <div class="text-2xl font-bold text-amber-400">{{ outTxnsBySpare.length }}</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Top repuestos consumidos -->
+      <div class="ui-surface p-5">
+        <h4 class="text-sm font-semibold mb-4">Top Repuestos Consumidos</h4>
+        <div class="space-y-3">
+          <div *ngFor="let s of outTxnsBySpare" class="space-y-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-300 truncate">{{ s.name }}</span>
+              <span class="text-slate-400 shrink-0 ml-2">{{ s.qty }} {{ s.uom }}</span>
+            </div>
+          </div>
+          <div *ngIf="outTxnsBySpare.length===0" class="text-center py-4 text-slate-500 text-sm">Sin consumos registrados</div>
+        </div>
+      </div>
+
+      <!-- Repuestos bajo mínimo -->
+      <div class="ui-surface p-5">
+        <h4 class="text-sm font-semibold mb-4">Repuestos bajo stock mínimo</h4>
+        <div class="space-y-2">
+          <div *ngFor="let s of lowStockSpares" class="flex items-center justify-between px-3 py-2 rounded-xl bg-rose-500/5 border border-rose-500/20 text-xs">
+            <div>
+              <span class="font-mono font-bold text-slate-200">{{ s.code }}</span>
+              <span class="ml-2 text-slate-400">{{ s.name }}</span>
+            </div>
+            <div class="text-right">
+              <span class="text-rose-400 font-semibold">{{ s.stock }} {{ s.uom }}</span>
+              <span class="text-slate-500 ml-1">/ mín {{ s.minStock }}</span>
+            </div>
+          </div>
+          <div *ngIf="lowStockSpares.length===0"
+               class="text-center py-4 text-emerald-500/70 text-sm">
+            <span class="pi pi-check-circle mr-1"></span> Todos los repuestos están sobre el mínimo
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

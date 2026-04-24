@@ -1,0 +1,140 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Maestro · Tipos de Movimiento</h3>
+      <p class="ui-subtitle">Catálogo de movimientos de inventario: consumo, merma, transferencia, devolución, ajuste.</p>
+    </div>
+    <div class="w-full max-w-sm">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar tipo de movimiento..." />
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Form -->
+    <div class="ui-surface p-5">
+      <p class="text-sm font-semibold mb-4">{{ editingId ? 'Editar tipo' : 'Nuevo tipo de movimiento' }}</p>
+      <form (ngSubmit)="submit()" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Código</label>
+            <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="MOV-CONS" />
+          </div>
+          <div>
+            <label class="ui-label">Nombre</label>
+            <input [(ngModel)]="form.name" name="name" required class="ui-input" placeholder="Consumo de MP" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Categoría</label>
+            <select [(ngModel)]="form.category" name="category" class="ui-select">
+              <option *ngFor="let c of categories" [value]="c.value">{{ c.label }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="ui-label">Dirección</label>
+            <select [(ngModel)]="form.direction" name="direction" class="ui-select">
+              <option *ngFor="let d of directions" [value]="d.value">{{ d.label }}</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="ui-label">Notas</label>
+          <input [(ngModel)]="form.notes" name="notes" class="ui-input" placeholder="Observaciones..." />
+        </div>
+        <div class="space-y-2 pt-1">
+          <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer w-full">
+            <input type="checkbox" [(ngModel)]="form.affectsStock" name="affectsStock" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+            Afecta stock
+          </label>
+          <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer w-full">
+            <input type="checkbox" [(ngModel)]="form.requiresLot" name="requiresLot" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+            Requiere lote
+          </label>
+          <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer w-full">
+            <input type="checkbox" [(ngModel)]="form.requiresReason" name="requiresReason" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+            Requiere motivo
+          </label>
+          <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer w-full">
+            <input type="checkbox" [(ngModel)]="form.autoConsumed" name="autoConsumed" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+            Generado automáticamente
+          </label>
+          <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer w-full">
+            <input type="checkbox" [(ngModel)]="form.active" name="active" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+            Activo
+          </label>
+        </div>
+        <div class="flex gap-2 pt-1">
+          <button type="submit" class="flex-1 ui-btn-primary">{{ editingId ? 'Guardar cambios' : 'Agregar' }}</button>
+          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Table -->
+    <div class="xl:col-span-2 ui-surface p-5">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <p class="text-sm font-semibold">Listado</p>
+        <div class="flex items-center gap-2">
+          <select [(ngModel)]="filterCategory" class="ui-select text-xs py-1">
+            <option value="">Todas las categorías</option>
+            <option *ngFor="let c of categories" [value]="c.value">{{ c.label }}</option>
+          </select>
+          <span class="text-[11px] text-slate-500">{{ filtered.length }} tipos</span>
+        </div>
+      </div>
+
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead class="ui-thead">
+            <tr>
+              <th class="ui-th">Código</th>
+              <th class="ui-th">Nombre</th>
+              <th class="ui-th">Categoría</th>
+              <th class="ui-th text-center">Dirección</th>
+              <th class="ui-th text-center">Stock</th>
+              <th class="ui-th text-center">Lote</th>
+              <th class="ui-th text-center">Motivo</th>
+              <th class="ui-th text-center">Auto</th>
+              <th class="ui-th text-center">Estado</th>
+              <th class="ui-th w-28">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="bg-slate-950/20">
+            <tr *ngFor="let it of filtered" class="ui-tr">
+              <td class="ui-td font-mono text-xs font-bold">{{ it.code }}</td>
+              <td class="ui-td">
+                <p class="text-sm">{{ it.name }}</p>
+                <p *ngIf="it.notes" class="text-[11px] text-slate-500">{{ it.notes }}</p>
+              </td>
+              <td class="ui-td">
+                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" [ngClass]="categoryCls(it.category)">{{ categoryLabel(it.category) }}</span>
+              </td>
+              <td class="ui-td text-center text-xs font-semibold" [ngClass]="directionCls(it.direction)">
+                <span class="pi mr-1" [ngClass]="it.direction === 'IN' ? 'pi-arrow-down' : it.direction === 'OUT' ? 'pi-arrow-up' : 'pi-arrows-h'"></span>
+                {{ directionLabel(it.direction) }}
+              </td>
+              <td class="ui-td text-center"><span class="pi text-sm" [ngClass]="it.affectsStock ? 'pi-check-circle text-emerald-400' : 'pi-times-circle text-slate-600'"></span></td>
+              <td class="ui-td text-center"><span class="pi text-sm" [ngClass]="it.requiresLot ? 'pi-check-circle text-emerald-400' : 'pi-times-circle text-slate-600'"></span></td>
+              <td class="ui-td text-center"><span class="pi text-sm" [ngClass]="it.requiresReason ? 'pi-check-circle text-amber-400' : 'pi-times-circle text-slate-600'"></span></td>
+              <td class="ui-td text-center"><span class="pi text-sm" [ngClass]="it.autoConsumed ? 'pi-check-circle text-blue-400' : 'pi-times-circle text-slate-600'"></span></td>
+              <td class="ui-td text-center"><span [ngClass]="it.active ? 'ui-badge-ok' : 'ui-badge-bad'">{{ it.active ? 'Activo' : 'Inactivo' }}</span></td>
+              <td class="ui-td">
+                <div class="flex gap-2">
+                  <button (click)="edit(it)" class="ui-btn-ghost text-xs">Editar</button>
+                  <button (click)="remove(it.id)" class="ui-btn-danger text-xs">Del</button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="filtered.length === 0">
+              <td colspan="10" class="px-4 py-10 text-center text-slate-500">Sin tipos de movimiento.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

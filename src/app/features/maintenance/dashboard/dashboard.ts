@@ -1,33 +1,7 @@
-import { Component } from '@angular/core';
+﻿import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-interface MaintenanceMetric {
-  label: string;
-  value: number | string;
-  unit?: string;
-  trend?: number; // porcentaje de cambio
-  icon: string;
-  color: 'blue' | 'green' | 'amber' | 'red';
-}
-
-interface WorkOrder {
-  id: string;
-  code: string;
-  asset: string;
-  type: 'PREVENTIVE' | 'CORRECTIVE' | 'EMERGENCY';
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  assignedTo: string;
-  dueDate: string;
-}
-
-interface AssetHealth {
-  asset: string;
-  status: 'GOOD' | 'WARNING' | 'CRITICAL';
-  lastMaintenance: string;
-  nextMaintenance: string;
-  healthScore: number;
-}
+import { Router } from '@angular/router';
+import { MaintenanceStoreService, WorkOrderStatus, WorkOrderPriority } from '../services/maintenance-store.service';
 
 @Component({
   standalone: true,
@@ -37,170 +11,90 @@ interface AssetHealth {
   styleUrl: './dashboard.css',
 })
 export class DashboardComponent {
-  metrics: MaintenanceMetric[] = [
-    {
-      label: 'Órdenes Pendientes',
-      value: 12,
-      icon: 'pi-clipboard',
-      color: 'amber',
-      trend: -15
-    },
-    {
-      label: 'Órdenes en Progreso',
-      value: 8,
-      icon: 'pi-cog',
-      color: 'blue',
-      trend: 5
-    },
-    {
-      label: 'Completadas (Mes)',
-      value: 45,
-      icon: 'pi-check-circle',
-      color: 'green',
-      trend: 12
-    },
-    {
-      label: 'Tiempo Prom. Respuesta',
-      value: '2.5',
-      unit: 'hrs',
-      icon: 'pi-clock',
-      color: 'blue',
-      trend: -8
-    },
-    {
-      label: 'MTTR',
-      value: '4.2',
-      unit: 'hrs',
-      icon: 'pi-wrench',
-      color: 'amber',
-      trend: -5
-    },
-    {
-      label: 'Disponibilidad',
-      value: '96.5',
-      unit: '%',
-      icon: 'pi-chart-line',
-      color: 'green',
-      trend: 2.1
-    }
-  ];
+  constructor(public ms: MaintenanceStoreService, private router: Router) {}
 
-  recentWorkOrders: WorkOrder[] = [
-    {
-      id: '1',
-      code: 'WO-2024-001',
-      asset: 'Hiladora 01',
-      type: 'CORRECTIVE',
-      priority: 'HIGH',
-      status: 'IN_PROGRESS',
-      assignedTo: 'Juan Pérez',
-      dueDate: '2025-12-28'
-    },
-    {
-      id: '2',
-      code: 'WO-2024-002',
-      asset: 'Carda 02',
-      type: 'PREVENTIVE',
-      priority: 'MEDIUM',
-      status: 'PENDING',
-      assignedTo: 'María Torres',
-      dueDate: '2025-12-29'
-    },
-    {
-      id: '3',
-      code: 'WO-2024-003',
-      asset: 'Compresor A1',
-      type: 'EMERGENCY',
-      priority: 'CRITICAL',
-      status: 'IN_PROGRESS',
-      assignedTo: 'Carlos Ruiz',
-      dueDate: '2025-12-27'
-    },
-    {
-      id: '4',
-      code: 'WO-2024-004',
-      asset: 'Telar 05',
-      type: 'PREVENTIVE',
-      priority: 'LOW',
-      status: 'PENDING',
-      assignedTo: 'Ana López',
-      dueDate: '2025-12-30'
-    }
-  ];
+  get kpis() { return this.ms.kpis(); }
+  get dtKpis() { return this.ms.downtimeKpis(); }
+  get invKpis() { return this.ms.inventoryKpis(); }
 
-  assetHealth: AssetHealth[] = [
-    {
-      asset: 'Hiladora 01',
-      status: 'WARNING',
-      lastMaintenance: '2025-12-15',
-      nextMaintenance: '2025-12-28',
-      healthScore: 72
-    },
-    {
-      asset: 'Carda 02',
-      status: 'GOOD',
-      lastMaintenance: '2025-12-20',
-      nextMaintenance: '2026-01-05',
-      healthScore: 88
-    },
-    {
-      asset: 'Compresor A1',
-      status: 'CRITICAL',
-      lastMaintenance: '2025-11-10',
-      nextMaintenance: '2025-12-27',
-      healthScore: 45
-    },
-    {
-      asset: 'Telar 05',
-      status: 'GOOD',
-      lastMaintenance: '2025-12-22',
-      nextMaintenance: '2026-01-10',
-      healthScore: 91
-    }
-  ];
+  get recentWos() { return this.ms.workOrders.slice(0, 5); }
 
-  getStatusBadgeClass(status: string): string {
-    const classes: Record<string, string> = {
-      'PENDING': 'ui-badge-warn',
-      'IN_PROGRESS': 'ui-badge bg-blue-500/15 border-blue-500/25 text-blue-200',
-      'COMPLETED': 'ui-badge-ok',
-      'CANCELLED': 'ui-badge-bad'
-    };
-    return classes[status] || 'ui-badge';
+  get openDowntimes() { return this.ms.downtimes.filter(d => !d.endAt); }
+
+  get availabilityPct() {
+    const totalMin = this.dtKpis.totalMin;
+    const totalPossible = this.ms.assets.length * 30 * 24 * 60;
+    return totalPossible > 0 ? (100 - (totalMin / totalPossible) * 100).toFixed(1) : '100.0';
   }
 
-  getPriorityBadgeClass(priority: string): string {
-    const classes: Record<string, string> = {
-      'LOW': 'ui-badge bg-slate-500/15 border-slate-500/25 text-slate-200',
-      'MEDIUM': 'ui-badge-warn',
-      'HIGH': 'ui-badge bg-orange-500/15 border-orange-500/25 text-orange-200',
-      'CRITICAL': 'ui-badge-bad'
-    };
-    return classes[priority] || 'ui-badge';
+  get upcomingPMs() {
+    return this.ms.plans
+      .filter(p => p.active)
+      .sort((a, b) => new Date(a.nextAt).getTime() - new Date(b.nextAt).getTime())
+      .slice(0, 5);
   }
 
-  getHealthStatusClass(status: string): string {
-    const classes: Record<string, string> = {
-      'GOOD': 'ui-badge-ok',
-      'WARNING': 'ui-badge-warn',
-      'CRITICAL': 'ui-badge-bad'
-    };
-    return classes[status] || 'ui-badge';
+  get assetHealth() {
+    return this.ms.assets.map(a => {
+      const openWos = this.ms.workOrders.filter(w => w.assetCode === a.code && ['OPEN','IN_PROGRESS'].includes(w.status)).length;
+      const openDt = this.ms.downtimes.filter(d => d.assetCode === a.code && !d.endAt).length;
+      const score = Math.max(0, 100 - openWos * 20 - openDt * 30);
+      const status = score >= 80 ? 'GOOD' : score >= 50 ? 'WARNING' : 'CRITICAL';
+      return { ...a, score, status };
+    });
   }
 
-  getMetricColor(color: string): string {
-    const colors: Record<string, string> = {
-      'blue': 'from-blue-600/20 to-blue-600/5 border-blue-500/30',
-      'green': 'from-emerald-600/20 to-emerald-600/5 border-emerald-500/30',
-      'amber': 'from-amber-600/20 to-amber-600/5 border-amber-500/30',
-      'red': 'from-rose-600/20 to-rose-600/5 border-rose-500/30'
-    };
-    return colors[color] || colors['blue'];
+  navTo(path: string) {
+    const segments = path.split('/').filter(Boolean);
+    this.router.navigate(['/maintenance', ...segments]);
   }
 
-  getHealthBarColor(score: number): string {
-    if (score >= 80) return 'bg-emerald-500';
-    if (score >= 60) return 'bg-amber-500';
+  priorityBadge(p: WorkOrderPriority | string) {
+    const m: Record<string, string> = {
+      CRITICAL: 'bg-rose-500/10 text-rose-300 border-rose-500/20',
+      HIGH: 'bg-orange-500/10 text-orange-300 border-orange-500/20',
+      MEDIUM: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
+      LOW: 'bg-slate-500/10 text-slate-300 border-slate-500/20',
+    };
+    return 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] border ' + (m[p] ?? '');
+  }
+
+  statusBadge(s: WorkOrderStatus | string) {
+    const m: Record<string, string> = {
+      OPEN: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
+      PLANNED: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
+      IN_PROGRESS: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
+      ON_HOLD: 'bg-slate-500/10 text-slate-300 border-slate-500/20',
+      DONE: 'bg-teal-500/10 text-teal-300 border-teal-500/20',
+      CLOSED: 'bg-slate-600/10 text-slate-400 border-slate-600/20',
+      CANCELLED: 'bg-red-900/10 text-red-400 border-red-900/20',
+    };
+    return 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] border ' + (m[s] ?? '');
+  }
+
+  healthIcon(status: string) {
+    if (status === 'GOOD') return 'pi-check-circle text-emerald-400';
+    if (status === 'WARNING') return 'pi-exclamation-circle text-amber-400';
+    return 'pi-times-circle text-rose-400';
+  }
+
+  healthBarClass(status: string) {
+    if (status === 'GOOD') return 'bg-emerald-500';
+    if (status === 'WARNING') return 'bg-amber-500';
     return 'bg-rose-500';
+  }
+
+  freqLabel(f: string) {
+    const m: Record<string, string> = {
+      WEEKLY: 'Semanal', MONTHLY: 'Mensual', QUARTERLY: 'Trimestral',
+      SEMIANNUAL: 'Semestral', ANNUAL: 'Anual',
+    };
+    return m[f] ?? f;
+  }
+
+  isOverdue(iso: string) { return new Date(iso).getTime() < Date.now(); }
+
+  fmtDate(iso: string) {
+    return new Date(iso).toLocaleDateString('es-PE', { day: '2-digit', month: 'short' });
   }
 }

@@ -5,19 +5,32 @@
       <p class="ui-subtitle">Crea, libera y controla el estado de las órdenes.</p>
     </div>
 
-    <div class="w-full max-w-sm">
-      <div class="relative">
+    <div class="flex items-center gap-2 w-full max-w-xl justify-end">
+      <div class="relative w-full max-w-sm">
         <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
-        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar orden..." />
+        <input [(ngModel)]="q" (ngModelChange)="onSearchChange()" class="ui-input pl-9" placeholder="Buscar orden..." />
       </div>
+      <button type="button" class="ui-btn-primary whitespace-nowrap" (click)="openCreatePanel()">
+        <i class="pi pi-plus text-xs mr-1"></i> Nueva orden
+      </button>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-    <div class="ui-surface p-5">
+  <div *ngIf="formPanelOpen" class="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px]" (click)="cancelEdit()"></div>
+
+  <div *ngIf="formPanelOpen" class="fixed right-0 top-0 z-50 h-full w-full max-w-2xl border-l border-slate-800 bg-slate-950 shadow-2xl">
+    <div class="h-full">
+      <div class="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+        <div>
+          <p class="text-sm font-semibold text-slate-100">{{ editingId ? 'Editar orden' : 'Nueva orden' }}</p>
+          <span class="text-[11px] text-slate-500">Campos completos</span>
+        </div>
+        <button type="button" class="ui-btn-ghost" (click)="cancelEdit()">Cerrar</button>
+      </div>
+
+      <div class="px-5 pb-5 pt-4 overflow-y-auto h-[calc(100%-74px)]">
       <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">{{ editingId ? 'Editar orden' : 'Nueva orden' }}</p>
-        <span class="text-[11px] text-slate-500">Campos completos</span>
+        <p class="text-sm font-semibold text-slate-300">Datos de orden</p>
       </div>
 
       <!-- Mensajes de estado -->
@@ -29,7 +42,7 @@
         Procesando...
       </div>
 
-      <form #ordenForm="ngForm" (ngSubmit)="submit()" class="space-y-4">
+      <form #ordenForm="ngForm" (ngSubmit)="submit()" class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <label class="ui-label">Número de Orden *</label>
           <input [(ngModel)]="form.numeroOrden" name="numeroOrden" required class="ui-input" placeholder="OP-2025-001" />
@@ -52,41 +65,38 @@
           <input [(ngModel)]="form.productoNombre" name="productoNombre" class="ui-input" placeholder="Nombre del producto" />
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="ui-label">Cantidad *</label>
-            <input type="number" [(ngModel)]="form.cantidadPlanificada" name="cantidadPlanificada" min="0" required class="ui-input" />
-          </div>
-          <div>
-            <label class="ui-label">Unidad *</label>
-            <input [(ngModel)]="form.unidadMedida" name="unidadMedida" required class="ui-input" placeholder="UND" />
-          </div>
+        <div>
+          <label class="ui-label">Cantidad *</label>
+          <input type="number" [(ngModel)]="form.cantidadPlanificada" name="cantidadPlanificada" min="0" required class="ui-input" />
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="ui-label">Estado</label>
-            <select [(ngModel)]="form.estado" name="estado" class="ui-select">
-              <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
-            </select>
-          </div>
-          <div>
-            <label class="ui-label">Prioridad</label>
-            <select [(ngModel)]="form.prioridad" name="prioridad" class="ui-select">
-              <option *ngFor="let p of prioridades" [value]="p">{{ p }}</option>
-            </select>
-          </div>
+        <div>
+          <label class="ui-label">Unidad *</label>
+          <input [(ngModel)]="form.unidadMedida" name="unidadMedida" required class="ui-input" placeholder="UND" />
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="ui-label">Inicio Planificado</label>
-            <input type="datetime-local" [(ngModel)]="form.fechaInicioPlanificada" name="fechaInicioPlanificada" class="ui-input" />
-          </div>
-          <div>
-            <label class="ui-label">Fin Planificado</label>
-            <input type="datetime-local" [(ngModel)]="form.fechaFinPlanificada" name="fechaFinPlanificada" class="ui-input" />
-          </div>
+        <div>
+          <label class="ui-label">Estado</label>
+          <select [(ngModel)]="form.estado" name="estado" class="ui-select">
+            <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="ui-label">Prioridad</label>
+          <select [(ngModel)]="form.prioridad" name="prioridad" class="ui-select">
+            <option *ngFor="let p of prioridades" [value]="p">{{ p }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="ui-label">Inicio Planificado</label>
+          <input type="datetime-local" [(ngModel)]="form.fechaInicioPlanificada" name="fechaInicioPlanificada" class="ui-input" />
+        </div>
+
+        <div>
+          <label class="ui-label">Fin Planificado</label>
+          <input type="datetime-local" [(ngModel)]="form.fechaFinPlanificada" name="fechaFinPlanificada" class="ui-input" />
         </div>
 
         <div>
@@ -104,21 +114,37 @@
           <input [(ngModel)]="form.pedidoCliente" name="pedidoCliente" class="ui-input" placeholder="Número pedido" />
         </div>
 
-        <div>
+        <div class="md:col-span-2">
           <label class="ui-label">Notas</label>
           <textarea [(ngModel)]="form.notas" name="notas" rows="2" class="ui-input" placeholder="Instrucciones o notas"></textarea>
         </div>
 
-        <div class="flex gap-2 pt-1">
+        <div class="ui-surface-inner p-3 space-y-2 md:col-span-2" *ngIf="productionTemplate">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-semibold text-slate-300">Template: {{ productionTemplate.name }}</p>
+            <span class="text-[10px] text-slate-500">Configurable por industria</span>
+          </div>
+          <app-dynamic-form
+            [template]="productionTemplate"
+            [initialValue]="dynamicFormValues"
+            [compact]="true"
+            (valueChange)="onDynamicFormValueChange($event)"
+            (validityChange)="onDynamicFormValidityChange($event)">
+          </app-dynamic-form>
+        </div>
+
+        <div class="flex gap-2 pt-1 md:col-span-2">
           <button type="submit" [disabled]="loading" class="flex-1 ui-btn-primary">
             {{ loading ? 'Procesando...' : (editingId ? 'Guardar' : 'Agregar') }}
           </button>
-          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+          <button type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
         </div>
       </form>
     </div>
+  </div>
+  </div>
 
-    <div class="xl:col-span-2 ui-surface p-5">
+  <div class="ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold">Listado</p>
         <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
@@ -138,7 +164,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let it of filtered" class="ui-tr">
+            <tr *ngFor="let it of pagedOrders" class="ui-tr">
               <td class="ui-td font-medium">{{ it.numeroOrden }}</td>
               <td class="ui-td">
                 <div>{{ it.productoNombre || '-' }}</div>
@@ -154,12 +180,19 @@
               </td>
               <td class="ui-td">
                 <div class="flex gap-2">
+                  <button (click)="showRoute(it)" [disabled]="loading" class="ui-btn-ghost text-xs"
+                    [class.text-blue-400]="selectedOrderRoute?.id === it.id">
+                    <i class="pi pi-sitemap text-[10px]"></i> Ruta
+                  </button>
+                  <button (click)="openRescheduleModal(it)" [disabled]="loading" class="ui-btn-ghost text-xs" title="Cambiar fechas planificadas">
+                    <i class="pi pi-calendar text-[10px]"></i> Reprogramar
+                  </button>
                   <button (click)="edit(it)" [disabled]="loading" class="ui-btn-ghost text-xs">Editar</button>
                   <button (click)="remove(it.id)" [disabled]="loading" class="ui-btn-danger text-xs">Eliminar</button>
                 </div>
               </td>
             </tr>
-            <tr *ngIf="filtered.length === 0">
+            <tr *ngIf="pagedOrders.length === 0">
               <td colspan="7" class="px-4 py-10 text-center text-slate-500">
                 {{ loading ? 'Cargando órdenes...' : 'No hay órdenes registradas.' }}
               </td>
@@ -167,6 +200,278 @@
           </tbody>
         </table>
       </div>
+
+      <div class="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
+        <div class="flex items-center gap-2">
+          <span>Mostrando {{ pageStart }}-{{ pageEnd }} de {{ filtered.length }}</span>
+          <select class="ui-select !py-1 !text-xs" [ngModel]="pageSize" (ngModelChange)="setPageSize($event)">
+            <option *ngFor="let s of pageSizeOptions" [ngValue]="s">{{ s }} / pág.</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button type="button" class="ui-btn-ghost text-xs" (click)="changePage(-1)" [disabled]="page === 1">Anterior</button>
+          <span class="px-2">Página {{ page }} de {{ totalPages }}</span>
+          <button type="button" class="ui-btn-ghost text-xs" (click)="changePage(1)" [disabled]="page === totalPages">Siguiente</button>
+        </div>
+      </div>
+    </div>
+
+  <!-- ═══ ROUTE VISUALIZATION ═══ -->
+  <div *ngIf="selectedOrderRoute" class="ui-surface p-5 space-y-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <div class="flex items-center gap-3">
+          <p class="text-sm font-semibold">Ruta de producción — {{ selectedOrderRoute.numeroOrden }}</p>
+          <span class="ui-badge" [ngClass]="badgeClass(selectedOrderRoute.estado)">{{ selectedOrderRoute.estado }}</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-0.5">{{ selectedOrderRoute.productoNombre || selectedOrderRoute.productoCodigo }}</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2">
+          <div class="w-32 h-2 bg-slate-800 rounded-full overflow-hidden">
+            <div class="h-full bg-emerald-500 rounded-full transition-all" [style.width.%]="routeProgress()"></div>
+          </div>
+          <span class="text-xs font-semibold text-emerald-400">{{ routeProgress() }}%</span>
+        </div>
+        <button type="button" (click)="selectedOrderRoute = null; routeSteps = []" class="ui-btn-ghost text-xs">✕ Cerrar</button>
+      </div>
+    </div>
+
+    <!-- Status legend -->
+    <div class="flex items-center gap-4 text-[10px]">
+      <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span> Completado</span>
+      <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500 inline-block animate-pulse"></span> En proceso</span>
+      <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-600 inline-block"></span> Pendiente</span>
+    </div>
+
+    <!-- Route flow graph -->
+    <div class="overflow-x-auto py-4">
+      <div class="flex items-start gap-0 min-w-max px-4">
+        <!-- Start node -->
+        <div class="flex flex-col items-center">
+          <div class="w-11 h-11 rounded-full bg-emerald-500/20 border-2 border-emerald-500/50 flex items-center justify-center">
+            <i class="pi pi-play text-emerald-400 text-xs"></i>
+          </div>
+          <span class="text-[9px] text-slate-500 mt-1">Inicio</span>
+        </div>
+
+        <ng-container *ngFor="let step of routeSteps; let i = index; let last = last">
+          <!-- Arrow -->
+          <div class="flex items-center self-center" style="margin-top: -8px">
+            <div class="w-10 h-[2px] bg-gradient-to-r" [ngClass]="stepConnectorClass(step)"></div>
+            <div class="w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-l-[7px]"
+              [class.border-l-emerald-500]="step.status==='COMPLETED'" [class.border-l-slate-500]="step.status!=='COMPLETED'"></div>
+          </div>
+
+          <!-- Step node -->
+          <div class="flex flex-col items-center min-w-[155px] max-w-[170px]">
+            <div class="w-full ui-surface border rounded-xl p-3 space-y-1.5 transition"
+              [ngClass]="stepNodeClass(step)">
+              <div class="flex items-center justify-between">
+                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded"
+                  [class.text-emerald-400]="step.status==='COMPLETED'" [class.bg-emerald-500/10]="step.status==='COMPLETED'"
+                  [class.text-blue-400]="step.status==='IN_PROGRESS'" [class.bg-blue-500/10]="step.status==='IN_PROGRESS'"
+                  [class.text-slate-500]="step.status==='PENDING'" [class.bg-slate-800]="step.status==='PENDING'">
+                  {{ step.seq }}
+                </span>
+                <i class="pi text-xs" [ngClass]="stepIconClass(step)"></i>
+              </div>
+              <p class="text-xs font-semibold text-white truncate">{{ step.operation }}</p>
+              <p class="text-[10px] text-slate-400 truncate">{{ step.machineName }}</p>
+              <p class="text-[10px] text-slate-500">{{ step.workCenter }}</p>
+              <div class="flex justify-between text-[9px] pt-1 border-t border-slate-800/50"
+                [class.text-emerald-500]="step.status==='COMPLETED'"
+                [class.text-blue-400]="step.status==='IN_PROGRESS'"
+                [class.text-slate-500]="step.status==='PENDING'">
+                <span>{{ stepStatusLabel(step) }}</span>
+                <span>{{ step.estimatedHours }}h</span>
+              </div>
+              <div *ngIf="step.completedAt" class="text-[9px] text-emerald-500/70">✓ {{ step.completedAt }}</div>
+              <div *ngIf="step.status==='IN_PROGRESS' && step.startedAt" class="text-[9px] text-blue-400/70">▶ {{ step.startedAt }}</div>
+            </div>
+          </div>
+
+          <!-- Final arrow + end node -->
+          <ng-container *ngIf="last">
+            <div class="flex items-center self-center" style="margin-top: -8px">
+              <div class="w-10 h-[2px] bg-gradient-to-r from-slate-600 to-slate-500"></div>
+              <div class="w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-l-[7px] border-l-slate-500"></div>
+            </div>
+            <div class="flex flex-col items-center">
+              <div class="w-11 h-11 rounded-full flex items-center justify-center"
+                [class.bg-emerald-500/20]="routeProgress()===100" [class.border-emerald-500/50]="routeProgress()===100"
+                [class.bg-blue-500/20]="routeProgress()!==100" [class.border-blue-500/50]="routeProgress()!==100"
+                style="border-width: 2px; border-style: solid">
+                <i class="pi text-xs" [class.pi-check-circle]="routeProgress()===100" [class.text-emerald-400]="routeProgress()===100"
+                  [class.pi-flag-fill]="routeProgress()!==100" [class.text-blue-400]="routeProgress()!==100"></i>
+              </div>
+              <span class="text-[9px] text-slate-500 mt-1">{{ routeProgress()===100 ? 'Completado' : 'Fin' }}</span>
+            </div>
+          </ng-container>
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- Step details table -->
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead class="ui-thead">
+          <tr>
+            <th class="ui-th w-12">#</th>
+            <th class="ui-th">Operación</th>
+            <th class="ui-th">Centro de trabajo</th>
+            <th class="ui-th">Máquina</th>
+            <th class="ui-th">Setup</th>
+            <th class="ui-th">Horas est.</th>
+            <th class="ui-th">Estado</th>
+            <th class="ui-th">Inicio</th>
+            <th class="ui-th">Fin</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let step of routeSteps" class="ui-tr"
+            [class.bg-blue-500/5]="step.status==='IN_PROGRESS'">
+            <td class="ui-td font-bold" [class.text-emerald-400]="step.status==='COMPLETED'"
+              [class.text-blue-400]="step.status==='IN_PROGRESS'">{{ step.seq }}</td>
+            <td class="ui-td font-medium">{{ step.operation }}</td>
+            <td class="ui-td">{{ step.workCenter }}</td>
+            <td class="ui-td">
+              <div>{{ step.machineName }}</div>
+              <div class="text-[10px] text-slate-500">{{ step.machineCode }}</div>
+            </td>
+            <td class="ui-td">{{ step.setupTimeMin }} min</td>
+            <td class="ui-td">{{ step.estimatedHours }}h</td>
+            <td class="ui-td">
+              <span class="text-xs font-medium" [class.text-emerald-400]="step.status==='COMPLETED'"
+                [class.text-blue-400]="step.status==='IN_PROGRESS'" [class.text-slate-500]="step.status==='PENDING'">
+                <i class="pi text-[10px] mr-1" [ngClass]="stepIconClass(step)"></i>
+                {{ stepStatusLabel(step) }}
+              </span>
+            </td>
+            <td class="ui-td text-[11px]">{{ step.startedAt || '—' }}</td>
+            <td class="ui-td text-[11px]">{{ step.completedAt || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
+
+<!-- ═══ REPROGRAMACIÓN MODAL ═══ -->
+<div *ngIf="reprogrammingOrder" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+  <div class="ui-surface rounded-xl shadow-2xl max-w-md w-full mx-4 p-6 space-y-5 animate-in fade-in duration-300">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-semibold text-slate-400">Reprogramar orden</p>
+        <h3 class="text-lg font-bold text-white mt-1">{{ reprogrammingOrder.numeroOrden }}</h3>
+        <p class="text-xs text-slate-500 mt-0.5">{{ reprogrammingOrder.productoNombre || reprogrammingOrder.productoCodigo }}</p>
+      </div>
+      <button (click)="closeRescheduleModal()" class="p-1.5 hover:bg-slate-800 rounded-lg transition text-slate-400 hover:text-white">
+        <i class="pi pi-times text-lg"></i>
+      </button>
+    </div>
+
+    <!-- Error message -->
+    <div *ngIf="reprogramError" class="px-3 py-2 bg-rose-50/10 border border-rose-500/30 rounded-lg text-xs text-rose-400">
+      <div class="flex items-start gap-2">
+        <i class="pi pi-exclamation-circle flex-shrink-0 mt-0.5"></i>
+        <span>{{ reprogramError }}</span>
+      </div>
+    </div>
+
+    <!-- Current dates info -->
+    <div class="grid grid-cols-2 gap-3 text-[11px] bg-slate-900/50 rounded-lg p-3">
+      <div>
+        <p class="text-slate-500 font-medium">Inicio actual</p>
+        <p class="text-emerald-400 font-semibold mt-1">{{ reprogrammingOrder.fechaInicioPlanificada || 'No definida' }}</p>
+      </div>
+      <div>
+        <p class="text-slate-500 font-medium">Fin actual</p>
+        <p class="text-emerald-400 font-semibold mt-1">{{ reprogrammingOrder.fechaFinPlanificada || 'No definida' }}</p>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <form (ngSubmit)="saveReschedule()" class="space-y-4">
+      <!-- Inicio Planificado -->
+      <div>
+        <label class="ui-label flex items-center gap-2">
+          <i class="pi pi-calendar text-sm"></i>
+          Fecha de inicio *
+        </label>
+        <input 
+          type="datetime-local" 
+          [(ngModel)]="reprogramForm.fechaInicioPlanificada" 
+          name="fechaInicio"
+          class="ui-input mt-1.5"
+          required />
+        <p class="text-[10px] text-slate-500 mt-1">Cuándo comienza la orden</p>
+      </div>
+
+      <!-- Fin Planificado -->
+      <div>
+        <label class="ui-label flex items-center gap-2">
+          <i class="pi pi-flag text-sm"></i>
+          Fecha de fin *
+        </label>
+        <input 
+          type="datetime-local" 
+          [(ngModel)]="reprogramForm.fechaFinPlanificada" 
+          name="fechaFin"
+          class="ui-input mt-1.5"
+          required />
+        <p class="text-[10px] text-slate-500 mt-1">Cuándo termina la orden</p>
+      </div>
+
+      <!-- Validation preview -->
+      <div *ngIf="reprogramForm.fechaInicioPlanificada && reprogramForm.fechaFinPlanificada" class="text-[11px] space-y-1 p-3 rounded-lg"
+        [class.bg-emerald-500/10]="areReprogramDatesValid()"
+        [class.bg-rose-500/10]="!areReprogramDatesValid()">
+        <div class="flex items-center gap-2"
+          [class.text-emerald-400]="areReprogramDatesValid()"
+          [class.text-rose-400]="!areReprogramDatesValid()">
+          <i class="pi text-xs"
+            [class.pi-check-circle]="areReprogramDatesValid()"
+            [class.pi-exclamation-circle]="!areReprogramDatesValid()"></i>
+          <span>
+            <span *ngIf="areReprogramDatesValid()">Fechas válidas</span>
+            <span *ngIf="!areReprogramDatesValid()">Inicio debe ser anterior a fin</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Duration estimate -->
+      <div *ngIf="reprogramForm.fechaInicioPlanificada && reprogramForm.fechaFinPlanificada && areReprogramDatesValid()"
+        class="text-[11px] text-slate-400 flex items-center gap-2">
+        <i class="pi pi-hourglass text-sm"></i>
+        <span>Duración estimada: <strong class="text-emerald-400">{{ calculateDurationHours() | number:'1.1-1' }} horas</strong></span>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-3 pt-2">
+        <button 
+          type="submit" 
+          [disabled]="loading || !isValidReschedule()"
+          class="flex-1 ui-btn-primary">
+          <i class="pi pi-save text-xs mr-1"></i>
+          {{ loading ? 'Guardando...' : 'Guardar reprogramación' }}
+        </button>
+        <button 
+          type="button" 
+          (click)="closeRescheduleModal()"
+          [disabled]="loading"
+          class="ui-btn-ghost">
+          Cancelar
+        </button>
+      </div>
+    </form>
+
+    <!-- Info note -->
+    <div class="text-[10px] text-slate-500 pt-2 border-t border-slate-800/50 space-y-1">
+      <p>💡 <strong>Nota:</strong> Solo se actualizarán las fechas planificadas. El estado de la orden no cambiará.</p>
+    </div>
+  </div>
+</div>
+

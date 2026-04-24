@@ -23,6 +23,7 @@ export class InspectionsComponent {
 
   form: Partial<CreateInspectionDto> = {
     code: '',
+    nodeId: '',
     type: InspectionType.INCOMING,
     result: InspectionResult.PENDING,
     productId: '',
@@ -50,11 +51,12 @@ export class InspectionsComponent {
         return inspections.filter(i => {
           if (!t) return true;
           return [
-            i.code,
+            i.node?.code || '',
             i.type,
-            i.result,
-            i.observations ?? '',
-            i.inspectorId
+            i.status,
+            i.notes ?? '',
+            i.nodeId,
+            i.inspectorId ?? ''
           ].join(' ').toLowerCase().includes(t);
         });
       })
@@ -76,11 +78,12 @@ export class InspectionsComponent {
         return inspections.filter(i => {
           if (!t) return true;
           return [
-            i.code,
+            i.node?.code || '',
             i.type,
-            i.result,
-            i.observations ?? '',
-            i.inspectorId
+            i.status,
+            i.notes ?? '',
+            i.nodeId,
+            i.inspectorId ?? ''
           ].join(' ').toLowerCase().includes(t);
         });
       })
@@ -111,18 +114,19 @@ export class InspectionsComponent {
     this.editing = i;
     this.error = null;
     this.form = {
-      code: i.code,
+      code: i.node?.code || i.nodeId,
+      nodeId: i.nodeId,
       type: i.type,
-      result: i.result,
-      productId: i.productId,
-      productionOrderId: i.productionOrderId,
-      lotId: i.lotId,
-      quantityInspected: i.quantityInspected,
+      result: i.status as any,
+      productId: i.productId || i.node?.productId || undefined,
+      productionOrderId: i.productionOrderId || i.node?.productionOrderId || undefined,
+      lotId: i.lotId || i.nodeId,
+      quantityInspected: typeof i.inspectedQuantity === 'string' ? parseFloat(i.inspectedQuantity) : i.inspectedQuantity,
       quantityApproved: i.quantityApproved,
       quantityRejected: i.quantityRejected,
-      inspectorId: i.inspectorId,
-      inspectionDate: new Date(i.inspectionDate),
-      observations: i.observations,
+      inspectorId: i.inspectorId ?? '',
+      inspectionDate: i.inspectionDate ? new Date(i.inspectionDate) : new Date(i.createdAt),
+      observations: i.notes || i.observations,
       corrective_actions: i.corrective_actions,
     };
   }
@@ -132,13 +136,15 @@ export class InspectionsComponent {
     return d.toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit' });
   }
 
-  getResultClass(result: InspectionResult): string {
-    switch (result) {
-      case InspectionResult.APPROVED:
+  getResultClass(status: InspectionResult): string {
+    switch (status) {
+      case InspectionResult.PASSED:
+      case 'APPROVED' as any:
         return 'ui-badge-ok';
-      case InspectionResult.REJECTED:
+      case InspectionResult.FAILED:
+      case 'REJECTED' as any:
         return 'ui-badge-bad';
-      case InspectionResult.CONDITIONAL:
+      case InspectionResult.PENDING:
         return 'ui-badge-warn';
       default:
         return 'ui-badge';
@@ -157,6 +163,7 @@ export class InspectionsComponent {
     if (!this.editing) {
       const dto: CreateInspectionDto = {
         code: this.form.code!,
+        nodeId: (this.form as any).nodeId,
         type: this.form.type!,
         result: this.form.result,
         productId: this.form.productId,
@@ -186,6 +193,7 @@ export class InspectionsComponent {
     } else {
       const dto: UpdateInspectionDto = {
         code: this.form.code,
+        nodeId: (this.form as any).nodeId,
         type: this.form.type,
         result: this.form.result,
         productId: this.form.productId,

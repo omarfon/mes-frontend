@@ -3,62 +3,328 @@
   <div class="ui-page-header">
     <div>
       <h3 class="ui-title">Maestro · Productos</h3>
-      <p class="ui-subtitle">Catálogo de productos fabricados (hilado, tela, prenda).</p>
+      <p class="ui-subtitle">Catálogo universal de productos, materias primas y componentes.</p>
     </div>
 
-    <div class="w-full max-w-sm">
-      <div class="relative">
-        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
-        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar producto..." />
+    <div class="flex items-center gap-3">
+      <button type="button" (click)="toggleBulkUpload()"
+        class="ui-btn-ghost text-xs flex items-center gap-2">
+        <i class="pi pi-upload text-xs"></i>
+        Carga masiva
+      </button>
+
+      <div class="w-full max-w-sm">
+        <div class="relative">
+          <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+          <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar por código, nombre, familia..." />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════  CARGA MASIVA  ═══════════ -->
+  <div *ngIf="showBulkUpload" class="ui-surface p-5 space-y-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-semibold">Carga masiva de productos</p>
+        <p class="text-[11px] text-slate-400">Suba un archivo .csv o .xlsx con los productos a importar.</p>
+      </div>
+      <button type="button" (click)="toggleBulkUpload()" class="ui-btn-ghost text-xs">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <!-- Instrucciones -->
+    <div class="rounded-xl bg-slate-900/50 border border-slate-800/70 p-4 text-xs text-slate-300 space-y-2">
+      <p class="font-medium text-slate-200">Instrucciones:</p>
+      <ul class="list-disc list-inside space-y-1 text-slate-400">
+        <li>Columnas obligatorias: <span class="text-white font-medium">code</span> y <span class="text-white font-medium">name</span></li>
+        <li>Columnas opcionales: description, type, family, subfamily, uom, netWeight, weightUnit, erpCode, barcode, minStock, maxStock, reorderPoint, leadTimeDays, costPrice, currency, batchManaged, serialManaged, qualityInspection, shelfLifeDays, storageConditions, spec, active</li>
+        <li>Tipos válidos: RAW_MATERIAL, SEMI_FINISHED, FINISHED, CONSUMABLE, SPARE_PART, PACKAGING, BYPRODUCT, SERVICE, OTHER</li>
+        <li>Booleanos: true/false, 1/0, si/no, yes/no</li>
+        <li>También acepta nombres de columna en español: codigo, nombre, descripcion, tipo, familia, subfamilia, unidad, peso, costo, lote, serie, inspeccion, etc.</li>
+      </ul>
+      <button type="button" (click)="downloadTemplate()" class="mt-2 inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition">
+        <i class="pi pi-file-excel text-xs"></i> Descargar plantilla Excel (.xlsx)
+      </button>
+    </div>
+
+    <!-- Drop zone / File input -->
+    <div class="relative">
+      <input type="file" accept=".csv,.xlsx,.xls" (change)="onFileSelected($event)"
+        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+      <div class="border-2 border-dashed border-slate-700 rounded-xl p-8 text-center hover:border-blue-500/50 transition">
+        <i class="pi pi-cloud-upload text-3xl text-slate-500 mb-2"></i>
+        <p class="text-sm text-slate-300" *ngIf="!bulkFileName">
+          Arrastra un archivo aquí o haz clic para seleccionar
+        </p>
+        <p class="text-sm text-slate-300" *ngIf="bulkFileName">
+          <i class="pi pi-file mr-2 text-blue-400"></i>
+          <span class="text-white font-medium">{{ bulkFileName }}</span>
+          <span class="text-slate-400 ml-2">({{ bulkPreview.length }} filas detectadas)</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Errores -->
+    <div *ngIf="bulkErrors.length > 0" class="rounded-xl bg-red-500/10 border border-red-500/30 p-4">
+      <p class="text-xs font-medium text-red-400 mb-2">
+        <i class="pi pi-exclamation-triangle mr-1"></i>
+        {{ bulkErrors.length }} {{ bulkErrors.length === 1 ? 'problema' : 'problemas' }} encontrados:
+      </p>
+      <ul class="list-disc list-inside text-xs text-red-300/80 space-y-1 max-h-32 overflow-y-auto">
+        <li *ngFor="let err of bulkErrors">{{ err }}</li>
+      </ul>
+    </div>
+
+    <!-- Éxito -->
+    <div *ngIf="bulkImported > 0" class="rounded-xl bg-green-500/10 border border-green-500/30 p-4">
+      <p class="text-xs text-green-400">
+        <i class="pi pi-check-circle mr-1"></i>
+        {{ bulkImported }} productos importados correctamente.
+      </p>
+    </div>
+
+    <!-- Preview tabla -->
+    <div *ngIf="bulkPreview.length > 0 && bulkImported === 0" class="space-y-3">
+      <p class="text-xs text-slate-400">Vista previa (primeras {{ bulkPreview.length > 10 ? 10 : bulkPreview.length }} filas de {{ bulkPreview.length }}):</p>
+      <div class="ui-table-wrap max-h-60 overflow-auto">
+        <table class="ui-table text-xs">
+          <thead class="ui-thead">
+            <tr>
+              <th class="ui-th">#</th>
+              <th class="ui-th">Código</th>
+              <th class="ui-th">Nombre</th>
+              <th class="ui-th">Tipo</th>
+              <th class="ui-th">Familia</th>
+              <th class="ui-th">UoM</th>
+              <th class="ui-th">Costo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of bulkPreview | slice:0:10; let i = index" class="ui-tr">
+              <td class="ui-td text-slate-500">{{ i + 1 }}</td>
+              <td class="ui-td font-medium">{{ row['code'] || row['codigo'] || '-' }}</td>
+              <td class="ui-td">{{ row['name'] || row['nombre'] || '-' }}</td>
+              <td class="ui-td">{{ row['type'] || row['tipo'] || '-' }}</td>
+              <td class="ui-td">{{ row['family'] || row['familia'] || '-' }}</td>
+              <td class="ui-td">{{ row['uom'] || row['unidad'] || '-' }}</td>
+              <td class="ui-td">{{ row['costprice'] || row['costo'] || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex gap-2">
+        <button type="button" (click)="confirmBulkImport()" class="ui-btn-primary text-xs flex items-center gap-2">
+          <i class="pi pi-check text-xs"></i>
+          Importar {{ bulkPreview.length }} productos
+        </button>
+        <button type="button" (click)="resetBulk()" class="ui-btn-ghost text-xs">
+          Cancelar
+        </button>
       </div>
     </div>
   </div>
 
   <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
 
+    <!-- ═══════════  FORMULARIO  ═══════════ -->
     <div class="ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold">{{ editingId ? 'Editar producto' : 'Nuevo producto' }}</p>
-        <span class="text-[11px] text-slate-500">Campos mínimos</span>
+        <span class="text-[11px] text-slate-500">(*) obligatorios</span>
+      </div>
+
+      <!-- Tabs del formulario -->
+      <div class="flex gap-1 mb-4 border-b border-slate-800/70 text-xs">
+        <button type="button" (click)="formTab='general'"
+          class="px-3 py-2 rounded-t-lg transition"
+          [ngClass]="formTab==='general' ? 'bg-slate-800/60 text-white' : 'text-slate-400 hover:text-slate-200'">
+          General
+        </button>
+        <button type="button" (click)="formTab='inventory'"
+          class="px-3 py-2 rounded-t-lg transition"
+          [ngClass]="formTab==='inventory' ? 'bg-slate-800/60 text-white' : 'text-slate-400 hover:text-slate-200'">
+          Inventario
+        </button>
+        <button type="button" (click)="formTab='traceability'"
+          class="px-3 py-2 rounded-t-lg transition"
+          [ngClass]="formTab==='traceability' ? 'bg-slate-800/60 text-white' : 'text-slate-400 hover:text-slate-200'">
+          Trazabilidad
+        </button>
       </div>
 
       <form (ngSubmit)="submit()" class="space-y-4">
-        <div>
-          <label class="ui-label">Código</label>
-          <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="PRD-XXX" />
-        </div>
 
-        <div>
-          <label class="ui-label">Nombre</label>
-          <input [(ngModel)]="form.name" name="name" required class="ui-input" placeholder="Hilo 20/1" />
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="ui-label">Tipo</label>
-            <select [(ngModel)]="form.type" name="type" class="ui-select">
-              <option value="YARN">Hilado</option>
-              <option value="FABRIC">Tela</option>
-              <option value="GARMENT">Prenda</option>
-            </select>
+        <!-- ── TAB: General ── -->
+        <ng-container *ngIf="formTab==='general'">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="ui-label">Código *</label>
+              <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="PRD-001" />
+            </div>
+            <div>
+              <label class="ui-label">Código ERP</label>
+              <input [(ngModel)]="form.erpCode" name="erpCode" class="ui-input" placeholder="SAP / Odoo" />
+            </div>
           </div>
 
           <div>
-            <label class="ui-label">Unidad</label>
-            <input [(ngModel)]="form.uom" name="uom" class="ui-input" placeholder="kg / m / un" />
+            <label class="ui-label">Nombre *</label>
+            <input [(ngModel)]="form.name" name="name" required class="ui-input" placeholder="Nombre del producto" />
           </div>
-        </div>
 
-        <div>
-          <label class="ui-label">Especificación (breve)</label>
-          <input [(ngModel)]="form.spec" name="spec" class="ui-input" placeholder="Ej: 180 g/m², Algodón peinado..." />
-        </div>
+          <div>
+            <label class="ui-label">Descripción</label>
+            <textarea [(ngModel)]="form.description" name="description" rows="2" class="ui-input"
+              placeholder="Descripción detallada..."></textarea>
+          </div>
 
-        <label class="inline-flex items-center gap-2 text-xs text-slate-700">
-          <input type="checkbox" [(ngModel)]="form.active" name="active" class="h-4 w-4 rounded border-slate-300" />
-          Activo
-        </label>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="ui-label">Tipo</label>
+              <select [(ngModel)]="form.type" name="type" class="ui-select">
+                <option *ngFor="let t of productTypes" [value]="t.value">{{ t.label }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="ui-label">Unidad de medida</label>
+              <input [(ngModel)]="form.uom" name="uom" class="ui-input" placeholder="kg / m / un / lt" />
+            </div>
+          </div>
 
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="ui-label">Familia</label>
+              <input [(ngModel)]="form.family" name="family" class="ui-input" placeholder="Ej: Polímeros" />
+            </div>
+            <div>
+              <label class="ui-label">Subfamilia</label>
+              <input [(ngModel)]="form.subfamily" name="subfamily" class="ui-input" placeholder="Ej: PET" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="ui-label">Peso neto</label>
+              <input [(ngModel)]="form.netWeight" name="netWeight" type="number" step="any" class="ui-input" placeholder="0.00" />
+            </div>
+            <div>
+              <label class="ui-label">Unidad peso</label>
+              <select [(ngModel)]="form.weightUnit" name="weightUnit" class="ui-select">
+                <option value="kg">kg</option>
+                <option value="g">g</option>
+                <option value="lb">lb</option>
+                <option value="oz">oz</option>
+                <option value="ton">ton</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="ui-label">Código de barras / SKU</label>
+            <input [(ngModel)]="form.barcode" name="barcode" class="ui-input" placeholder="EAN / UPC / interno" />
+          </div>
+
+          <div>
+            <label class="ui-label">Especificación técnica</label>
+            <textarea [(ngModel)]="form.spec" name="spec" rows="2" class="ui-input"
+              placeholder="Ej: Acero SAE 1018, IV 0.80±0.02..."></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="ui-label">Costo estándar</label>
+              <input [(ngModel)]="form.costPrice" name="costPrice" type="number" step="0.01" class="ui-input" placeholder="0.00" />
+            </div>
+            <div>
+              <label class="ui-label">Moneda</label>
+              <select [(ngModel)]="form.currency" name="currency" class="ui-select">
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="MXN">MXN</option>
+                <option value="COP">COP</option>
+                <option value="PEN">PEN</option>
+                <option value="BRL">BRL</option>
+                <option value="ARS">ARS</option>
+              </select>
+            </div>
+          </div>
+
+          <label class="inline-flex items-center gap-2 text-xs">
+            <input type="checkbox" [(ngModel)]="form.active" name="active" class="h-4 w-4 rounded border-slate-300" />
+            Activo
+          </label>
+        </ng-container>
+
+        <!-- ── TAB: Inventario ── -->
+        <ng-container *ngIf="formTab==='inventory'">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="ui-label">Stock mínimo</label>
+              <input [(ngModel)]="form.minStock" name="minStock" type="number" class="ui-input" placeholder="0" />
+            </div>
+            <div>
+              <label class="ui-label">Stock máximo</label>
+              <input [(ngModel)]="form.maxStock" name="maxStock" type="number" class="ui-input" placeholder="0" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="ui-label">Punto de reorden</label>
+              <input [(ngModel)]="form.reorderPoint" name="reorderPoint" type="number" class="ui-input" placeholder="0" />
+            </div>
+            <div>
+              <label class="ui-label">Lead time (días)</label>
+              <input [(ngModel)]="form.leadTimeDays" name="leadTimeDays" type="number" class="ui-input" placeholder="0" />
+            </div>
+          </div>
+
+          <div>
+            <label class="ui-label">Vida útil (días)</label>
+            <input [(ngModel)]="form.shelfLifeDays" name="shelfLifeDays" type="number" class="ui-input"
+              placeholder="Dejar vacío si no aplica" />
+          </div>
+
+          <div>
+            <label class="ui-label">Condiciones de almacenamiento</label>
+            <textarea [(ngModel)]="form.storageConditions" name="storageConditions" rows="2" class="ui-input"
+              placeholder="Ej: Ambiente seco, <30°C, lejos de luz solar..."></textarea>
+          </div>
+        </ng-container>
+
+        <!-- ── TAB: Trazabilidad ── -->
+        <ng-container *ngIf="formTab==='traceability'">
+          <p class="text-xs text-slate-400 mb-2">Configuración de seguimiento y control de calidad para este producto.</p>
+
+          <label class="flex items-center gap-3 px-3 py-3 rounded-xl bg-slate-900/40 border border-slate-800/70 cursor-pointer">
+            <input type="checkbox" [(ngModel)]="form.batchManaged" name="batchManaged" class="h-4 w-4 rounded border-slate-300" />
+            <div>
+              <p class="text-sm">Gestión por lotes</p>
+              <p class="text-[11px] text-slate-400">Requiere número de lote en entradas y salidas</p>
+            </div>
+          </label>
+
+          <label class="flex items-center gap-3 px-3 py-3 rounded-xl bg-slate-900/40 border border-slate-800/70 cursor-pointer">
+            <input type="checkbox" [(ngModel)]="form.serialManaged" name="serialManaged" class="h-4 w-4 rounded border-slate-300" />
+            <div>
+              <p class="text-sm">Gestión por serie</p>
+              <p class="text-[11px] text-slate-400">Cada unidad tiene un número de serie único</p>
+            </div>
+          </label>
+
+          <label class="flex items-center gap-3 px-3 py-3 rounded-xl bg-slate-900/40 border border-slate-800/70 cursor-pointer">
+            <input type="checkbox" [(ngModel)]="form.qualityInspection" name="qualityInspection" class="h-4 w-4 rounded border-slate-300" />
+            <div>
+              <p class="text-sm">Inspección de calidad</p>
+              <p class="text-[11px] text-slate-400">Requiere inspección obligatoria al recibir/producir</p>
+            </div>
+          </label>
+        </ng-container>
+
+        <!-- Botones -->
         <div class="flex gap-2 pt-1">
           <button type="submit" class="flex-1 ui-btn-primary">
             {{ editingId ? 'Guardar cambios' : 'Agregar' }}
@@ -70,6 +336,7 @@
       </form>
     </div>
 
+    <!-- ═══════════  TABLA  ═══════════ -->
     <div class="xl:col-span-2 ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold">Listado</p>
@@ -83,8 +350,11 @@
               <th class="ui-th">Código</th>
               <th class="ui-th">Nombre</th>
               <th class="ui-th">Tipo</th>
+              <th class="ui-th">Familia</th>
               <th class="ui-th">UoM</th>
-              <th class="ui-th">Especificación</th>
+              <th class="ui-th">Costo</th>
+              <th class="ui-th text-center">Lote</th>
+              <th class="ui-th text-center">QC</th>
               <th class="ui-th">Estado</th>
               <th class="ui-th w-40">Acciones</th>
             </tr>
@@ -93,10 +363,32 @@
           <tbody>
             <tr *ngFor="let it of filtered" class="ui-tr">
               <td class="ui-td font-medium">{{ it.code }}</td>
-              <td class="ui-td">{{ it.name }}</td>
-              <td class="ui-td">{{ it.type }}</td>
+              <td class="ui-td">
+                <div>{{ it.name }}</div>
+                <div *ngIf="it.spec" class="text-[11px] text-slate-400 truncate max-w-[200px]">{{ it.spec }}</div>
+              </td>
+              <td class="ui-td">
+                <span class="text-xs px-2 py-0.5 rounded-full border border-slate-700 bg-slate-800/40">
+                  {{ typeLabel(it.type) }}
+                </span>
+              </td>
+              <td class="ui-td">
+                <div>{{ it.family || '-' }}</div>
+                <div *ngIf="it.subfamily" class="text-[11px] text-slate-400">{{ it.subfamily }}</div>
+              </td>
               <td class="ui-td">{{ it.uom }}</td>
-              <td class="ui-td">{{ it.spec || '-' }}</td>
+              <td class="ui-td">
+                <span *ngIf="it.costPrice != null">{{ it.costPrice | number:'1.2-2' }} {{ it.currency }}</span>
+                <span *ngIf="it.costPrice == null">-</span>
+              </td>
+              <td class="ui-td text-center">
+                <span *ngIf="it.batchManaged" class="pi pi-check-circle text-green-400 text-xs"></span>
+                <span *ngIf="!it.batchManaged" class="text-slate-600">-</span>
+              </td>
+              <td class="ui-td text-center">
+                <span *ngIf="it.qualityInspection" class="pi pi-check-circle text-blue-400 text-xs"></span>
+                <span *ngIf="!it.qualityInspection" class="text-slate-600">-</span>
+              </td>
               <td class="ui-td">
                 <span class="ui-badge" [ngClass]="it.active ? 'ui-badge-ok' : 'ui-badge-bad'">
                   {{ it.active ? 'Activo' : 'Inactivo' }}
@@ -110,7 +402,7 @@
               </td>
             </tr>
             <tr *ngIf="filtered.length === 0">
-              <td colspan="7" class="px-4 py-10 text-center text-slate-500">
+              <td colspan="10" class="px-4 py-10 text-center text-slate-500">
                 No hay productos registrados.
               </td>
             </tr>

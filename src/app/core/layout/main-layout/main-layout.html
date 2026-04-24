@@ -1,8 +1,8 @@
-<div class="w-screen h-screen bg-slate-950 text-slate-100 overflow-hidden">
+﻿<div class="w-screen h-screen bg-slate-950 text-slate-100 overflow-hidden">
   <div class="flex h-full">
 
     <!-- SIDEBAR -->
-    <aside class="h-full border-r border-slate-800/70 bg-slate-950/60 backdrop-blur
+    <aside class="h-full flex flex-col border-r border-slate-800/70 bg-slate-950/60 backdrop-blur
              transition-all duration-200 ease-in-out" [class.w-72]="!sidebarCollapsed" [class.w-20]="sidebarCollapsed">
       <!-- Logo / Brand -->
       <div class="h-16 flex items-center justify-between px-4 border-b border-slate-800/70">
@@ -12,7 +12,7 @@
           </div>
           <div class="leading-tight" *ngIf="!sidebarCollapsed">
             <p class="text-sm font-semibold">MES</p>
-            <p class="text-[11px] text-slate-400">Dedalus</p>
+            <p class="text-[11px] text-slate-400">Royal Systems</p>
           </div>
         </div>
 
@@ -24,12 +24,34 @@
       </div>
 
       <!-- Nav -->
-      <nav class="p-3 space-y-2 text-sm">
-        <a routerLink="/dashboard" routerLinkActive="bg-slate-800/60 border-slate-700"
+      <nav class="flex-1 overflow-y-auto p-3 space-y-2 text-sm">
+        <a routerLink="/dashboard" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
           class="group flex items-center gap-3 px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition">
           <span class="pi pi-chart-bar text-slate-300"></span>
           <span *ngIf="!sidebarCollapsed">Dashboard</span>
         </a>
+
+        <!-- FACTIBILIDAD -->
+        <button type="button" (click)="toggle('feasibility')"
+          class="w-full flex items-center justify-between rounded-xl px-3 py-2 text-sm border border-slate-800/70 bg-slate-900/30 hover:bg-slate-800/40 transition">
+          <span class="flex items-center gap-2">
+            <i class="pi pi-check-circle text-xs text-slate-400"></i>
+            Factibilidad
+          </span>
+          <i class="pi pi-chevron-down text-xs text-slate-400 transition" [class.rotate-180]="open.feasibility"></i>
+        </button>
+
+        <div *ngIf="open.feasibility" class="ml-10 mt-1 space-y-1">
+          <a routerLink="/feasibility/studies" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+            Estudios
+          </a>
+          <a routerLink="/feasibility/history" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+            Historial
+          </a>
+        </div>
+
         <button type="button" (click)="toggle('production')"
           class="w-full flex items-center justify-between rounded-xl px-3 py-2 text-sm border border-slate-800/70 bg-slate-900/30 hover:bg-slate-800/40 transition">
           <span class="flex items-center gap-2">
@@ -41,30 +63,30 @@
         </button>
 
         <div *ngIf="open.production" class="ml-10 mt-1 space-y-1">
-          <a routerLink="/production/orders" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/production/orders" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
             Órdenes
           </a>
 
-          <a routerLink="/production/dispatch" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/production/dispatch" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
             Despacho
           </a>
 
-          <a routerLink="/production/execution" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/production/execution" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
             Ejecución
           </a>
 
-          <a routerLink="/production/wip" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/production/wip" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
             WIP
           </a>
-          <a routerLink="/production/board" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/production/board" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
             Control Visual
           </a>
-          <a routerLink="/production/times" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/production/times" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
             Control tiempos
           </a>
@@ -82,40 +104,40 @@
         </button>
 
         <div *ngIf="open.traceability " class="mt-2 ml-2 space-y-1">
-          <a routerLink="/traceability/lots" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/traceability/lots" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Lotes</a>
 
-          <a routerLink="/traceability/movements" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/traceability/movements" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Movimientos</a>
 
-          <a routerLink="/traceability/genealogy" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/traceability/genealogy" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Genealogía</a>
 
-          <a routerLink="/traceability/serials" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/traceability/serials" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Seriales /
             Unidades</a>
 
-          <a routerLink="/traceability/quarantine" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/traceability/quarantine" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Cuarentena /
             Bloqueos</a>
 
-          <a routerLink="/traceability/warehouse-map" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/traceability/warehouse-map" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Ubicaciones /
             Mapa</a>
 
-          <a routerLink="/traceability/search" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/traceability/search" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Búsqueda
             avanzada</a>
 
-          <a routerLink="/traceability/labels" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/traceability/labels" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Etiquetas /
             Impresión</a>
 
-          <a routerLink="/traceability/audit" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/traceability/audit" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Auditoría /
             Eventos</a>
 
-          <a routerLink="/traceability/integrations" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/traceability/integrations" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Integraciones</a>
         </div>
 
@@ -130,10 +152,10 @@
         </button>
 
         <div *ngIf="open.quality" class="mt-2 ml-2 space-y-1">
-          <a routerLink="/quality/defects" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/quality/defects" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">Defectos</a>
 
-          <a routerLink="/quality/dashboard" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/quality/dashboard" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <span class="flex items-center gap-2">
               <i class="pi pi-chart-line text-[11px] text-slate-400"></i>
@@ -141,7 +163,7 @@
             </span>
           </a>
 
-          <a routerLink="/quality/inspections" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/quality/inspections" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <span class="flex items-center gap-2">
               <i class="pi pi-search text-[11px] text-slate-400"></i>
@@ -153,7 +175,7 @@
 
           <p class="px-3 pt-1 text-[11px] text-slate-500 uppercase tracking-wide">Catálogos</p>
 
-          <a routerLink="/quality/defect-families" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/quality/defect-families" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <span class="flex items-center gap-2">
               <i class="pi pi-sitemap text-[11px] text-slate-400"></i>
@@ -161,7 +183,7 @@
             </span>
           </a>
 
-          <a routerLink="/quality/severities" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/quality/severities" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <span class="flex items-center gap-2">
               <i class="pi pi-exclamation-triangle text-[11px] text-slate-400"></i>
@@ -172,7 +194,35 @@
 
           <div class="my-2 border-t border-slate-800/70"></div>
 
-          <a routerLink="/quality/reports" routerLinkActive="bg-slate-800/60 text-white"
+          <p class="px-3 pt-1 text-[11px] text-slate-500 uppercase tracking-wide">Gestión NC</p>
+
+          <a routerLink="/quality/decision" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <span class="flex items-center gap-2">
+              <i class="pi pi-shield text-[11px] text-slate-400"></i>
+              Decisión de Calidad
+            </span>
+          </a>
+
+          <a routerLink="/quality/non-conformities" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <span class="flex items-center gap-2">
+              <i class="pi pi-exclamation-circle text-[11px] text-slate-400"></i>
+              No Conformidades · CAPA
+            </span>
+          </a>
+
+          <a routerLink="/quality/op-review" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <span class="flex items-center gap-2">
+              <i class="pi pi-list-check text-[11px] text-slate-400"></i>
+              Revisiones por OP
+            </span>
+          </a>
+
+          <div class="my-2 border-t border-slate-800/70"></div>
+
+          <a routerLink="/quality/reports" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <span class="flex items-center gap-2">
               <i class="pi pi-file text-[11px] text-slate-400"></i>
@@ -195,56 +245,56 @@
 
         <div *ngIf="open.maintenance" class="mt-2 ml-2 space-y-1">
 
-          <a routerLink="/maintenance/dashboard" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/maintenance/dashboard" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-chart-line mr-2 text-xs"></i> Dashboard
           </a>
 
-          <a routerLink="/maintenance/assets" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/maintenance/assets" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-cog mr-2 text-xs"></i> Activos / Máquinas
           </a>
 
-          <a routerLink="/maintenance/components" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/maintenance/components" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-box mr-2 text-xs"></i> Componentes
           </a>
 
-          <a routerLink="/maintenance/work-orders" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/maintenance/work-orders" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-wrench mr-2 text-xs"></i> Órdenes de trabajo
           </a>
-          <a routerLink="/maintenance/downtime" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/maintenance/downtime" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-stopwatch mr-2 text-xs"></i> Paradas (Downtime)
           </a>
 
-          <a routerLink="/maintenance/calendar" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/maintenance/calendar" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-calendar mr-2 text-xs"></i> Calendario
           </a>
 
-          <a routerLink="/maintenance/preventive" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/maintenance/preventive" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-calendar mr-2 text-xs"></i> Mantenimiento Preventivo
           </a>
 
-          <a routerLink="/maintenance/interventions" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/maintenance/interventions" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-cog mr-2 text-xs"></i> Intervenciones
           </a>
 
-          <a routerLink="/maintenance/inventory" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/maintenance/inventory" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-box mr-2 text-xs"></i> Repuestos
           </a>
 
-          <a routerLink="/maintenance/history" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/maintenance/history" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-history mr-2 text-xs"></i> Historial
           </a>
 
-          <a routerLink="/maintenance/reports" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/maintenance/reports" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-chart-bar mr-2 text-xs"></i> Reportes
           </a>
@@ -262,22 +312,22 @@
         </button>
 
         <div *ngIf="open.inventory" class="mt-2 ml-2 space-y-1">
-          <a routerLink="/inventory/movements" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/inventory/movements" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-arrows-h mr-2 text-xs"></i> Entradas/Salidas
           </a>
 
-          <a routerLink="/inventory/kardex" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/inventory/kardex" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-list mr-2 text-xs"></i> Kardex
           </a>
 
-          <a routerLink="/inventory/transfers" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/inventory/transfers" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-arrow-right-arrow-left mr-2 text-xs"></i> Transferencias
           </a>
 
-          <a routerLink="/inventory/counts" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/inventory/counts" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-check-square mr-2 text-xs"></i> Conteos Cíclicos
           </a>
@@ -294,27 +344,32 @@
         </button>
 
         <div *ngIf="open.reportsKpi" class="mt-2 ml-2 space-y-1">
-          <a routerLink="/reports-kpi/oee" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/admin/system-params" [queryParams]="{ tab: 'kpi-alerts' }" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-sliders-h mr-2 text-xs"></i> Configuración KPIs y Alertas
+          </a>
+
+          <a routerLink="/reports-kpi/oee" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-chart-line mr-2 text-xs"></i> OEE
           </a>
 
-          <a routerLink="/reports-kpi/production" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/reports-kpi/production" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-chart-bar mr-2 text-xs"></i> Análisis Producción
           </a>
 
-          <a routerLink="/reports-kpi/scrap" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/reports-kpi/scrap" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-exclamation-triangle mr-2 text-xs"></i> Scrap/Merma
           </a>
 
-          <a routerLink="/reports-kpi/downtime" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/reports-kpi/downtime" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-ban mr-2 text-xs"></i> Paradas (Pareto)
           </a>
 
-          <a routerLink="/reports-kpi/traceability" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/reports-kpi/traceability" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-search mr-2 text-xs"></i> Trazabilidad/Auditoría
           </a>
@@ -331,19 +386,24 @@
         </button>
 
         <div *ngIf="open.admin" class="mt-2 ml-2 space-y-1">
-          <a routerLink="/admin/users-roles" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/admin/users-roles" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-users mr-2 text-xs"></i> Usuarios y Roles
           </a>
 
-          <a routerLink="/admin/audit-logs" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/admin/audit-logs" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-history mr-2 text-xs"></i> Auditoría
           </a>
 
-          <a routerLink="/admin/system-params" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/admin/system-params" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-cog mr-2 text-xs"></i> Parámetros del Sistema
+          </a>
+
+          <a routerLink="/admin/system-params" [queryParams]="{ tab: 'form-templates' }" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+            class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
+            <i class="pi pi-file-edit mr-2 text-xs"></i> Form Templates
           </a>
         </div>
 
@@ -358,22 +418,22 @@
         </button>
 
         <div *ngIf="open.integrations" class="mt-2 ml-2 space-y-1">
-          <a routerLink="/integrations/erp" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/integrations/erp" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-database mr-2 text-xs"></i> ERP (SAP/Odoo)
           </a>
 
-          <a routerLink="/integrations/scada" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/integrations/scada" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-bolt mr-2 text-xs"></i> SCADA
           </a>
 
-          <a routerLink="/integrations/cmms" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/integrations/cmms" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-wrench mr-2 text-xs"></i> CMMS Externo
           </a>
 
-          <a routerLink="/integrations/messaging" routerLinkActive="bg-slate-800/60 text-white"
+          <a routerLink="/integrations/messaging" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
             class="block rounded-lg px-3 py-2 text-xs text-slate-200 hover:bg-slate-800/40 transition">
             <i class="pi pi-comments mr-2 text-xs"></i> Messaging (Kafka/RabbitMQ)
           </a>
@@ -389,52 +449,150 @@
         </button>
 
         <div *ngIf="masterMenuOpen && !sidebarCollapsed" class="ml-10 mt-1 space-y-1">
-          <a routerLink="/master-data/machines" routerLinkActive="bg-slate-800/60 border-slate-700"
-            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
-            Máquinas
-          </a>
-          <a routerLink="/master-data/materials" routerLinkActive="bg-slate-800/60 border-slate-700"
-            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
-            Materiales
-          </a>
-          <a routerLink="/master-data/locations" routerLinkActive="bg-slate-800/60 border-slate-700"
-            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
-            Ubicaciones
-          </a>
-          <a routerLink="/master-data/processes" routerLinkActive="bg-slate-800/60 border-slate-700"
-            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
-            Procesos
-          </a>
-          <a routerLink="/master-data/uoms" routerLinkActive="bg-slate-800/60 border-slate-700"
-            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
-            Unidades (UoM)
-          </a>
-          <a routerLink="/master-data/products" routerLinkActive="bg-slate-800/60 border-slate-700"
-            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">Productos
-          </a>
 
-          <a routerLink="/master-data/shifts" routerLinkActive="bg-slate-800/60 border-slate-700"
-            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">Turnos
-          </a>
+          <!-- ── Organización y Planta ── -->
+          <button type="button" (click)="toggleMg('org')"
+            class="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-widest text-slate-500 hover:text-slate-300 hover:bg-slate-800/30 transition">
+            <span>Organización</span>
+            <span class="pi text-[10px]" [ngClass]="mg.org ? 'pi-chevron-up' : 'pi-chevron-down'"></span>
+          </button>
+          <div *ngIf="mg.org" class="space-y-0.5">
+            <a routerLink="/master-data/plants" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-building text-xs mr-1.5 text-slate-400"></span>Plantas / Sitios
+            </a>
+            <a routerLink="/master-data/areas" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-th-large text-xs mr-1.5 text-slate-400"></span>Áreas / Secciones
+            </a>
+            <a routerLink="/master-data/work-centers" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-sitemap text-xs mr-1.5 text-slate-400"></span>Centros de trabajo
+            </a>
+            <a routerLink="/master-data/workstations" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-desktop text-xs mr-1.5 text-slate-400"></span>Estaciones / Puestos
+            </a>
+            <a routerLink="/master-data/locations" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-map-marker text-xs mr-1.5 text-slate-400"></span>Ubicaciones físicas
+            </a>
+          </div>
 
-          <a routerLink="/master-data/operators" routerLinkActive="bg-slate-800/60 border-slate-700"
-            [routerLinkActiveOptions]="{ exact: true }"
-            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">Operadores
-          </a>
+          <!-- ── Tiempo y Turnos ── -->
+          <button type="button" (click)="toggleMg('time')"
+            class="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-widest text-slate-500 hover:text-slate-300 hover:bg-slate-800/30 transition">
+            <span>Tiempo y Turnos</span>
+            <span class="pi text-[10px]" [ngClass]="mg.time ? 'pi-chevron-up' : 'pi-chevron-down'"></span>
+          </button>
+          <div *ngIf="mg.time" class="space-y-0.5">
+            <a routerLink="/master-data/plant-calendar" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-calendar text-xs mr-1.5 text-slate-400"></span>Calendario de planta
+            </a>
+            <a routerLink="/master-data/shifts" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-clock text-xs mr-1.5 text-slate-400"></span>Turnos
+            </a>
+            <a routerLink="/master-data/shift-groups" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-users text-xs mr-1.5 text-slate-400"></span>Grupos / Cuadrillas
+            </a>
+          </div>
 
-          <a routerLink="/master-data/downtime-reasons" routerLinkActive="bg-slate-800/60 border-slate-700"
-            [routerLinkActiveOptions]="{ exact: true }"
-            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">Motivos
-            de parada</a>
+          <!-- ── Producción ── -->
+          <button type="button" (click)="toggleMg('prod')"
+            class="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-widest text-slate-500 hover:text-slate-300 hover:bg-slate-800/30 transition">
+            <span>Producción</span>
+            <span class="pi text-[10px]" [ngClass]="mg.prod ? 'pi-chevron-up' : 'pi-chevron-down'"></span>
+          </button>
+          <div *ngIf="mg.prod" class="space-y-0.5">
+            <a routerLink="/master-data/machines" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-cog text-xs mr-1.5 text-slate-400"></span>Máquinas
+            </a>
+            <a routerLink="/master-data/processes" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-share-alt text-xs mr-1.5 text-slate-400"></span>Procesos
+            </a>
+            <a routerLink="/master-data/operators" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              [routerLinkActiveOptions]="{ exact: true }"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-id-card text-xs mr-1.5 text-slate-400"></span>Operadores
+            </a>
+            <a routerLink="/master-data/downtime-reasons" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              [routerLinkActiveOptions]="{ exact: true }"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-ban text-xs mr-1.5 text-slate-400"></span>Motivos de parada
+            </a>
+            <a routerLink="/master-data/product-variants" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-clone text-xs mr-1.5 text-slate-400"></span>Variantes de producto
+            </a>
+            <a routerLink="/master-data/routings" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-sort-alt text-xs mr-1.5 text-slate-400"></span>Rutas de fabricación
+            </a>
+            <a routerLink="/master-data/process-recipes" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-file-edit text-xs mr-1.5 text-slate-400"></span>Recetas de proceso
+            </a>
+            <a routerLink="/master-data/standard-times" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-stopwatch text-xs mr-1.5 text-slate-400"></span>Tiempos estándar
+            </a>
+            <a routerLink="/master-data/order-types" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-list text-xs mr-1.5 text-slate-400"></span>Tipos de OT
+            </a>
+          </div>
 
-          <a routerLink="/master-data/suppliers" routerLinkActive="bg-slate-800/60 border-slate-700"
-            [routerLinkActiveOptions]="{ exact: true }"
-            class="block px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">Proveedores</a>
+          <!-- ── Materiales e Inventario ── -->
+          <button type="button" (click)="toggleMg('materials')"
+            class="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-widest text-slate-500 hover:text-slate-300 hover:bg-slate-800/30 transition">
+            <span>Materiales</span>
+            <span class="pi text-[10px]" [ngClass]="mg.materials ? 'pi-chevron-up' : 'pi-chevron-down'"></span>
+          </button>
+          <div *ngIf="mg.materials" class="space-y-0.5">
+            <a routerLink="/master-data/materials" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-box text-xs mr-1.5 text-slate-400"></span>Materiales
+            </a>
+            <a routerLink="/master-data/products" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-tags text-xs mr-1.5 text-slate-400"></span>Productos
+            </a>
+            <a routerLink="/master-data/uoms" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-sliders-h text-xs mr-1.5 text-slate-400"></span>Unidades (UoM)
+            </a>
+            <a routerLink="/master-data/suppliers" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              [routerLinkActiveOptions]="{ exact: true }"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-truck text-xs mr-1.5 text-slate-400"></span>Proveedores
+            </a>
+            <a routerLink="/master-data/bill-of-materials" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-list text-xs mr-1.5 text-slate-400"></span>Listas de materiales (BOM)
+            </a>
+            <a routerLink="/master-data/movement-types" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-arrows-h text-xs mr-1.5 text-slate-400"></span>Tipos de movimiento
+            </a>
+            <a routerLink="/master-data/scrap-reasons" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-trash text-xs mr-1.5 text-slate-400"></span>Motivos de merma
+            </a>
+            <a routerLink="/master-data/material-lots" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-qrcode text-xs mr-1.5 text-slate-400"></span>Lotes de material
+            </a>
+          </div>
         </div>
 
-        <!-- Cuando el sidebar está colapsado, deja un link directo -->
+        <!-- Cuando el sidebar estÃ¡ colapsado, deja un link directo -->
         <a *ngIf="sidebarCollapsed" routerLink="/master-data/machines"
-          routerLinkActive="bg-slate-800/60 border-slate-700"
+          routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
           class="group flex items-center gap-3 px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
           <span class="pi pi-database text-slate-300"></span>
         </a>
@@ -442,7 +600,7 @@
         <!-- Divider -->
         <div class="my-4 h-px bg-slate-800/70"></div>
 
-        <a routerLink="/reports" routerLinkActive="bg-slate-800/60 border-slate-700"
+        <a routerLink="/reports" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
           class="group flex items-center gap-3 px-3 py-2 rounded-xl border border-transparent hover:bg-slate-800/40 transition">
           <span class="pi pi-file text-slate-300"></span>
           <span *ngIf="!sidebarCollapsed">Reportes</span>
@@ -450,7 +608,7 @@
       </nav>
 
       <!-- Footer Sidebar -->
-      <div class="absolute bottom-0 left-0 right-0 p-3 border-t border-slate-800/70">
+      <div class="shrink-0 p-3 border-t border-slate-800/70">
         <div class="flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-900/40 border border-slate-800/70">
           <div class="h-9 w-9 rounded-xl bg-slate-800/60 flex items-center justify-center">
             <span class="pi pi-user text-slate-200"></span>
@@ -467,7 +625,7 @@
 
           <button type="button" (click)="logout()"
             class="ml-auto h-9 w-9 rounded-xl hover:bg-slate-800/60 transition flex items-center justify-center"
-            title="Cerrar sesión">
+            title="Cerrar sesiÃ³n">
             <span class="pi pi-sign-out"></span>
           </button>
         </div>
@@ -495,7 +653,7 @@
           <div class="flex-1 max-w-xl">
             <div class="relative">
               <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
-              <input type="text" placeholder="Buscar lotes, órdenes, máquinas..." class="w-full bg-slate-900/60 border border-slate-800/80 rounded-xl pl-9 pr-3 py-2 text-sm
+              <input type="text" placeholder="Buscar lotes, Órdenes, máquinas..." class="w-full bg-slate-900/60 border border-slate-800/80 rounded-xl pl-9 pr-3 py-2 text-sm
                        placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/60" />
             </div>
           </div>
@@ -510,7 +668,7 @@
 
             <button type="button"
               class="h-10 w-10 rounded-xl border border-slate-800/80 bg-slate-900/50 hover:bg-slate-800/60 transition flex items-center justify-center"
-              title="Configuración">
+              title="ConfiguraciÃ³n">
               <span class="pi pi-sliders-h text-slate-200"></span>
             </button>
 
@@ -545,7 +703,7 @@
           <!-- Footer -->
           <div class="mt-4 text-[11px] text-slate-500 flex items-center justify-between">
             <span>Ambiente: <span class="text-emerald-400">DEV</span></span>
-            <span>MES · Royal Systems</span>
+            <span>MES · Dedalus</span>
           </div>
         </div>
       </main>

@@ -1,0 +1,174 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Maestro · Lotes de Material</h3>
+      <p class="ui-subtitle">Trazabilidad de materia prima: número de lote, proveedor, cantidades y estado.</p>
+    </div>
+    <div class="w-full max-w-sm">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar lote, material, proveedor..." />
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+    <div *ngFor="let s of statuses" class="ui-surface px-4 py-3 flex items-center gap-3">
+      <span class="pi text-xl" [ngClass]="statusIcon(s.value)"></span>
+      <div>
+        <p class="text-lg font-bold">{{ countByStatus(s.value) }}</p>
+        <p class="text-[11px] text-slate-500">{{ s.label }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- Form -->
+    <div class="ui-surface p-5">
+      <p class="text-sm font-semibold mb-4">{{ editingId ? 'Editar lote' : 'Registrar lote' }}</p>
+      <form (ngSubmit)="submit()" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Nº Lote interno</label>
+            <input [(ngModel)]="form.lotNumber" name="lotNumber" required class="ui-input" placeholder="LOT-2026-001" />
+          </div>
+          <div>
+            <label class="ui-label">Estado</label>
+            <select [(ngModel)]="form.status" name="status" class="ui-select">
+              <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Cód. Material</label>
+            <input [(ngModel)]="form.materialCode" name="materialCode" required class="ui-input" placeholder="MAT-ALG" />
+          </div>
+          <div>
+            <label class="ui-label">Nombre Material</label>
+            <input [(ngModel)]="form.materialName" name="materialName" class="ui-input" placeholder="Algodón peinado" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Proveedor</label>
+            <input [(ngModel)]="form.supplierCode" name="supplierCode" class="ui-input" placeholder="PROV-TEX01" />
+          </div>
+          <div>
+            <label class="ui-label">Lote proveedor</label>
+            <input [(ngModel)]="form.supplierLot" name="supplierLot" class="ui-input" placeholder="TX-A45217" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Fecha recepción</label>
+            <input type="date" [(ngModel)]="form.receivedDate" name="receivedDate" class="ui-input" />
+          </div>
+          <div>
+            <label class="ui-label">Fecha vencimiento</label>
+            <input type="date" [(ngModel)]="form.expiryDate" name="expiryDate" class="ui-input" />
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="ui-label">Qtd. inicial</label>
+            <input type="number" [(ngModel)]="form.initialQty" (ngModelChange)="copyInitialToAvailable()" name="initialQty" min="0" step="0.001" class="ui-input" />
+          </div>
+          <div>
+            <label class="ui-label">Qtd. disponible</label>
+            <input type="number" [(ngModel)]="form.availableQty" name="availableQty" min="0" step="0.001" class="ui-input" />
+          </div>
+          <div>
+            <label class="ui-label">UoM</label>
+            <input [(ngModel)]="form.uom" name="uom" class="ui-input" placeholder="kg" />
+          </div>
+        </div>
+        <div>
+          <label class="ui-label">Ubicación</label>
+          <input [(ngModel)]="form.locationCode" name="locationCode" class="ui-input" placeholder="ALM-01-A1" />
+        </div>
+        <div>
+          <label class="ui-label">Notas</label>
+          <input [(ngModel)]="form.notes" name="notes" class="ui-input" placeholder="Observaciones..." />
+        </div>
+        <div class="flex gap-2 pt-1">
+          <button type="submit" class="flex-1 ui-btn-primary">{{ editingId ? 'Guardar cambios' : 'Registrar lote' }}</button>
+          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Table -->
+    <div class="xl:col-span-2 ui-surface p-5">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <p class="text-sm font-semibold">Listado de lotes</p>
+        <div class="flex flex-wrap items-center gap-2">
+          <select [(ngModel)]="filterMaterial" class="ui-select text-xs py-1">
+            <option value="">Todos los materiales</option>
+            <option *ngFor="let m of uniqueMaterials" [value]="m">{{ m }}</option>
+          </select>
+          <select [(ngModel)]="filterStatus" class="ui-select text-xs py-1">
+            <option value="">Todos los estados</option>
+            <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
+          </select>
+          <span class="text-[11px] text-slate-500">{{ filtered.length }} lote(s)</span>
+        </div>
+      </div>
+
+      <div class="ui-table-wrap">
+        <table class="ui-table">
+          <thead class="ui-thead">
+            <tr>
+              <th class="ui-th">Nº Lote</th>
+              <th class="ui-th">Material</th>
+              <th class="ui-th">Proveedor / Lote prov.</th>
+              <th class="ui-th text-center">Qtd. inicial</th>
+              <th class="ui-th text-center">Disponible</th>
+              <th class="ui-th">Ubicación</th>
+              <th class="ui-th">Recepción</th>
+              <th class="ui-th">Estado</th>
+              <th class="ui-th w-24">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="bg-slate-950/20">
+            <tr *ngFor="let it of filtered" class="ui-tr">
+              <td class="ui-td font-mono text-xs font-bold">{{ it.lotNumber }}</td>
+              <td class="ui-td">
+                <p class="text-sm">{{ it.materialName }}</p>
+                <p class="text-[11px] text-slate-500 font-mono">{{ it.materialCode }}</p>
+              </td>
+              <td class="ui-td text-xs">
+                <p class="text-slate-300">{{ it.supplierCode || '-' }}</p>
+                <p class="text-slate-500">{{ it.supplierLot || '-' }}</p>
+              </td>
+              <td class="ui-td text-center text-xs">{{ it.initialQty }} {{ it.uom }}</td>
+              <td class="ui-td text-center">
+                <span class="text-sm font-semibold" [ngClass]="it.availableQty > 0 ? 'text-emerald-300' : 'text-slate-500'">
+                  {{ it.availableQty }} {{ it.uom }}
+                </span>
+              </td>
+              <td class="ui-td text-xs text-slate-400">{{ it.locationCode || '-' }}</td>
+              <td class="ui-td text-xs text-slate-500">{{ it.receivedDate || '-' }}</td>
+              <td class="ui-td">
+                <span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full" [ngClass]="statusCls(it.status)">
+                  <span class="pi text-[10px]" [ngClass]="statusIcon(it.status)"></span>
+                  {{ statusLabel(it.status) }}
+                </span>
+              </td>
+              <td class="ui-td">
+                <div class="flex gap-1">
+                  <button (click)="edit(it)" class="ui-btn-ghost text-xs">Edit</button>
+                  <button (click)="remove(it.id)" class="ui-btn-danger text-xs">Del</button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="filtered.length === 0">
+              <td colspan="9" class="px-4 py-10 text-center text-slate-500">Sin lotes registrados.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,29 +1,13 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-type ComponentStatus = 'OPERATIONAL' | 'DEGRADED' | 'FAILED' | 'REPLACED';
-type ComponentCriticality = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-
-interface AssetComponent {
-  id: string;
-  code: string;
-  name: string;
-  assetCode: string;
-  assetName: string;
-  category: string; // Motor, Rodamiento, Correa, Sensor, etc.
-  manufacturer?: string;
-  model?: string;
-  serialNumber?: string;
-  status: ComponentStatus;
-  criticality: ComponentCriticality;
-  installDate: string;
-  expectedLifeHours?: number;
-  currentHours?: number;
-  lastInspection?: string;
-  nextInspection?: string;
-  notes?: string;
-}
+import { 
+  ComponentsService, 
+  AssetComponent, 
+  ComponentStatus, 
+  ComponentCriticality,
+  CreateComponentDto 
+} from '../services/components.service';
 
 interface MaintenanceRecord {
   id: string;
@@ -41,26 +25,31 @@ interface MaintenanceRecord {
   templateUrl: './components.html',
   styleUrl: './components.css',
 })
-export class ComponentsComponent {
+export class ComponentsComponent implements OnInit {
+  private componentsService = inject(ComponentsService);
+  
   q = '';
   filterAsset = 'ALL';
   filterStatus: 'ALL' | ComponentStatus = 'ALL';
   selectedComponent: AssetComponent | null = null;
   editingId: string | null = null;
 
+  components$ = this.componentsService.components$;
+  components: AssetComponent[] = [];
+
   // Form
-  form: Omit<AssetComponent, 'id'> = {
+  form: Partial<AssetComponent> = {
     code: '',
     name: '',
-    assetCode: 'MAQ-001',
-    assetName: 'Hiladora 01',
-    category: 'Motor',
+    assetCode: '',
+    assetName: '',
+    category: '',
     manufacturer: '',
     model: '',
     serialNumber: '',
-    status: 'OPERATIONAL',
-    criticality: 'MEDIUM',
-    installDate: new Date().toISOString().split('T')[0],
+    status: ComponentStatus.OPERATIONAL,
+    criticality: ComponentCriticality.MEDIUM,
+    installDate: new Date(),
     expectedLifeHours: 10000,
     currentHours: 0,
     notes: ''
@@ -74,7 +63,7 @@ export class ComponentsComponent {
     hoursAtMaintenance: 0
   };
 
-  // Mock assets
+  // Mock assets (could be loaded from assets service)
   assets = [
     { code: 'MAQ-001', name: 'Hiladora 01' },
     { code: 'MAQ-002', name: 'Carda 02' },
@@ -82,61 +71,12 @@ export class ComponentsComponent {
     { code: 'TEL-05', name: 'Telar 05' }
   ];
 
-  components: AssetComponent[] = [
-    {
-      id: '1',
-      code: 'COMP-M001-MOT',
-      name: 'Motor Principal',
-      assetCode: 'MAQ-001',
-      assetName: 'Hiladora 01',
-      category: 'Motor',
-      manufacturer: 'Siemens',
-      model: 'IE3-100L',
-      serialNumber: 'SN-2024-001',
-      status: 'OPERATIONAL',
-      criticality: 'CRITICAL',
-      installDate: '2024-01-15',
-      expectedLifeHours: 15000,
-      currentHours: 3250,
-      lastInspection: '2025-12-01',
-      nextInspection: '2026-01-01',
-      notes: 'Requiere inspección mensual'
-    },
-    {
-      id: '2',
-      code: 'COMP-M001-ROD1',
-      name: 'Rodamiento Eje Principal',
-      assetCode: 'MAQ-001',
-      assetName: 'Hiladora 01',
-      category: 'Rodamiento',
-      manufacturer: 'SKF',
-      model: '6206-2RS',
-      serialNumber: 'SKF-2024-445',
-      status: 'DEGRADED',
-      criticality: 'HIGH',
-      installDate: '2024-06-20',
-      expectedLifeHours: 8000,
-      currentHours: 6500,
-      lastInspection: '2025-12-10',
-      nextInspection: '2025-12-30',
-      notes: 'Presenta vibración anormal, programar reemplazo'
-    },
-    {
-      id: '3',
-      code: 'COMP-C001-VALV',
-      name: 'Válvula de Seguridad',
-      assetCode: 'COMP-A1',
-      assetName: 'Compresor A1',
-      category: 'Válvula',
-      manufacturer: 'Parker',
-      model: 'PSV-200',
-      status: 'OPERATIONAL',
-      criticality: 'CRITICAL',
-      installDate: '2023-11-10',
-      lastInspection: '2025-11-15',
-      nextInspection: '2026-02-15'
-    }
-  ];
+  ngOnInit(): void {
+    this.componentsService.loadComponents();
+    this.components$.subscribe(components => {
+      this.components = components;
+    });
+  }
 
   maintenanceRecords: Map<string, MaintenanceRecord[]> = new Map([
     ['1', [
@@ -206,37 +146,58 @@ export class ComponentsComponent {
   submit() {
     if (!this.form.code || !this.form.name) return;
 
-    const asset = this.assets.find(a => a.code === this.form.assetCode);
-    if (!asset) return;
+    const dto: CreateComponentDto = {
+      code: this.form.code,
+      name: this.form.name,
+      assetCode: this.form.assetCode,
+      assetName: this.form.assetName,
+      category: this.form.category,
+      status: this.form.status,
+      manufacturer: this.form.manufacturer,
+      model: this.form.model,
+      serialNumber: this.form.serialNumber,
+      criticality: this.form.criticality,
+      installDate: this.form.installDate,
+      expectedLifeHours: this.form.expectedLifeHours,
+      currentHours: this.form.currentHours,
+      notes: this.form.notes,
+      lastInspection: this.form.lastInspection,
+      nextInspection: this.form.nextInspection
+    };
 
     if (this.editingId) {
-      const idx = this.components.findIndex(c => c.id === this.editingId);
-      if (idx >= 0) {
-        this.components[idx] = {
-          ...this.components[idx],
-          ...this.form,
-          assetName: asset.name
-        };
-      }
-      this.cancelEdit();
+      this.componentsService.updateComponent(this.editingId, dto)
+        .subscribe({
+          next: (updated) => {
+            this.selectedComponent = updated;
+            this.cancelEdit();
+          },
+          error: (err) => console.error('Error updating component:', err)
+        });
       return;
     }
 
-    const newComponent: AssetComponent = {
-      id: crypto.randomUUID?.() ?? String(Date.now()),
-      ...this.form,
-      assetName: asset.name
-    };
-
-    this.components.unshift(newComponent);
-    this.resetForm();
-    this.selectComponent(newComponent);
+    this.componentsService.createComponent(dto)
+      .subscribe({
+        next: (created) => {
+          this.resetForm();
+          this.selectComponent(created);
+        },
+        error: (err) => console.error('Error creating component:', err)
+      });
   }
 
   remove(id: string) {
     if (!confirm('¿Eliminar este componente?')) return;
-    this.components = this.components.filter(c => c.id !== id);
-    if (this.selectedComponent?.id === id) this.selectedComponent = null;
+    this.componentsService.deleteComponent(id)
+      .subscribe({
+        next: () => {
+          if (this.selectedComponent?.id === id) {
+            this.selectedComponent = null;
+          }
+        },
+        error: (err) => console.error('Error deleting component:', err)
+      });
   }
 
   cancelEdit() {
@@ -248,15 +209,15 @@ export class ComponentsComponent {
     this.form = {
       code: '',
       name: '',
-      assetCode: 'MAQ-001',
-      assetName: 'Hiladora 01',
-      category: 'Motor',
+      assetCode: '',
+      assetName: '',
+      category: '',
       manufacturer: '',
       model: '',
       serialNumber: '',
-      status: 'OPERATIONAL',
-      criticality: 'MEDIUM',
-      installDate: new Date().toISOString().split('T')[0],
+      status: ComponentStatus.OPERATIONAL,
+      criticality: ComponentCriticality.MEDIUM,
+      installDate: new Date(),
       expectedLifeHours: 10000,
       currentHours: 0,
       notes: ''
@@ -280,7 +241,7 @@ export class ComponentsComponent {
     this.maintenanceRecords.set(this.selectedComponent.id, records);
 
     // Update last inspection
-    this.selectedComponent.lastInspection = newRecord.date;
+    this.selectedComponent.lastInspection = new Date(newRecord.date);
 
     this.resetRecordForm();
   }
@@ -298,24 +259,31 @@ export class ComponentsComponent {
     return this.maintenanceRecords.get(componentId) || [];
   }
 
-  getStatusBadge(status: ComponentStatus): string {
+  getStatusBadge(status: ComponentStatus | undefined): string {
+    if (!status) return 'ui-badge';
     const badges: Record<ComponentStatus, string> = {
-      'OPERATIONAL': 'ui-badge-ok',
-      'DEGRADED': 'ui-badge-warn',
-      'FAILED': 'ui-badge-bad',
-      'REPLACED': 'ui-badge bg-slate-500/15 border-slate-500/25 text-slate-200'
+      [ComponentStatus.OPERATIONAL]: 'ui-badge-ok',
+      [ComponentStatus.DEGRADED]: 'ui-badge-warn',
+      [ComponentStatus.FAILED]: 'ui-badge-bad',
+      [ComponentStatus.REPLACED]: 'ui-badge bg-slate-500/15 border-slate-500/25 text-slate-200'
     };
     return badges[status] || 'ui-badge';
   }
 
-  getCriticalityBadge(criticality: ComponentCriticality): string {
+  getCriticalityBadge(criticality: ComponentCriticality | undefined): string {
+    if (!criticality) return 'ui-badge';
     const badges: Record<ComponentCriticality, string> = {
-      'LOW': 'ui-badge bg-slate-500/15 border-slate-500/25 text-slate-200',
-      'MEDIUM': 'ui-badge-warn',
-      'HIGH': 'ui-badge bg-orange-500/15 border-orange-500/25 text-orange-200',
-      'CRITICAL': 'ui-badge-bad'
+      [ComponentCriticality.LOW]: 'ui-badge bg-slate-500/15 border-slate-500/25 text-slate-200',
+      [ComponentCriticality.MEDIUM]: 'ui-badge-warn',
+      [ComponentCriticality.HIGH]: 'ui-badge bg-orange-500/15 border-orange-500/25 text-orange-200',
+      [ComponentCriticality.CRITICAL]: 'ui-badge-bad'
     };
     return badges[criticality] || 'ui-badge';
+  }
+
+  formatDate(date: Date | undefined): string {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('es-ES');
   }
 
   getLifePercentage(component: AssetComponent): number {

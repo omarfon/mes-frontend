@@ -1,0 +1,340 @@
+<div class="h-full flex flex-col bg-slate-950 overflow-hidden">
+
+  <!-- Header -->
+  <div class="px-6 py-4 border-b border-slate-800/60">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h1 class="text-base font-semibold text-slate-100">Revisiones por Orden de Producción</h1>
+        <p class="text-xs text-slate-500 mt-0.5">Inspecciones realizadas y NC generadas por OP</p>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="grid grid-cols-4 gap-3">
+      <div class="bg-slate-900 border border-slate-800/60 rounded-lg px-4 py-3">
+        <p class="text-[11px] text-slate-500 uppercase tracking-wide">Total OPs</p>
+        <p class="text-2xl font-bold text-slate-100 mt-1">{{ totalOPs }}</p>
+      </div>
+      <div class="bg-slate-900 border border-emerald-500/20 rounded-lg px-4 py-3">
+        <p class="text-[11px] text-slate-500 uppercase tracking-wide">Aprobadas</p>
+        <p class="text-2xl font-bold text-emerald-400 mt-1">{{ approvedOPs }}</p>
+      </div>
+      <div class="bg-slate-900 border border-red-500/20 rounded-lg px-4 py-3">
+        <p class="text-[11px] text-slate-500 uppercase tracking-wide">Rechazadas</p>
+        <p class="text-2xl font-bold text-red-400 mt-1">{{ rejectedOPs }}</p>
+      </div>
+      <div class="bg-slate-900 border border-orange-500/20 rounded-lg px-4 py-3">
+        <p class="text-[11px] text-slate-500 uppercase tracking-wide">NC abiertas</p>
+        <p class="text-2xl font-bold text-orange-400 mt-1">{{ openNCs }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Body: list + detail -->
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- List -->
+    <div class="w-96 flex-shrink-0 border-r border-slate-800/60 flex flex-col overflow-hidden">
+
+      <!-- Filters -->
+      <div class="px-4 py-3 border-b border-slate-800/40 space-y-2">
+        <div class="relative">
+          <i class="pi pi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+          <input [(ngModel)]="q" (ngModelChange)="q=$event" placeholder="Buscar OP, producto…"
+            class="w-full bg-slate-900 border border-slate-700/60 rounded-md pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500/60" />
+        </div>
+        <div class="flex gap-2">
+          <select [(ngModel)]="resultFilter"
+            class="flex-1 bg-slate-900 border border-slate-700/60 rounded-md px-2 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500/60">
+            <option value="ALL">Todos los resultados</option>
+            <option value="APPROVED">Aprobada</option>
+            <option value="CONDITIONAL">Condicional</option>
+            <option value="REJECTED">Rechazada</option>
+            <option value="PENDING">Pendiente</option>
+          </select>
+          <select [(ngModel)]="statusFilter"
+            class="flex-1 bg-slate-900 border border-slate-700/60 rounded-md px-2 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500/60">
+            <option value="ALL">Todos los estados</option>
+            <option value="IN_PROCESS">En proceso</option>
+            <option value="ON_HOLD">En espera</option>
+            <option value="COMPLETED">Completada</option>
+            <option value="CLOSED">Cerrada</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- OP Cards -->
+      <div class="flex-1 overflow-y-auto p-3 space-y-2">
+        <div *ngFor="let op of filtered" (click)="select(op)"
+          class="bg-slate-900 border rounded-lg px-3 py-3 cursor-pointer transition hover:border-slate-600"
+          [class.border-emerald-500/60]="selectedId === op.id"
+          [class.border-slate-800/60]="selectedId !== op.id">
+
+          <!-- OP header row -->
+          <div class="flex items-start justify-between mb-1.5">
+            <div>
+              <p class="text-[12px] font-semibold text-slate-100">{{ op.orderCode }}</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">{{ op.productName }}</p>
+            </div>
+            <div class="flex flex-col items-end gap-1">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium" [class]="qualityResultBadge(op.qualityResult)">
+                {{ qualityResultLabel(op.qualityResult) }}
+              </span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px]" [class]="opStatusBadge(op.opStatus)">
+                {{ opStatusLabel(op.opStatus) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Stats row -->
+          <div class="flex items-center gap-3 mt-2">
+            <div class="flex items-center gap-1 text-[11px] text-slate-500">
+              <i class="pi pi-search text-[10px]"></i>
+              <span>{{ inspectionCount(op) }} insp.</span>
+            </div>
+            <div class="flex items-center gap-1 text-[11px]" [class.text-orange-400]="op.ncs.length > 0" [class.text-slate-600]="op.ncs.length === 0">
+              <i class="pi pi-exclamation-circle text-[10px]"></i>
+              <span>{{ op.ncs.length }} NC</span>
+            </div>
+            <div class="flex items-center gap-1 text-[11px] text-slate-500">
+              <i class="pi pi-box text-[10px]"></i>
+              <span>{{ op.qty }} {{ op.uom }}</span>
+            </div>
+          </div>
+
+          <!-- Mini process flow -->
+          <div class="flex items-center gap-1 mt-2">
+            <ng-container *ngFor="let node of op.processFlow; let last = last">
+              <div class="w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0" [class]="nodeClass(node.result)" [title]="node.processName">
+                <i class="pi text-[7px]" [class]="nodeIcon(node.result)"></i>
+              </div>
+              <div *ngIf="!last" class="h-px flex-1 max-w-[12px]" [class]="connectorClass(node.result)"></div>
+            </ng-container>
+          </div>
+        </div>
+
+        <div *ngIf="filtered.length === 0" class="text-center py-10 text-slate-600 text-xs">
+          <i class="pi pi-inbox text-2xl block mb-2"></i>
+          Sin órdenes que coincidan
+        </div>
+      </div>
+    </div>
+
+    <!-- Detail panel -->
+    <div class="flex-1 overflow-hidden flex flex-col">
+
+      <!-- No selection -->
+      <div *ngIf="!selected" class="flex-1 flex flex-col items-center justify-center text-slate-600">
+        <i class="pi pi-list-check text-4xl mb-3"></i>
+        <p class="text-sm">Selecciona una orden para ver el detalle</p>
+      </div>
+
+      <!-- Selected OP detail -->
+      <ng-container *ngIf="selected">
+        <!-- OP header -->
+        <div class="px-6 py-4 border-b border-slate-800/60">
+          <div class="flex items-start justify-between">
+            <div>
+              <h2 class="text-sm font-semibold text-slate-100">{{ selected.orderCode }}</h2>
+              <p class="text-xs text-slate-400 mt-0.5">{{ selected.productName }}
+                <span class="text-slate-600 mx-1">·</span>
+                <span class="text-slate-400">{{ selected.productCode }}</span>
+                <span class="text-slate-600 mx-1">·</span>
+                <span class="text-slate-400">{{ selected.qty }} {{ selected.uom }}</span>
+              </p>
+              <p class="text-[11px] text-slate-500 mt-1">
+                Inicio: {{ formatDateShort(selected.startedAt) }}
+                <span *ngIf="selected.completedAt" class="ml-2">— Fin: {{ formatDateShort(selected.completedAt) }}</span>
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" [class]="qualityResultBadge(selected.qualityResult)">
+                {{ qualityResultLabel(selected.qualityResult) }}
+              </span>
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs" [class]="opStatusBadge(selected.opStatus)">
+                {{ opStatusLabel(selected.opStatus) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex border-b border-slate-800/60 px-6 pt-3">
+          <ng-container *ngFor="let tab of [['process','Flujo de proceso'],['inspections','Inspecciones'],['ncs','No Conformidades']]">
+            <button (click)="setActiveTab(tab[0])"
+              class="pb-2 mr-5 text-xs transition border-b-2"
+              [class.border-emerald-500]="activeTab === tab[0]"
+              [class.text-emerald-400]="activeTab === tab[0]"
+              [class.border-transparent]="activeTab !== tab[0]"
+              [class.text-slate-500]="activeTab !== tab[0]">
+              {{ tab[1] }}
+              <span *ngIf="tab[0] === 'ncs' && selected.ncs.length > 0"
+                class="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-orange-500/20 text-orange-400 text-[9px]">
+                {{ selected.ncs.length }}
+              </span>
+            </button>
+          </ng-container>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-6 py-4">
+
+          <!-- TAB: Flujo de proceso -->
+          <div *ngIf="activeTab === 'process'">
+            <p class="text-[11px] text-slate-500 uppercase tracking-wide mb-4">Flujo de proceso y resultado de inspección</p>
+
+            <!-- Horizontal flow nodes -->
+            <div class="flex items-start gap-0 mb-6 overflow-x-auto pb-2">
+              <ng-container *ngFor="let node of selected.processFlow; let last = last">
+                <div class="flex flex-col items-center min-w-[90px]">
+                  <!-- Circle -->
+                  <div class="w-10 h-10 rounded-full border-2 flex items-center justify-center" [class]="nodeClass(node.result)">
+                    <i class="pi text-sm" [class]="nodeIcon(node.result)"></i>
+                  </div>
+                  <!-- Work center -->
+                  <p class="text-[10px] text-slate-500 mt-1 text-center">{{ node.workCenter }}</p>
+                  <p class="text-[10px] text-slate-400 text-center max-w-[80px] leading-tight">{{ node.processName }}</p>
+                  <!-- Result label -->
+                  <span class="mt-1 text-[9px] font-medium"
+                    [class.text-emerald-400]="node.result === 'APPROVED'"
+                    [class.text-red-400]="node.result === 'REJECTED'"
+                    [class.text-blue-400]="node.result === 'CONDITIONAL'"
+                    [class.text-amber-400]="node.result === 'PENDING'"
+                    [class.text-slate-600]="node.result === 'NOT_INSPECTED'">
+                    {{ node.result === 'APPROVED' ? 'Aprobado' : node.result === 'REJECTED' ? 'Rechazado' : node.result === 'CONDITIONAL' ? 'Condicional' : node.result === 'PENDING' ? 'Pendiente' : 'Sin inspección' }}
+                  </span>
+                </div>
+                <!-- Connector -->
+                <div *ngIf="!last" class="h-px w-8 mt-5 flex-shrink-0" [class]="connectorClass(node.result)"></div>
+              </ng-container>
+            </div>
+
+            <!-- Per-process summary cards -->
+            <div class="space-y-3">
+              <div *ngFor="let ins of selected.inspections"
+                class="bg-slate-900 border border-slate-800/60 rounded-lg p-4">
+                <div class="flex items-start justify-between mb-2">
+                  <div>
+                    <p class="text-xs font-medium text-slate-200">{{ ins.processName }} — {{ ins.workCenter }}</p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">{{ ins.code }} · {{ formatDate(ins.date) }}</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded text-[10px]" [class]="inspResultBadge(ins.result)">
+                      {{ ins.result === 'APPROVED' ? 'Aprobado' : ins.result === 'REJECTED' ? 'Rechazado' : ins.result === 'CONDITIONAL' ? 'Condicional' : 'Pendiente' }}
+                    </span>
+                    <span *ngIf="ins.ncId" class="px-2 py-0.5 rounded bg-orange-500/10 text-orange-400 text-[10px] border border-orange-500/20">
+                      <i class="pi pi-exclamation-circle text-[9px] mr-0.5"></i>{{ ins.ncId }}
+                    </span>
+                  </div>
+                </div>
+                <!-- Bar -->
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full transition-all"
+                      [class.bg-emerald-500]="ins.result === 'APPROVED'"
+                      [class.bg-red-500]="ins.result === 'REJECTED'"
+                      [class.bg-blue-500]="ins.result === 'CONDITIONAL'"
+                      [style.width.%]="approvalRate(ins)"></div>
+                  </div>
+                  <span class="text-[11px] text-slate-400">{{ approvalRate(ins) }}% aprobado</span>
+                  <span class="text-[11px] text-slate-500">{{ ins.quantityApproved }}/{{ ins.quantityInspected }} {{ selected.uom }}</span>
+                </div>
+                <!-- Defects -->
+                <div *ngIf="ins.defects.length > 0" class="flex flex-wrap gap-1 mt-2">
+                  <div *ngFor="let d of ins.defects"
+                    class="flex items-center gap-1 px-2 py-0.5 rounded text-[10px]"
+                    [class]="ncSeverityBadge(d.severity)">
+                    <span>{{ d.code }}</span>
+                    <span class="text-slate-400">{{ d.desc }}</span>
+                    <span class="font-medium">×{{ d.count }}</span>
+                  </div>
+                </div>
+                <p *ngIf="ins.observations" class="text-[11px] text-slate-500 italic mt-2">{{ ins.observations }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: Inspecciones -->
+          <div *ngIf="activeTab === 'inspections'">
+            <p class="text-[11px] text-slate-500 uppercase tracking-wide mb-3">Inspecciones registradas en esta OP</p>
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs">
+                <thead>
+                  <tr class="border-b border-slate-800">
+                    <th class="pb-2 text-left text-[11px] text-slate-500 font-medium">Código</th>
+                    <th class="pb-2 text-left text-[11px] text-slate-500 font-medium">Tipo</th>
+                    <th class="pb-2 text-left text-[11px] text-slate-500 font-medium">Proceso</th>
+                    <th class="pb-2 text-right text-[11px] text-slate-500 font-medium">Insp.</th>
+                    <th class="pb-2 text-right text-[11px] text-slate-500 font-medium">Aprobado</th>
+                    <th class="pb-2 text-right text-[11px] text-slate-500 font-medium">Rechazado</th>
+                    <th class="pb-2 text-left text-[11px] text-slate-500 font-medium">Resultado</th>
+                    <th class="pb-2 text-left text-[11px] text-slate-500 font-medium">NC</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let ins of selected.inspections" class="border-b border-slate-800/40 hover:bg-slate-900/60">
+                    <td class="py-2 text-slate-300 font-mono">{{ ins.code }}</td>
+                    <td class="py-2 text-slate-400">
+                      {{ ins.type === 'INCOMING' ? 'Entrada MP' : ins.type === 'IN_PROCESS' ? 'En proceso' : 'Final' }}
+                    </td>
+                    <td class="py-2 text-slate-300">{{ ins.processName }}</td>
+                    <td class="py-2 text-right text-slate-300">{{ ins.quantityInspected }}</td>
+                    <td class="py-2 text-right text-emerald-400">{{ ins.quantityApproved }}</td>
+                    <td class="py-2 text-right" [class.text-red-400]="ins.quantityRejected > 0" [class.text-slate-500]="ins.quantityRejected === 0">
+                      {{ ins.quantityRejected }}
+                    </td>
+                    <td class="py-2">
+                      <span class="px-2 py-0.5 rounded text-[10px]" [class]="inspResultBadge(ins.result)">
+                        {{ ins.result === 'APPROVED' ? 'Aprobado' : ins.result === 'REJECTED' ? 'Rechazado' : ins.result === 'CONDITIONAL' ? 'Condicional' : 'Pendiente' }}
+                      </span>
+                    </td>
+                    <td class="py-2">
+                      <span *ngIf="ins.ncId" class="text-orange-400 font-mono text-[10px]">{{ ins.ncId }}</span>
+                      <span *ngIf="!ins.ncId" class="text-slate-600">—</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB: No Conformidades -->
+          <div *ngIf="activeTab === 'ncs'">
+            <p class="text-[11px] text-slate-500 uppercase tracking-wide mb-3">NC generadas por esta orden de producción</p>
+
+            <div *ngIf="selected.ncs.length === 0" class="flex flex-col items-center justify-center py-12 text-slate-600">
+              <i class="pi pi-check-circle text-3xl mb-2 text-emerald-700"></i>
+              <p class="text-sm text-emerald-600">Sin no conformidades</p>
+              <p class="text-xs text-slate-600 mt-1">Todos los procesos fueron conformes</p>
+            </div>
+
+            <div *ngIf="selected.ncs.length > 0" class="space-y-3">
+              <div *ngFor="let nc of selected.ncs"
+                class="bg-slate-900 border border-slate-800/60 rounded-lg p-4">
+                <div class="flex items-start justify-between mb-2">
+                  <div>
+                    <p class="text-xs font-semibold font-mono text-slate-200">{{ nc.code }}</p>
+                    <p class="text-xs text-slate-300 mt-1">{{ nc.title }}</p>
+                  </div>
+                  <div class="flex items-center gap-2 ml-4 flex-shrink-0">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-medium" [class]="ncSeverityBadge(nc.severity)">
+                      {{ nc.severity }}
+                    </span>
+                    <span class="text-[11px] font-medium" [class]="ncStatusBadge(nc.status)">
+                      <i class="pi pi-circle-fill text-[8px] mr-0.5"></i>
+                      {{ nc.status === 'OPEN' ? 'Abierta' : nc.status === 'ANALYSIS' ? 'Análisis' : nc.status === 'ACTION_PLAN' ? 'Plan acción' : nc.status === 'IMPLEMENTATION' ? 'Implementación' : nc.status === 'VERIFICATION' ? 'Verificación' : nc.status === 'CLOSED' ? 'Cerrada' : 'Cancelada' }}
+                    </span>
+                  </div>
+                </div>
+                <div *ngIf="nc.inspectionId" class="text-[11px] text-slate-500">
+                  <i class="pi pi-search text-[10px] mr-1"></i>Originada en inspección:
+                  <span class="font-mono text-slate-400 ml-1">{{ nc.inspectionId }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>

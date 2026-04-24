@@ -1,0 +1,168 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Capacidad de planta</h3>
+      <p class="ui-subtitle">Análisis de capacidad disponible por máquina y centro de trabajo.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9 w-64" placeholder="Buscar máquina..." />
+      </div>
+      <select [(ngModel)]="filterArea" class="ui-select w-36">
+        <option value="">Todas las áreas</option>
+        <option *ngFor="let a of areas" [value]="a">{{ a }}</option>
+      </select>
+      <button type="button" (click)="openNew()" class="ui-btn-primary flex items-center gap-2">
+        <i class="pi pi-plus text-xs"></i> Nueva capacidad
+      </button>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div *ngIf="showForm" class="ui-surface p-6 space-y-4">
+    <div class="flex items-center justify-between">
+      <p class="text-sm font-semibold">{{ editingId ? 'Editar capacidad' : 'Nueva capacidad' }}</p>
+      <button type="button" (click)="cancel()" class="ui-btn-ghost text-xs">✕ Cerrar</button>
+    </div>
+    <div *ngIf="error" class="px-3 py-2 bg-rose-500/10 border border-rose-500/30 rounded-lg text-xs text-rose-400">{{ error }}</div>
+    <form (ngSubmit)="submit()">
+      <p class="text-[11px] text-slate-500 uppercase tracking-wide">Máquina</p>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div>
+          <label class="ui-label">Código máquina *</label>
+          <input [(ngModel)]="form.machineCode" name="machineCode" required class="ui-input" placeholder="MC-001" />
+        </div>
+        <div>
+          <label class="ui-label">Nombre *</label>
+          <input [(ngModel)]="form.machineName" name="machineName" required class="ui-input" placeholder="Telar circular #1" />
+        </div>
+        <div>
+          <label class="ui-label">Área</label>
+          <input [(ngModel)]="form.area" name="area" class="ui-input" placeholder="Tejeduría" />
+        </div>
+        <div>
+          <label class="ui-label">Centro de trabajo</label>
+          <input [(ngModel)]="form.workCenter" name="workCenter" class="ui-input" placeholder="CT-01" />
+        </div>
+      </div>
+
+      <div class="my-3 border-t border-slate-800/50"></div>
+      <p class="text-[11px] text-slate-500 uppercase tracking-wide">Disponibilidad</p>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div>
+          <label class="ui-label">Horas/día</label>
+          <input [(ngModel)]="form.availableHoursDay" name="availableHoursDay" type="number" class="ui-input" (ngModelChange)="recalc()" />
+        </div>
+        <div>
+          <label class="ui-label">Turnos/día</label>
+          <input [(ngModel)]="form.shiftsPerDay" name="shiftsPerDay" type="number" class="ui-input" (ngModelChange)="recalc()" />
+        </div>
+        <div>
+          <label class="ui-label">Días/semana</label>
+          <input [(ngModel)]="form.daysPerWeek" name="daysPerWeek" type="number" class="ui-input" (ngModelChange)="recalc()" />
+        </div>
+        <div>
+          <label class="ui-label">Paro planificado (%)</label>
+          <input [(ngModel)]="form.plannedDowntime" name="plannedDowntime" type="number" class="ui-input" />
+        </div>
+      </div>
+
+      <div class="my-3 border-t border-slate-800/50"></div>
+      <p class="text-[11px] text-slate-500 uppercase tracking-wide">Rendimiento</p>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div>
+          <label class="ui-label">Unidades/hora</label>
+          <input [(ngModel)]="form.capacityUnitsHour" name="capacityUnitsHour" type="number" class="ui-input" (ngModelChange)="recalc()" />
+        </div>
+        <div>
+          <label class="ui-label">Unidad</label>
+          <input [(ngModel)]="form.capacityUnit" name="capacityUnit" class="ui-input" placeholder="pzas, metros, kg..." />
+        </div>
+        <div>
+          <label class="ui-label">Utilización (%)</label>
+          <input [(ngModel)]="form.utilization" name="utilization" type="number" class="ui-input" (ngModelChange)="recalc()" />
+        </div>
+        <div>
+          <label class="ui-label">Eficiencia (%)</label>
+          <input [(ngModel)]="form.efficiency" name="efficiency" type="number" class="ui-input" (ngModelChange)="recalc()" />
+        </div>
+      </div>
+
+      <!-- Resumen -->
+      <div class="grid grid-cols-2 gap-3 mt-4">
+        <div class="ui-surface p-4 rounded-lg text-center border border-emerald-500/20">
+          <p class="text-[10px] text-slate-500 uppercase">Capacidad semanal</p>
+          <p class="text-xl font-bold text-emerald-400">{{ form.weeklyCapacity | number }} {{ form.capacityUnit }}</p>
+        </div>
+        <div class="ui-surface p-4 rounded-lg text-center border border-emerald-500/20">
+          <p class="text-[10px] text-slate-500 uppercase">Capacidad mensual</p>
+          <p class="text-xl font-bold text-emerald-400">{{ form.monthlyCapacity | number }} {{ form.capacityUnit }}</p>
+        </div>
+      </div>
+      <div class="mt-3">
+        <label class="ui-label">Notas</label>
+        <input [(ngModel)]="form.notes" name="notes" class="ui-input" placeholder="Observaciones..." />
+      </div>
+      <div class="flex gap-2 pt-4 border-t border-slate-800/50 mt-4">
+        <button type="submit" class="ui-btn-primary flex items-center gap-2">
+          <i class="pi pi-check text-xs"></i> {{ editingId ? 'Guardar' : 'Crear' }}
+        </button>
+        <button type="button" (click)="cancel()" class="ui-btn-ghost">Cancelar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- TABLE -->
+  <div class="ui-surface p-5">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-sm font-semibold">Capacidad por máquina</p>
+      <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
+    </div>
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead class="ui-thead">
+          <tr>
+            <th class="ui-th">Máquina</th>
+            <th class="ui-th">Área</th>
+            <th class="ui-th">Centro trabajo</th>
+            <th class="ui-th">Horas/día</th>
+            <th class="ui-th">Turnos</th>
+            <th class="ui-th">Uds/hora</th>
+            <th class="ui-th">Efic. %</th>
+            <th class="ui-th">Cap. semanal</th>
+            <th class="ui-th">Cap. mensual</th>
+            <th class="ui-th w-32">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of filtered" class="ui-tr">
+            <td class="ui-td">
+              <div class="font-medium">{{ c.machineName }}</div>
+              <div class="text-[10px] text-slate-500">{{ c.machineCode }}</div>
+            </td>
+            <td class="ui-td">{{ c.area }}</td>
+            <td class="ui-td">{{ c.workCenter }}</td>
+            <td class="ui-td text-center">{{ c.availableHoursDay }}</td>
+            <td class="ui-td text-center">{{ c.shiftsPerDay }}</td>
+            <td class="ui-td text-center">{{ c.capacityUnitsHour }}</td>
+            <td class="ui-td text-center">{{ c.efficiency }}%</td>
+            <td class="ui-td font-medium text-emerald-400">{{ c.weeklyCapacity | number }}</td>
+            <td class="ui-td font-medium text-emerald-400">{{ c.monthlyCapacity | number }}</td>
+            <td class="ui-td">
+              <div class="flex gap-2">
+                <button (click)="edit(c)" class="ui-btn-ghost text-xs">Editar</button>
+                <button (click)="remove(c.id)" class="ui-btn-danger text-xs">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filtered.length === 0">
+            <td colspan="10" class="px-4 py-10 text-center text-slate-500">
+              {{ loading ? 'Cargando...' : 'No hay registros de capacidad.' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

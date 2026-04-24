@@ -26,18 +26,24 @@ export class MainLayout {
   }
   masterMenuOpen = false;
 
-toggleMasterMenu() {
-  this.masterMenuOpen = !this.masterMenuOpen;
-}
- open = {
-    production: false, // ponlo true si quieres que inicie desplegado
-      traceability: false, // 👈 añade esto
-      quality: false, // 👈 añade esto
-      maintenance: false, // 👈 añade esto
-      inventory: false, // 👈 añade esto
-      reportsKpi: false, // 👈 añade esto
-      admin: false, // 👈 añade esto
-      integrations: false, // 👈 añade esto
+  toggleMasterMenu() {
+    this.masterMenuOpen = !this.masterMenuOpen;
+  }
+
+  // grupos internos de la sección Maestros (colapsables)
+  mg = { org: true, time: false, prod: false, materials: true };
+  toggleMg(key: keyof typeof this.mg) { this.mg[key] = !this.mg[key]; }
+
+  open = {
+    production: false,
+      traceability: false,
+      quality: false,
+      maintenance: false,
+      inventory: false,
+      reportsKpi: false,
+      admin: false,
+      integrations: false,
+      feasibility: false,
   };
 
   toggle(key: keyof typeof this.open) {

@@ -1,17 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-type LocationType = 'WAREHOUSE' | 'LINE' | 'STATION';
-
-interface Location {
-  id: string;
-  code: string;
-  name: string;
-  type: LocationType;
-  parent?: string;   // ubicación padre opcional
-  active: boolean;
-}
+import { LocationsService, Location, LocationType, CreateLocationDto } from './locations.service';
 
 @Component({
   standalone: true,
@@ -19,54 +9,67 @@ interface Location {
   imports: [CommonModule, FormsModule],
   templateUrl: './locations.html',
 })
-export class LocationsComponent {
-  form: Omit<Location, 'id'> = { code: '', name: '', type: 'WAREHOUSE', parent: '', active: true };
-  items: Location[] = [
-    { id: '1', code: 'ALM-01', name: 'Almacén Principal', type: 'WAREHOUSE', parent: '', active: true },
-    { id: '2', code: 'LIN-01', name: 'Línea 1', type: 'LINE', parent: 'ALM-01', active: true },
-  ];
+export class LocationsComponent implements OnInit {
+  form: CreateLocationDto = { code: '', name: '', type: 'WAREHOUSE', parent: '', active: true };
+  items: Location[] = [];
   editingId: string | null = null;
   q = '';
+  loading = false;
+  error: string | null = null;
+
+  constructor(private svc: LocationsService, private cdr: ChangeDetectorRef) {}
+
+  ngOnInit() { this.load(); }
+
+  load() {
+    this.loading = true;
+    this.error = null;
+    this.svc.getAll().subscribe({
+      next: data => { this.items = data; this.loading = false; this.cdr.detectChanges(); },
+      error: err => { this.error = this.extractError(err); this.loading = false; this.cdr.detectChanges(); },
+    });
+  }
 
   get filtered() {
     const t = this.q.trim().toLowerCase();
     if (!t) return this.items;
-    return this.items.filter(x =>
-      [x.code, x.name, x.type, x.parent || ''].some(v => v.toLowerCase().includes(t))
-    );
+    return this.items.filter(x => [x.code, x.name, x.type, x.parent || ''].some(v => v.toLowerCase().includes(t)));
   }
 
   submit() {
     if (!this.form.code || !this.form.name) return;
-
-    if (this.editingId) {
-      const idx = this.items.findIndex(x => x.id === this.editingId);
-      if (idx >= 0) this.items[idx] = { ...this.items[idx], ...this.form };
-      this.cancelEdit();
-      return;
-    }
-
-    const id = crypto.randomUUID?.() ?? String(Date.now());
-    this.items.unshift({ id, ...this.form });
-    this.resetForm();
+    this.loading = true;
+    const obs = this.editingId ? this.svc.update(this.editingId, this.form) : this.svc.create(this.form);
+    obs.subscribe({
+      next: () => { this.load(); this.editingId ? this.cancelEdit() : this.resetForm(); },
+      error: err => { this.error = this.extractError(err); this.loading = false; },
+    });
   }
 
   edit(it: Location) {
     this.editingId = it.id;
-    this.form = { code: it.code, name: it.name, type: it.type, parent: it.parent || '', active: it.active };
+    this.form = { code: it.code, name: it.name, type: it.type as LocationType, parent: it.parent || '', active: it.active };
   }
 
   remove(id: string) {
-    this.items = this.items.filter(x => x.id !== id);
-    if (this.editingId === id) this.cancelEdit();
+    if (!confirm('¿Eliminar esta ubicación?')) return;
+    this.svc.delete(id).subscribe({
+      next: () => { this.load(); if (this.editingId === id) this.cancelEdit(); },
+      error: err => { this.error = this.extractError(err); },
+    });
   }
 
-  cancelEdit() {
-    this.editingId = null;
-    this.resetForm();
-  }
+  cancelEdit() { this.editingId = null; this.resetForm(); }
 
   resetForm() {
     this.form = { code: '', name: '', type: 'WAREHOUSE', parent: '', active: true };
+  }
+
+  private extractError(err: any): string {
+    if (typeof err.error?.message === 'string') return err.error.message;
+    if (Array.isArray(err.error?.message)) return err.error.message.join(', ');
+    if (err.error?.error) return err.error.error;
+    const map: Record<number, string> = { 400: 'Datos inválidos.', 409: 'Ya existe un registro con ese código.', 500: 'Error del servidor.' };
+    return map[err.status] || err.message || 'Error desconocido';
   }
 }

@@ -1,0 +1,154 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Rutas de producción</h3>
+      <p class="ui-subtitle">Plantillas de rutas de producción reutilizables para estudios de factibilidad.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9 w-64" placeholder="Buscar ruta..." />
+      </div>
+      <button type="button" (click)="openNew()" class="ui-btn-primary flex items-center gap-2">
+        <i class="pi pi-plus text-xs"></i> Nueva ruta
+      </button>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div *ngIf="showForm" class="ui-surface p-6 space-y-4">
+    <div class="flex items-center justify-between">
+      <p class="text-sm font-semibold">{{ editingId ? 'Editar ruta' : 'Nueva ruta' }}</p>
+      <button type="button" (click)="cancel()" class="ui-btn-ghost text-xs">✕ Cerrar</button>
+    </div>
+    <div *ngIf="error" class="px-3 py-2 bg-rose-500/10 border border-rose-500/30 rounded-lg text-xs text-rose-400">{{ error }}</div>
+    <form (ngSubmit)="submit()">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div>
+          <label class="ui-label">Código *</label>
+          <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="RUT-001" />
+        </div>
+        <div class="col-span-2">
+          <label class="ui-label">Nombre *</label>
+          <input [(ngModel)]="form.name" name="name" required class="ui-input" placeholder="Ruta tela jersey..." />
+        </div>
+        <div>
+          <label class="ui-label">Tipo de producto</label>
+          <input [(ngModel)]="form.productType" name="productType" class="ui-input" placeholder="Textil, plástico..." />
+        </div>
+      </div>
+      <div class="mt-3">
+        <label class="ui-label">Descripción</label>
+        <input [(ngModel)]="form.description" name="description" class="ui-input" placeholder="Descripción de la ruta..." />
+      </div>
+
+      <!-- Pasos -->
+      <div class="my-3 border-t border-slate-800/50"></div>
+      <div class="flex items-center justify-between">
+        <p class="text-[11px] text-slate-500 uppercase tracking-wide">Pasos de la ruta</p>
+        <button type="button" (click)="addStep()" class="ui-btn-ghost text-xs flex items-center gap-1">
+          <i class="pi pi-plus text-[10px]"></i> Agregar paso
+        </button>
+      </div>
+
+      <div *ngIf="form.steps.length === 0" class="text-center py-6 text-slate-500 text-xs">
+        Sin pasos definidos.
+      </div>
+
+      <div *ngFor="let step of form.steps; let i = index"
+        class="ui-surface p-3 rounded-lg space-y-2 border border-slate-800/50 mt-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-300">Paso {{ step.seq }}</span>
+          <button type="button" (click)="removeStep(i)" class="text-rose-400 hover:text-rose-300 text-xs">
+            <i class="pi pi-trash text-xs"></i>
+          </button>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div>
+            <label class="ui-label">Operación</label>
+            <input [(ngModel)]="step.operation" [name]="'op'+i" class="ui-input" placeholder="Corte, teñido..." />
+          </div>
+          <div>
+            <label class="ui-label">Centro trabajo</label>
+            <input [(ngModel)]="step.workCenter" [name]="'wc'+i" class="ui-input" placeholder="CT-01" />
+          </div>
+          <div>
+            <label class="ui-label">Máquina</label>
+            <input [(ngModel)]="step.machineCode" [name]="'mc'+i" class="ui-input" placeholder="MC-001" />
+          </div>
+          <div>
+            <label class="ui-label">Setup (min)</label>
+            <input [(ngModel)]="step.setupTimeMin" [name]="'st'+i" type="number" class="ui-input" (ngModelChange)="recalc()" />
+          </div>
+          <div>
+            <label class="ui-label">Ciclo (seg)</label>
+            <input [(ngModel)]="step.cycleTimeSec" [name]="'ct'+i" type="number" class="ui-input" (ngModelChange)="recalc()" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Totales -->
+      <div *ngIf="form.steps.length > 0" class="grid grid-cols-2 gap-3 mt-3">
+        <div class="ui-surface p-3 rounded-lg text-center">
+          <p class="text-[10px] text-slate-500 uppercase">Setup total</p>
+          <p class="text-lg font-semibold">{{ form.totalSetupMin }} min</p>
+        </div>
+        <div class="ui-surface p-3 rounded-lg text-center">
+          <p class="text-[10px] text-slate-500 uppercase">Ciclo total</p>
+          <p class="text-lg font-semibold">{{ form.totalCycleMin | number:'1.1-1' }} min</p>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-4 border-t border-slate-800/50 mt-4">
+        <button type="submit" class="ui-btn-primary flex items-center gap-2">
+          <i class="pi pi-check text-xs"></i> {{ editingId ? 'Guardar' : 'Crear' }}
+        </button>
+        <button type="button" (click)="cancel()" class="ui-btn-ghost">Cancelar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- TABLE -->
+  <div class="ui-surface p-5">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-sm font-semibold">Plantillas de ruta</p>
+      <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
+    </div>
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead class="ui-thead">
+          <tr>
+            <th class="ui-th">Código</th>
+            <th class="ui-th">Nombre</th>
+            <th class="ui-th">Tipo producto</th>
+            <th class="ui-th">Pasos</th>
+            <th class="ui-th">Setup total</th>
+            <th class="ui-th">Ciclo total</th>
+            <th class="ui-th w-32">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of filtered" class="ui-tr">
+            <td class="ui-td font-medium">{{ r.code }}</td>
+            <td class="ui-td">{{ r.name }}</td>
+            <td class="ui-td">{{ r.productType }}</td>
+            <td class="ui-td text-center">{{ r.steps?.length || 0 }}</td>
+            <td class="ui-td">{{ r.totalSetupMin }} min</td>
+            <td class="ui-td">{{ r.totalCycleMin | number:'1.1-1' }} min</td>
+            <td class="ui-td">
+              <div class="flex gap-2">
+                <button (click)="edit(r)" class="ui-btn-ghost text-xs">Editar</button>
+                <button (click)="remove(r.id)" class="ui-btn-danger text-xs">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filtered.length === 0">
+            <td colspan="7" class="px-4 py-10 text-center text-slate-500">
+              {{ loading ? 'Cargando...' : 'No hay rutas registradas.' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

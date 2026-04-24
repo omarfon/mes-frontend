@@ -148,11 +148,21 @@
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-1">
                 <span class="font-mono text-xs font-semibold truncate">{{ comp.code }}</span>
-                <span class="text-xs" [ngClass]="getStatusBadge(comp.status)">{{ comp.status }}</span>
+                <span class="text-xs" [ngClass]="{
+                  'bg-green-600 text-white px-2 py-0.5 rounded-full': comp.status === 'OPERATIONAL',
+                  'bg-yellow-600 text-white px-2 py-0.5 rounded-full': comp.status === 'DEGRADED',
+                  'bg-red-600 text-white px-2 py-0.5 rounded-full': comp.status === 'FAILED',
+                  'bg-slate-600 text-white px-2 py-0.5 rounded-full': comp.status === 'REPLACED'
+                }">{{ comp.status }}</span>
               </div>
               <p class="text-sm text-slate-200 truncate">{{ comp.name }}</p>
             </div>
-            <span class="text-xs" [ngClass]="getCriticalityBadge(comp.criticality)">
+            <span class="text-xs" [ngClass]="{
+                  'bg-slate-500 text-white px-2 py-0.5 rounded-full': comp.criticality === 'LOW',
+                  'bg-yellow-600 text-white px-2 py-0.5 rounded-full': comp.criticality === 'MEDIUM',
+                  'bg-orange-600 text-white px-2 py-0.5 rounded-full': comp.criticality === 'HIGH',
+                  'bg-red-600 text-white px-2 py-0.5 rounded-full': comp.criticality === 'CRITICAL'
+                }">
               {{ comp.criticality }}
             </span>
           </div>
@@ -213,11 +223,21 @@
             <div>
               <div class="flex items-center gap-2 mb-1">
                 <span class="font-mono text-sm font-bold">{{ selectedComponent.code }}</span>
-                <span class="text-xs" [ngClass]="getStatusBadge(selectedComponent.status)">{{ selectedComponent.status }}</span>
+                <span class="text-xs" [ngClass]="{
+                  'bg-green-600 text-white px-2 py-0.5 rounded-full': selectedComponent.status === 'OPERATIONAL',
+                  'bg-yellow-600 text-white px-2 py-0.5 rounded-full': selectedComponent.status === 'DEGRADED',
+                  'bg-red-600 text-white px-2 py-0.5 rounded-full': selectedComponent.status === 'FAILED',
+                  'bg-slate-600 text-white px-2 py-0.5 rounded-full': selectedComponent.status === 'REPLACED'
+                }">{{ selectedComponent.status }}</span>
               </div>
               <h4 class="text-sm text-slate-200">{{ selectedComponent.name }}</h4>
             </div>
-            <span class="text-xs" [ngClass]="getCriticalityBadge(selectedComponent.criticality)">
+            <span class="text-xs" [ngClass]="{
+                  'bg-slate-500 text-white px-2 py-0.5 rounded-full': selectedComponent.criticality === 'LOW',
+                  'bg-yellow-600 text-white px-2 py-0.5 rounded-full': selectedComponent.criticality === 'MEDIUM',
+                  'bg-orange-600 text-white px-2 py-0.5 rounded-full': selectedComponent.criticality === 'HIGH',
+                  'bg-red-600 text-white px-2 py-0.5 rounded-full': selectedComponent.criticality === 'CRITICAL'
+                }">
               {{ selectedComponent.criticality }}
             </span>
           </div>

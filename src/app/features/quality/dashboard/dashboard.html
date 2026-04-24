@@ -1,319 +1,198 @@
-<div class="space-y-5">
-  <!-- Header -->
-  <div class="ui-page-header">
-    <div>
-      <h3 class="ui-title">Dashboard de Calidad</h3>
-      <p class="ui-subtitle">Resumen de inspecciones y defectos del día</p>
-    </div>
-
-    <div class="flex items-center gap-3">
-      <label class="text-sm text-slate-300">Fecha:</label>
-      <input 
-        type="date" 
-        [(ngModel)]="selectedDate" 
-        (change)="onDateChange()"
-        class="ui-input w-48"
-      />
+﻿<div class="quality-dashboard">
+  <!-- Header con filtros de período -->
+  <div class="dashboard-header">
+    <h1 class="text-3xl font-bold text-slate-100">Dashboard de Calidad</h1>
+    
+    <div class="period-filter">
+      <select 
+        [ngModel]="selectedPeriod()" 
+        (ngModelChange)="onPeriodChange($event)"
+        class="px-4 py-2 border border-slate-700 bg-slate-900 text-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500">
+        <option value="today">Hoy</option>
+        <option value="week">Esta Semana</option>
+        <option value="month">Este Mes</option>
+        <option value="quarter">Este Trimestre</option>
+        <option value="year">Este Año</option>
+      </select>
     </div>
   </div>
 
-  <!-- KPIs principales -->
-  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-    <!-- Total Inspecciones -->
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-3">
-        <div class="h-12 w-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-          <span class="pi pi-check-circle text-blue-400 text-xl"></span>
-        </div>
-        <span class="text-xs text-slate-400">Total</span>
+  <!-- Tarjetas de KPIs principales -->
+  <div class="kpi-grid" *ngIf="stats$ | async as stats">
+    <div class="kpi-card kpi-primary">
+      <div class="kpi-icon">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+        </svg>
       </div>
-      <p class="text-3xl font-bold text-slate-100">{{ dailyStats.totalInspections }}</p>
-      <p class="text-xs text-slate-400 mt-1">Inspecciones</p>
+      <div class="kpi-content">
+        <p class="kpi-label">Total Inspecciones</p>
+        <p class="kpi-value">{{ stats.totalInspections }}</p>
+        <div class="kpi-breakdown">
+          <span class="text-green-600"> {{ stats.passedInspections }}</span>
+          <span class="text-red-600"> {{ stats.failedInspections }}</span>
+          <span class="text-yellow-600"> {{ stats.pendingInspections }}</span>
+        </div>
+      </div>
     </div>
 
-    <!-- Tasa de Aprobación -->
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-3">
-        <div class="h-12 w-12 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center">
-          <span class="pi pi-thumbs-up text-green-400 text-xl"></span>
-        </div>
-        <span class="text-xs text-slate-400">Pass Rate</span>
+    <div class="kpi-card kpi-success">
+      <div class="kpi-icon">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
       </div>
-      <p class="text-3xl font-bold text-green-400">{{ dailyStats.passRate.toFixed(1) }}%</p>
-      <p class="text-xs text-slate-400 mt-1">{{ dailyStats.passed }} Aprobadas / {{ dailyStats.failed }} Rechazadas</p>
+      <div class="kpi-content">
+        <p class="kpi-label">Tasa de Aprobación</p>
+        <p class="kpi-value">{{ formatPercent(stats.passRate) }}</p>
+        <div class="kpi-progress">
+          <div class="kpi-progress-bar" [style.width.%]="stats.passRate"></div>
+        </div>
+      </div>
     </div>
 
-    <!-- Total Defectos -->
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-3">
-        <div class="h-12 w-12 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
-          <span class="pi pi-exclamation-triangle text-orange-400 text-xl"></span>
-        </div>
-        <span class="text-xs text-slate-400">Defectos</span>
+    <div class="kpi-card kpi-warning">
+      <div class="kpi-icon">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
       </div>
-      <p class="text-3xl font-bold text-orange-400">{{ dailyStats.totalDefects }}</p>
-      <p class="text-xs text-slate-400 mt-1">Total encontrados</p>
+      <div class="kpi-content">
+        <p class="kpi-label">Total Defectos</p>
+        <p class="kpi-value">{{ stats.totalDefects }}</p>
+        <p class="kpi-subtitle">{{ formatPercent(stats.defectRate * 100) }} por inspección</p>
+      </div>
     </div>
 
-    <!-- Defectos Críticos -->
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-3">
-        <div class="h-12 w-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-          <span class="pi pi-times-circle text-red-400 text-xl"></span>
-        </div>
-        <span class="text-xs text-slate-400">Críticos</span>
+    <div class="kpi-card kpi-danger">
+      <div class="kpi-icon">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
       </div>
-      <p class="text-3xl font-bold text-red-400">{{ dailyStats.criticalDefects }}</p>
-      <p class="text-xs text-slate-400 mt-1">Severidad alta</p>
+      <div class="kpi-content">
+        <p class="kpi-label">Defectos Críticos</p>
+        <p class="kpi-value">{{ stats.criticalDefects }}</p>
+        <p class="kpi-subtitle">Requieren atención inmediata</p>
+      </div>
     </div>
   </div>
 
   <!-- Gráficos y análisis -->
-  <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
-    <!-- Defectos por Familia -->
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">Defectos por Familia</p>
-        <span class="text-xs text-slate-400">Top categorías</span>
-      </div>
-
-      <div class="space-y-4" *ngIf="defectsByFamily.length > 0">
-        <div *ngFor="let item of defectsByFamily" class="space-y-2">
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-slate-300">{{ item.family }}</span>
-            <span class="text-slate-400">{{ item.count }} ({{ item.percentage.toFixed(1) }}%)</span>
+  <div class="charts-grid">
+    <!-- Inspecciones por tipo -->
+    <div class="chart-card">
+      <h3 class="chart-title">Inspecciones por Tipo</h3>
+      <div class="chart-content" *ngIf="inspectionsByType$ | async as byType">
+        <div *ngFor="let item of byType" class="chart-bar-item">
+          <div class="chart-bar-label">
+            <span>{{ item.type }}</span>
+            <span class="font-semibold">{{ item.count }}</span>
           </div>
-          <div class="h-2 bg-slate-800/50 rounded-full overflow-hidden">
-            <div 
-              class="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500"
-              [style.width.%]="item.percentage"
-            ></div>
-          </div>
-        </div>
-      </div>
-
-      <div *ngIf="defectsByFamily.length === 0" class="text-center py-8 text-slate-500 text-sm">
-        Sin defectos registrados
-      </div>
-    </div>
-
-    <!-- Inspecciones por Tipo -->
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">Inspecciones por Tipo</p>
-        <span class="text-xs text-slate-400">Distribución</span>
-      </div>
-
-      <div class="space-y-4" *ngIf="inspectionsByType.length > 0">
-        <div *ngFor="let item of inspectionsByType" class="rounded-xl border border-slate-800/70 bg-slate-900/20 p-4">
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-sm font-semibold text-slate-200">{{ item.type }}</span>
-            <span class="ui-badge">{{ item.count }} total</span>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div class="text-center">
-              <p class="text-2xl font-bold text-green-400">{{ item.passed }}</p>
-              <p class="text-xs text-slate-400 mt-1">Aprobadas</p>
-            </div>
-            <div class="text-center">
-              <p class="text-2xl font-bold text-red-400">{{ item.failed }}</p>
-              <p class="text-xs text-slate-400 mt-1">Rechazadas</p>
+          <div class="chart-bar-wrapper">
+            <div class="chart-bar" [style.width.%]="item.percentage">
+              <span class="chart-bar-text">{{ formatPercent(item.percentage) }}</span>
             </div>
           </div>
         </div>
+        <div *ngIf="byType.length === 0" class="empty-state">
+          <p>No hay datos disponibles</p>
+        </div>
       </div>
-
-      <div *ngIf="inspectionsByType.length === 0" class="text-center py-8 text-slate-500 text-sm">
-        Sin inspecciones registradas
-      </div>
+      <button class="chart-action-btn" (click)="navigateToInspections()">
+        Ver todas las inspecciones 
+      </button>
     </div>
-  </div>
 
-  <!-- Top 5 Defectos y Tendencias -->
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-    <!-- Top 5 Defectos -->
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">Top 5 Defectos</p>
-        <span class="pi pi-chart-bar text-slate-400"></span>
-      </div>
-
-      <div class="space-y-3" *ngIf="topDefects.length > 0">
-        <div *ngFor="let defect of topDefects; let i = index" class="flex items-center gap-3">
-          <div class="h-8 w-8 rounded-lg bg-slate-800/60 flex items-center justify-center text-xs font-bold">
-            {{ i + 1 }}
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm text-slate-200 truncate">{{ defect.name }}</p>
-            <div class="h-1.5 bg-slate-800/50 rounded-full mt-1 overflow-hidden">
-              <div 
-                class="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full"
-                [style.width.%]="getBarWidth(defect.count, topDefects[0]?.count || 1)"
-              ></div>
+    <!-- Defectos por familia -->
+    <div class="chart-card">
+      <h3 class="chart-title">Defectos por Familia</h3>
+      <div class="chart-content" *ngIf="defectsByFamily$ | async as byFamily">
+        <div *ngFor="let item of byFamily.slice(0, 5)" class="chart-bar-item">
+          <div class="chart-bar-label">
+            <span>{{ item.family }}</span>
+            <div class="flex items-center gap-2">
+              <span class="text-xs px-2 py-1 rounded bg-slate-800">{{ item.severity }}</span>
+              <span class="font-semibold">{{ item.count }}</span>
             </div>
           </div>
-          <span class="text-sm font-bold text-orange-400">{{ defect.count }}</span>
+          <div class="chart-bar-wrapper">
+            <div class="chart-bar chart-bar-danger" [style.width.%]="item.percentage">
+              <span class="chart-bar-text">{{ formatPercent(item.percentage) }}</span>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="byFamily.length === 0" class="empty-state">
+          <p>No hay defectos registrados</p>
         </div>
       </div>
+      <button class="chart-action-btn" (click)="navigateToDefects()">
+        Ver todos los defectos 
+      </button>
+    </div>
 
-      <div *ngIf="topDefects.length === 0" class="text-center py-8 text-slate-500 text-sm">
-        Sin defectos registrados
+    <!-- Top 5 defectos más frecuentes -->
+    <div class="chart-card">
+      <h3 class="chart-title">Top 5 Defectos Más Frecuentes</h3>
+      <div class="chart-content" *ngIf="topDefects$ | async as topDefects">
+        <div class="defects-list">
+          <div *ngFor="let defect of topDefects; let i = index" class="defect-item">
+            <div class="defect-rank">{{ i + 1 }}</div>
+            <div class="defect-info">
+              <p class="defect-name">{{ defect.name }}</p>
+              <p class="defect-severity">{{ defect.severity }}</p>
+            </div>
+            <div class="defect-count">{{ defect.count }}</div>
+          </div>
+          <div *ngIf="topDefects.length === 0" class="empty-state">
+            <p>No hay defectos registrados</p>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Inspecciones Recientes -->
-    <div class="ui-surface p-5 xl:col-span-2">
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">Inspecciones Recientes</p>
-        <span class="text-xs text-slate-400">Últimas 10</span>
-      </div>
-
-      <div class="overflow-x-auto">
-        <table class="ui-table">
-          <thead class="ui-thead">
-            <tr>
-              <th class="ui-th">Código</th>
-              <th class="ui-th">Tipo</th>
-              <th class="ui-th">Lote</th>
-              <th class="ui-th">Resultado</th>
-              <th class="ui-th">Defectos</th>
-            </tr>
-          </thead>
-          <tbody class="bg-slate-950/20">
-            <tr *ngFor="let inspection of recentInspections" class="ui-tr">
-              <td class="ui-td">{{ inspection.code }}</td>
-              <td class="ui-td">
-                <span class="ui-badge">{{ inspection.type }}</span>
-              </td>
-              <td class="ui-td text-xs">{{ inspection.lotCode || '-' }}</td>
-              <td class="ui-td">
-                <span 
-                  class="ui-badge"
-                  [class.ui-badge-ok]="inspection.result === 'PASS'"
-                  [class.ui-badge-warn]="inspection.result === 'HOLD'"
-                  [class.ui-badge-bad]="inspection.result === 'FAIL'"
-                >
-                  {{ inspection.result }}
-                </span>
-              </td>
-              <td class="ui-td">
-                <span class="text-orange-400 font-semibold">
-                  {{ getTotalFindings(inspection) }}
-                </span>
-              </td>
-            </tr>
-
-            <tr *ngIf="recentInspections.length === 0">
-              <td colspan="5" class="px-4 py-8 text-center text-slate-500">
-                Sin inspecciones para hoy
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- Distribución Pass/Fail/Hold -->
-  <div class="ui-surface p-5">
-    <div class="flex items-center justify-between mb-4">
-      <p class="text-sm font-semibold">Distribución de Resultados</p>
-      <span class="text-xs text-slate-400">{{ dailyStats.totalInspections }} inspecciones</span>
-    </div>
-
-    <div class="grid grid-cols-3 gap-4">
-      <div class="text-center">
-        <div class="relative inline-block">
-          <svg class="w-32 h-32 transform -rotate-90">
-            <circle
-              cx="64"
-              cy="64"
-              r="56"
-              fill="none"
-              stroke="rgb(15 23 42)"
-              stroke-width="12"
-            />
-            <circle
-              cx="64"
-              cy="64"
-              r="56"
-              fill="none"
-              stroke="rgb(34 197 94)"
-              stroke-width="12"
-              [attr.stroke-dasharray]="2 * 3.14159 * 56"
-              [attr.stroke-dashoffset]="2 * 3.14159 * 56 * (1 - dailyStats.passed / (dailyStats.totalInspections || 1))"
-              class="transition-all duration-500"
-            />
-          </svg>
-          <div class="absolute inset-0 flex items-center justify-center">
-            <span class="text-2xl font-bold text-green-400">{{ dailyStats.passed }}</span>
+    <!-- Inspecciones recientes -->
+    <div class="chart-card">
+      <h3 class="chart-title">Inspecciones Recientes</h3>
+      <div class="chart-content" *ngIf="recentInspections$ | async as recent">
+        <div class="recent-inspections-table">
+          <table class="min-w-full">
+            <thead class="bg-slate-800">
+              <tr>
+                <th class="table-header">Fecha</th>
+                <th class="table-header">Tipo</th>
+                <th class="table-header">Nodo</th>
+                <th class="table-header">Estado</th>
+                <th class="table-header">Defectos</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700">
+              <tr *ngFor="let inspection of recent" class="hover:bg-slate-800">
+                <td class="table-cell">{{ formatDate(inspection.date) }}</td>
+                <td class="table-cell">
+                  <span class="badge badge-blue">{{ inspection.type }}</span>
+                </td>
+                <td class="table-cell font-mono text-sm">{{ inspection.node }}</td>
+                <td class="table-cell">
+                  <span [ngClass]="{
+                    'badge badge-green': inspection.status === 'Aprobado',
+                    'badge badge-red': inspection.status === 'Rechazado',
+                    'badge badge-yellow': inspection.status === 'Pendiente'
+                  }">{{ inspection.status }}</span>
+                </td>
+                <td class="table-cell text-center">
+                  <span class="font-semibold" [ngClass]="{
+                    'text-slate-500': inspection.defectsCount === 0,
+                    'text-red-400': inspection.defectsCount > 0
+                  }">{{ inspection.defectsCount }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div *ngIf="recent.length === 0" class="empty-state">
+            <p>No hay inspecciones recientes</p>
           </div>
         </div>
-        <p class="text-sm text-slate-300 mt-2">Aprobadas</p>
-        <p class="text-xs text-slate-500">{{ dailyStats.totalInspections > 0 ? (dailyStats.passed / dailyStats.totalInspections * 100).toFixed(1) : 0 }}%</p>
-      </div>
-
-      <div class="text-center">
-        <div class="relative inline-block">
-          <svg class="w-32 h-32 transform -rotate-90">
-            <circle
-              cx="64"
-              cy="64"
-              r="56"
-              fill="none"
-              stroke="rgb(15 23 42)"
-              stroke-width="12"
-            />
-            <circle
-              cx="64"
-              cy="64"
-              r="56"
-              fill="none"
-              stroke="rgb(239 68 68)"
-              stroke-width="12"
-              [attr.stroke-dasharray]="2 * 3.14159 * 56"
-              [attr.stroke-dashoffset]="2 * 3.14159 * 56 * (1 - dailyStats.failed / (dailyStats.totalInspections || 1))"
-              class="transition-all duration-500"
-            />
-          </svg>
-          <div class="absolute inset-0 flex items-center justify-center">
-            <span class="text-2xl font-bold text-red-400">{{ dailyStats.failed }}</span>
-          </div>
-        </div>
-        <p class="text-sm text-slate-300 mt-2">Rechazadas</p>
-        <p class="text-xs text-slate-500">{{ dailyStats.totalInspections > 0 ? (dailyStats.failed / dailyStats.totalInspections * 100).toFixed(1) : 0 }}%</p>
-      </div>
-
-      <div class="text-center">
-        <div class="relative inline-block">
-          <svg class="w-32 h-32 transform -rotate-90">
-            <circle
-              cx="64"
-              cy="64"
-              r="56"
-              fill="none"
-              stroke="rgb(15 23 42)"
-              stroke-width="12"
-            />
-            <circle
-              cx="64"
-              cy="64"
-              r="56"
-              fill="none"
-              stroke="rgb(251 191 36)"
-              stroke-width="12"
-              [attr.stroke-dasharray]="2 * 3.14159 * 56"
-              [attr.stroke-dashoffset]="2 * 3.14159 * 56 * (1 - dailyStats.hold / (dailyStats.totalInspections || 1))"
-              class="transition-all duration-500"
-            />
-          </svg>
-          <div class="absolute inset-0 flex items-center justify-center">
-            <span class="text-2xl font-bold text-yellow-400">{{ dailyStats.hold }}</span>
-          </div>
-        </div>
-        <p class="text-sm text-slate-300 mt-2">En espera</p>
-        <p class="text-xs text-slate-500">{{ dailyStats.totalInspections > 0 ? (dailyStats.hold / dailyStats.totalInspections * 100).toFixed(1) : 0 }}%</p>
       </div>
     </div>
   </div>

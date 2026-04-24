@@ -1,0 +1,245 @@
+<div class="space-y-5">
+  <div class="ui-page-header">
+    <div>
+      <h3 class="ui-title">Decisión de Calidad</h3>
+      <p class="ui-subtitle">Panel de decisiones sobre lotes inspeccionados: liberar, rechazar, condicional o abrir NC.</p>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div class="ui-surface p-4 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+        <i class="pi pi-clock text-amber-400 text-sm"></i>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500">Pendientes</p>
+        <p class="text-2xl font-bold text-amber-400">{{ pendingCount }}</p>
+      </div>
+    </div>
+    <div class="ui-surface p-4 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+        <i class="pi pi-check-circle text-emerald-400 text-sm"></i>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500">Aprobados</p>
+        <p class="text-2xl font-bold text-emerald-400">{{ approvedToday }}</p>
+      </div>
+    </div>
+    <div class="ui-surface p-4 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
+        <i class="pi pi-times-circle text-red-400 text-sm"></i>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500">Rechazados</p>
+        <p class="text-2xl font-bold text-red-400">{{ rejectedToday }}</p>
+      </div>
+    </div>
+    <div class="ui-surface p-4 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+        <i class="pi pi-exclamation-circle text-orange-400 text-sm"></i>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500">NC Creadas</p>
+        <p class="text-2xl font-bold text-orange-400">{{ ncCreatedCount }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="ui-surface p-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="relative">
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar lote, producto, inspección..." />
+      </div>
+      <select [(ngModel)]="statusFilter" class="ui-select">
+        <option value="ALL">Todos los estados</option>
+        <option value="PENDING">Pendientes</option>
+        <option value="APPROVED">Aprobados</option>
+        <option value="REJECTED">Rechazados</option>
+        <option value="CONDITIONAL">Condicionales</option>
+        <option value="NC_CREATED">NC Creadas</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <!-- List -->
+    <div class="xl:col-span-2 space-y-2">
+      <p class="text-xs text-slate-500">{{ filtered.length }} registros</p>
+
+      <div *ngFor="let r of filtered"
+        class="ui-surface p-4 cursor-pointer border transition-all"
+        [class.border-emerald-500/30]="selectedId === r.id"
+        [class.bg-emerald-500/5]="selectedId === r.id"
+        [class.border-slate-800]="selectedId !== r.id"
+        (click)="select(r)">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+              <span class="font-mono text-sm text-white">{{ r.lotCode }}</span>
+              <span class="text-xs font-semibold" [class]="typeBadge(r.lotType)">{{ r.lotType }}</span>
+              <span class="px-2 py-0.5 rounded text-[11px]" [class]="statusBadge(r.status)">{{ statusLabel(r.status) }}</span>
+            </div>
+            <p class="text-xs text-slate-300 truncate">{{ r.description }}</p>
+            <div class="flex gap-3 mt-1 text-[11px] text-slate-500 flex-wrap">
+              <span><i class="pi pi-box mr-1"></i>{{ r.qty | number }} {{ r.uom }}</span>
+              <span><i class="pi pi-map-marker mr-1"></i>{{ r.location }}</span>
+              <span class="text-purple-400/70"><i class="pi pi-clipboard mr-1"></i>{{ r.inspection.id }}</span>
+            </div>
+            <!-- Mini inspection result bar -->
+            <div class="flex items-center gap-2 mt-2">
+              <div class="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div class="h-full bg-emerald-500 rounded-full transition-all" [style.width.%]="approvalRate(r.inspection)"></div>
+              </div>
+              <span class="text-[10px] text-slate-500">{{ approvalRate(r.inspection) }}% ok</span>
+              <span *ngIf="r.inspection.defects.length > 0" class="text-[10px] text-amber-400">{{ r.inspection.defects.length }} tipo(s) defecto</span>
+            </div>
+          </div>
+          <i class="pi pi-chevron-down text-slate-500 text-xs flex-shrink-0 transition" [class.rotate-180]="selectedId === r.id"></i>
+        </div>
+      </div>
+
+      <p *ngIf="filtered.length === 0" class="text-center text-slate-500 text-sm py-8">Sin registros</p>
+    </div>
+
+    <!-- Detail Panel -->
+    <div class="space-y-4">
+      <div *ngIf="!selected" class="ui-surface p-6 text-center">
+        <i class="pi pi-shield text-4xl text-slate-700 mb-3"></i>
+        <p class="text-slate-500 text-sm">Selecciona un lote para revisar la inspección y tomar una decisión de calidad.</p>
+      </div>
+
+      <ng-container *ngIf="selected">
+        <!-- Lot Summary -->
+        <div class="ui-surface p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-semibold">{{ selected.lotCode }}</p>
+            <span class="px-2 py-0.5 rounded text-[11px]" [class]="statusBadge(selected.status)">{{ statusLabel(selected.status) }}</span>
+          </div>
+          <p class="text-xs text-slate-400">{{ selected.description }}</p>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div><span class="text-slate-500">Tipo:</span> <span class="font-semibold ml-1" [class]="typeBadge(selected.lotType)">{{ selected.lotType }}</span></div>
+            <div><span class="text-slate-500">Cantidad:</span> <span class="text-slate-200 ml-1">{{ selected.qty | number }} {{ selected.uom }}</span></div>
+            <div><span class="text-slate-500">Ubicación:</span> <span class="text-slate-200 ml-1">{{ selected.location }}</span></div>
+            <div *ngIf="selected.ncId"><span class="text-slate-500">NC:</span> <span class="text-orange-400 ml-1">{{ selected.ncId }}</span></div>
+          </div>
+        </div>
+
+        <!-- Inspection Summary -->
+        <div class="ui-surface p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-semibold">Resultado de Inspección</p>
+            <span class="px-2 py-0.5 rounded text-[10px]" [class]="inspResultBadge(selected.inspection.result)">{{ selected.inspection.result }}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div><span class="text-slate-500">Código:</span> <span class="text-purple-400 ml-1">{{ selected.inspection.id }}</span></div>
+            <div><span class="text-slate-500">Tipo:</span> <span class="text-slate-200 ml-1">{{ selected.inspection.type }}</span></div>
+            <div><span class="text-slate-500">Inspector:</span> <span class="text-slate-200 ml-1">{{ selected.inspection.inspector }}</span></div>
+            <div><span class="text-slate-500">Fecha:</span> <span class="text-slate-200 ml-1">{{ formatDate(selected.inspection.date) }}</span></div>
+          </div>
+
+          <!-- Quantity bars -->
+          <div class="space-y-1.5 text-xs">
+            <div class="flex justify-between text-slate-500 text-[10px]">
+              <span>Inspeccionado: <strong class="text-slate-300">{{ selected.inspection.quantityInspected | number }} {{ selected.uom }}</strong></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden flex">
+                <div class="h-full bg-emerald-500 transition-all" [style.width.%]="approvalRate(selected.inspection)"></div>
+                <div class="h-full bg-red-500 transition-all"
+                  [style.width.%]="(selected.inspection.quantityRejected / selected.inspection.quantityInspected) * 100"></div>
+              </div>
+            </div>
+            <div class="flex gap-4">
+              <span class="text-emerald-400"><i class="pi pi-check mr-0.5 text-[9px]"></i>{{ selected.inspection.quantityApproved | number }} ok</span>
+              <span class="text-red-400"><i class="pi pi-times mr-0.5 text-[9px]"></i>{{ selected.inspection.quantityRejected | number }} rech.</span>
+            </div>
+          </div>
+
+          <!-- Defects -->
+          <div *ngIf="selected.inspection.defects.length > 0" class="border-t border-slate-800 pt-3">
+            <p class="text-[10px] text-slate-500 mb-2">Defectos encontrados</p>
+            <div *ngFor="let d of selected.inspection.defects" class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2 flex-1 min-w-0">
+                <span class="px-1.5 py-0.5 rounded text-[9px] flex-shrink-0" [class]="severityBadge(d.severity)">{{ d.severity }}</span>
+                <span class="text-[10px] text-slate-400 truncate">{{ d.code }} · {{ d.desc }}</span>
+              </div>
+              <span class="text-[10px] font-semibold text-slate-300 ml-2">x{{ d.count }}</span>
+            </div>
+          </div>
+
+          <p *ngIf="selected.inspection.observations" class="text-[11px] text-slate-400 italic border-t border-slate-800 pt-2">{{ selected.inspection.observations }}</p>
+        </div>
+
+        <!-- Decision (only if pending) -->
+        <div *ngIf="selected.status === 'PENDING'" class="ui-surface p-4">
+          <p class="text-xs font-semibold mb-3">Tomar Decisión</p>
+
+          <div *ngIf="!actionMode" class="space-y-2">
+            <button (click)="openAction('approve')" class="w-full flex items-center gap-2 p-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5 text-emerald-400 text-xs hover:bg-emerald-500/10 transition">
+              <i class="pi pi-check-circle"></i> Liberar — Aprobado completo
+            </button>
+            <button (click)="openAction('conditional')" class="w-full flex items-center gap-2 p-2.5 rounded-lg border border-blue-500/30 bg-blue-500/5 text-blue-400 text-xs hover:bg-blue-500/10 transition">
+              <i class="pi pi-minus-circle"></i> Aprobación condicional (parcial)
+            </button>
+            <button (click)="openAction('reject')" class="w-full flex items-center gap-2 p-2.5 rounded-lg border border-orange-500/30 bg-orange-500/5 text-orange-400 text-xs hover:bg-orange-500/10 transition">
+              <i class="pi pi-times-circle"></i> Rechazar lote
+            </button>
+            <button (click)="openAction('nc')" class="w-full flex items-center gap-2 p-2.5 rounded-lg border border-red-500/30 bg-red-500/5 text-red-400 text-xs hover:bg-red-500/10 transition">
+              <i class="pi pi-exclamation-circle"></i> Crear NC / Abrir CAPA
+            </button>
+          </div>
+
+          <div *ngIf="actionMode" class="space-y-3">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-2 py-0.5 rounded text-xs font-semibold text-white"
+                [class.bg-emerald-500]="actionMode==='approve'"
+                [class.bg-blue-500]="actionMode==='conditional'"
+                [class.bg-orange-500]="actionMode==='reject'"
+                [class.bg-red-600]="actionMode==='nc'">
+                {{ actionMode==='approve' ? 'APROBAR' : actionMode==='conditional' ? 'CONDICIONAL' : actionMode==='reject' ? 'RECHAZAR' : 'CREAR NC' }}
+              </span>
+              <span class="text-xs text-slate-400">{{ selected.lotCode }}</span>
+            </div>
+
+            <div *ngIf="actionMode==='conditional'" class="space-y-1">
+              <label class="ui-label">Cantidad aprobada ({{ selected.uom }})</label>
+              <input type="number" [(ngModel)]="conditionalQty" class="ui-input" [max]="selected.inspection.quantityInspected" />
+              <p class="text-[10px] text-slate-500">De {{ selected.inspection.quantityInspected | number }} {{ selected.uom }} inspeccionados</p>
+            </div>
+
+            <div>
+              <label class="ui-label">Justificación / Nota *</label>
+              <textarea [(ngModel)]="actionNote" class="ui-input resize-none" rows="3" placeholder="Indique el criterio de la decisión..."></textarea>
+            </div>
+
+            <div class="flex gap-2">
+              <button (click)="confirmDecision()" [disabled]="!actionNote.trim()" class="flex-1 ui-btn-primary text-xs disabled:opacity-40">Confirmar</button>
+              <button (click)="actionMode=null" class="flex-1 ui-btn-ghost text-xs">Cancelar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resolved decision -->
+        <div *ngIf="selected.status !== 'PENDING'" class="ui-surface p-4 space-y-2">
+          <p class="text-xs font-semibold">Decisión registrada</p>
+          <div class="p-3 rounded-lg border"
+            [class.border-emerald-500/30]="selected.status==='APPROVED'"
+            [class.border-blue-500/30]="selected.status==='CONDITIONAL'"
+            [class.border-orange-500/30]="selected.status==='REJECTED'"
+            [class.border-red-500/30]="selected.status==='NC_CREATED'">
+            <span class="px-2 py-0.5 rounded text-xs" [class]="statusBadge(selected.status)">{{ statusLabel(selected.status) }}</span>
+            <p *ngIf="selected.conditionalQty" class="text-xs text-blue-400 mt-1">
+              Cantidad aprobada: {{ selected.conditionalQty | number }} {{ selected.uom }}
+            </p>
+            <p class="text-xs text-slate-300 mt-1">{{ selected.decisionNote }}</p>
+            <p class="text-[10px] text-slate-500 mt-1">por {{ selected.decisionBy }} · {{ formatDate(selected.decisionAt!) }}</p>
+            <p *ngIf="selected.ncId" class="text-[11px] text-orange-400 mt-1"><i class="pi pi-link mr-1"></i>{{ selected.ncId }}</p>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>
