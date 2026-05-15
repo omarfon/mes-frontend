@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OrdenesService, Orden, EstadoOrden, PrioridadOrden, CreateOrdenDto } from './orders.service';
+import { RoutingsService, Routing } from '../../master-data/routings/routings.service';
 import { DynamicFormComponent } from '../../../shared/components/dynamic-form/dynamic-form';
 import { FormTemplateService } from '../../../core/services/form-template.service';
 import { FormTemplate } from '../../../shared/models/form-template.model';
@@ -37,6 +38,7 @@ export class OrdersComponent implements OnInit {
     prioridad: PrioridadOrden.NORMAL,
     fechaInicioPlanificada: '',
     fechaFinPlanificada: '',
+    rutaId: '',
     lote: '',
     cliente: '',
     pedidoCliente: '',
@@ -52,6 +54,8 @@ export class OrdersComponent implements OnInit {
   readonly pageSizeOptions = [5, 10, 20, 50];
   loading = false;
   error: string | null = null;
+  routings: Routing[] = [];
+  routesLoading = false;
 
   // Exponer enums para el template
   estados = Object.values(EstadoOrden);
@@ -78,12 +82,31 @@ export class OrdersComponent implements OnInit {
   constructor(
     private ordenesService: OrdenesService,
     private cdr: ChangeDetectorRef,
-    private formTemplateService: FormTemplateService
+    private formTemplateService: FormTemplateService,
+    private routingsService: RoutingsService
   ) {}
 
   ngOnInit() {
     this.productionTemplate = this.formTemplateService.getTemplateByCode('PRODUCTION_RECORD') ?? null;
+    this.loadRoutings();
     this.loadOrdenes();
+  }
+
+  loadRoutings() {
+    this.routesLoading = true;
+
+    this.routingsService.getAll().subscribe({
+      next: (data) => {
+        this.routings = (data || []).filter(route => route.active !== false);
+        this.routesLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.routings = [];
+        this.routesLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   loadOrdenes() {
@@ -93,16 +116,15 @@ export class OrdersComponent implements OnInit {
     this.ordenesService.getAll().subscribe({
       next: (data) => {
         console.log('✅ Ordenes loaded:', data);
-        const fakes = this.seedFakeOrders();
-        this.items = [...(data || []), ...fakes];
+        this.items = data || [];
         this.ensurePageInRange();
         this.loading = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('❌ Error loading ordenes:', err);
-        this.items = this.seedFakeOrders();
-        this.error = null;
+        this.items = [];
+        this.error = err?.error?.message || err?.message || 'No fue posible cargar las órdenes desde el backend';
         this.loading = false;
         this.cdr.detectChanges();
       }
@@ -122,6 +144,21 @@ export class OrdersComponent implements OnInit {
   get pagedOrders() {
     const start = (this.page - 1) * this.pageSize;
     return this.filtered.slice(start, start + this.pageSize);
+  }
+
+  get visibleOrders() {
+    if (!this.selectedOrderRoute) {
+      return this.pagedOrders;
+    }
+
+    const selected = this.filtered.find(order => order.id === this.selectedOrderRoute?.id)
+      ?? this.items.find(order => order.id === this.selectedOrderRoute?.id);
+
+    return selected ? [selected] : [];
+  }
+
+  get visibleRecordsCount() {
+    return this.selectedOrderRoute ? this.visibleOrders.length : this.filtered.length;
   }
 
   get totalPages() {
@@ -184,6 +221,7 @@ export class OrdersComponent implements OnInit {
       prioridad: this.form.prioridad || undefined,
       fechaInicioPlanificada: this.form.fechaInicioPlanificada || undefined,
       fechaFinPlanificada: this.form.fechaFinPlanificada || undefined,
+      rutaId: this.form.rutaId || undefined,
       lote: this.form.lote || undefined,
       cliente: this.form.cliente || undefined,
       pedidoCliente: this.form.pedidoCliente || undefined,
@@ -272,6 +310,7 @@ export class OrdersComponent implements OnInit {
       prioridad: item.prioridad || PrioridadOrden.NORMAL,
       fechaInicioPlanificada: item.fechaInicioPlanificada || '',
       fechaFinPlanificada: item.fechaFinPlanificada || '',
+      rutaId: item.rutaId || '',
       lote: item.lote || '',
       cliente: item.cliente || '',
       pedidoCliente: item.pedidoCliente || '',
@@ -282,11 +321,21 @@ export class OrdersComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  remove(id: string) {
+  private isApprovedOrder(order: Orden): boolean {
+    const status = String(order.estado || '').toUpperCase();
+    return status === EstadoOrden.LIBERADA || status === 'APROBADA';
+  }
+
+  remove(order: Orden) {
+    if (this.isApprovedOrder(order)) {
+      alert('Es imposible eliminar una orden ya aprobada. Solo se pueden anular o inhabilitar.');
+      return;
+    }
+
     if (!confirm('¿Eliminar esta orden?')) return;
 
     this.loading = true;
-    this.ordenesService.delete(id).subscribe({
+    this.ordenesService.delete(order.id).subscribe({
       next: () => {
         console.log('Orden deleted');
         this.loadOrdenes();
@@ -325,6 +374,7 @@ export class OrdersComponent implements OnInit {
       prioridad: PrioridadOrden.NORMAL,
       fechaInicioPlanificada: '',
       fechaFinPlanificada: '',
+      rutaId: '',
       lote: '',
       cliente: '',
       pedidoCliente: '',
@@ -343,68 +393,6 @@ export class OrdersComponent implements OnInit {
 
   onDynamicFormValidityChange(valid: boolean) {
     this.dynamicFormValid = valid;
-  }
-
-  private seedFakeOrders(): Orden[] {
-    return [
-      {
-        id: 'ord-001', numeroOrden: 'OP-2026-0451', productoId: 'prod-101',
-        productoCodigo: 'TEL-POL-001', productoNombre: 'Tela Polyester 150cm Blanco',
-        cantidadPlanificada: 2500, cantidadProducida: 1600, unidadMedida: 'MT',
-        estado: EstadoOrden.EN_PROCESO, prioridad: PrioridadOrden.ALTA,
-        fechaInicioPlanificada: '2026-04-10', fechaFinPlanificada: '2026-04-18',
-        fechaInicioReal: '2026-04-10', lote: 'L-2026-0451',
-        cliente: 'Textiles del Norte S.A.', pedidoCliente: 'PED-TN-1205',
-        notas: 'Entrega parcial permitida', creadoPor: 'jperez', activo: true,
-        createdAt: '2026-04-08T10:30:00Z', updatedAt: '2026-04-15T14:20:00Z',
-      },
-      {
-        id: 'ord-002', numeroOrden: 'OP-2026-0452', productoId: 'prod-102',
-        productoCodigo: 'TEL-ALG-003', productoNombre: 'Tela Algodón 180cm Azul Marino',
-        cantidadPlanificada: 1800, cantidadProducida: 0, unidadMedida: 'MT',
-        estado: EstadoOrden.LIBERADA, prioridad: PrioridadOrden.URGENTE,
-        fechaInicioPlanificada: '2026-04-19', fechaFinPlanificada: '2026-04-25',
-        lote: 'L-2026-0452',
-        cliente: 'Confecciones Modatex Ltda.', pedidoCliente: 'PED-CM-0843',
-        notas: 'Cliente requiere certificado de calidad', creadoPor: 'mrodriguez', activo: true,
-        createdAt: '2026-04-12T08:15:00Z', updatedAt: '2026-04-12T08:15:00Z',
-      },
-      {
-        id: 'ord-003', numeroOrden: 'OP-2026-0448', productoId: 'prod-103',
-        productoCodigo: 'HIL-NYL-010', productoNombre: 'Hilo Nylon 40/2 Negro',
-        cantidadPlanificada: 500, cantidadProducida: 500, unidadMedida: 'KG',
-        estado: EstadoOrden.COMPLETADA, prioridad: PrioridadOrden.NORMAL,
-        fechaInicioPlanificada: '2026-04-05', fechaFinPlanificada: '2026-04-12',
-        fechaInicioReal: '2026-04-05', fechaFinReal: '2026-04-11',
-        lote: 'L-2026-0448',
-        cliente: 'Industrias Hilatex', pedidoCliente: 'PED-IH-0392',
-        creadoPor: 'lgomez', activo: true,
-        createdAt: '2026-04-03T09:00:00Z', updatedAt: '2026-04-11T16:45:00Z',
-      },
-      {
-        id: 'ord-004', numeroOrden: 'OP-2026-0453', productoId: 'prod-104',
-        productoCodigo: 'TEL-LYC-005', productoNombre: 'Tela Lycra Sport 140cm Rojo',
-        cantidadPlanificada: 3200, cantidadProducida: 0, unidadMedida: 'MT',
-        estado: EstadoOrden.PENDIENTE, prioridad: PrioridadOrden.BAJA,
-        fechaInicioPlanificada: '2026-04-22', fechaFinPlanificada: '2026-04-30',
-        lote: 'L-2026-0453',
-        cliente: 'Deportivos Elite S.A.S.', pedidoCliente: 'PED-DE-0157',
-        notas: 'Requiere teñido especial - color Pantone 186C', creadoPor: 'jperez', activo: true,
-        createdAt: '2026-04-15T11:00:00Z', updatedAt: '2026-04-15T11:00:00Z',
-      },
-      {
-        id: 'ord-005', numeroOrden: 'OP-2026-0449', productoId: 'prod-105',
-        productoCodigo: 'TEL-MZC-002', productoNombre: 'Tela Mezclilla 12oz 160cm',
-        cantidadPlanificada: 4000, cantidadProducida: 2100, unidadMedida: 'MT',
-        estado: EstadoOrden.PAUSADA, prioridad: PrioridadOrden.ALTA,
-        fechaInicioPlanificada: '2026-04-07', fechaFinPlanificada: '2026-04-20',
-        fechaInicioReal: '2026-04-07',
-        lote: 'L-2026-0449',
-        cliente: 'Jeans & Denim Corp.', pedidoCliente: 'PED-JD-0721',
-        notas: 'Pausada por falta de insumo de índigo - ETA proveedor 2026-04-19', creadoPor: 'mrodriguez', activo: true,
-        createdAt: '2026-04-04T07:30:00Z', updatedAt: '2026-04-14T09:10:00Z',
-      },
-    ];
   }
 
   badgeClass(estado: EstadoOrden) {
@@ -431,12 +419,16 @@ export class OrdersComponent implements OnInit {
   // ── Route visualization ──
   showRoute(order: Orden) {
     if (this.selectedOrderRoute?.id === order.id) {
-      this.selectedOrderRoute = null;
-      this.routeSteps = [];
+      this.closeRouteView();
       return;
     }
     this.selectedOrderRoute = order;
     this.routeSteps = this.getRouteForOrder(order);
+  }
+
+  closeRouteView() {
+    this.selectedOrderRoute = null;
+    this.routeSteps = [];
   }
 
   private getRouteForOrder(order: Orden): OrderRouteStep[] {

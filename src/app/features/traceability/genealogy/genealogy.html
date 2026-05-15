@@ -5,10 +5,104 @@
       <p class="ui-subtitle">Relaciones entre lotes padre-hijo (split, merge, transformación).</p>
     </div>
 
-    <div class="w-full max-w-sm">
-      <div class="relative">
+    <div class="flex items-center gap-2 w-full max-w-xl justify-end">
+      <div class="relative w-full max-w-sm">
         <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
         <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar..." />
+      </div>
+      <button type="button" class="ui-btn-primary whitespace-nowrap" (click)="openCreatePanel()">
+        <i class="pi pi-plus text-xs mr-1"></i> Nueva relación
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="formPanelOpen" class="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px]" (click)="cancelEdit()"></div>
+
+  <div *ngIf="formPanelOpen" class="fixed right-0 top-0 z-50 h-full w-full max-w-2xl border-l border-slate-800 bg-slate-950 shadow-2xl">
+    <div class="h-full">
+      <div class="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+        <div>
+          <p class="text-sm font-semibold text-slate-100">{{ editingId ? 'Editar Relación' : 'Nueva Relación' }}</p>
+          <span class="text-[11px] text-slate-500">Trazabilidad de lotes</span>
+        </div>
+        <button type="button" class="ui-btn-ghost" (click)="cancelEdit()">Cerrar</button>
+      </div>
+
+      <div class="px-5 pb-5 pt-4 overflow-y-auto h-[calc(100%-74px)]">
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-sm font-semibold text-slate-300">Datos de relación</p>
+        </div>
+
+        <div *ngIf="error" class="mb-3 ui-surface p-4 border-l-4 border-red-500/60 bg-red-500/5">
+          <p class="text-sm text-red-400">{{ error }}</p>
+        </div>
+
+        <div *ngIf="loading" class="mb-3 ui-surface p-4 border-l-4 border-blue-500/60 bg-blue-500/5">
+          <p class="text-sm text-blue-400">Procesando...</p>
+        </div>
+
+        <form (ngSubmit)="submit()" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Lote Padre <span class="text-red-400">*</span></label>
+            <select [(ngModel)]="form.parentLotId" name="parentLotId" required class="ui-select">
+              <option value="">-- Selecciona lote padre --</option>
+              <option *ngFor="let lot of lots" [value]="lot.id">
+                {{ lot.lotNumber || lot.code || lot.numero }} - {{ lot.productName || lot.description || lot.descripcion || '' }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Lote Hijo <span class="text-red-400">*</span></label>
+            <select [(ngModel)]="form.childLotId" name="childLotId" required class="ui-select">
+              <option value="">-- Selecciona lote hijo --</option>
+              <option *ngFor="let lot of lots" [value]="lot.id">
+                {{ lot.lotNumber || lot.code || lot.numero }} - {{ lot.productName || lot.description || lot.descripcion || '' }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Tipo de Relación <span class="text-red-400">*</span></label>
+            <select [(ngModel)]="form.relationType" name="relationType" required class="ui-select">
+              <option *ngFor="let type of relationTypes" [value]="type">
+                {{ getRelationTypeLabel(type) }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Cantidad <span class="text-red-400">*</span></label>
+            <input type="number" [(ngModel)]="form.quantity" name="quantity" min="0" required class="ui-input" placeholder="0" />
+          </div>
+
+          <div>
+            <label class="ui-label">Unidad de Medida</label>
+            <input [(ngModel)]="form.unitOfMeasure" name="unitOfMeasure" class="ui-input" placeholder="KG, UNIDADES, LITROS..." />
+          </div>
+
+          <div>
+            <label class="ui-label">Orden de Trabajo</label>
+            <select [(ngModel)]="form.workOrderId" name="workOrderId" class="ui-select">
+              <option value="">-- Ninguna --</option>
+              <option *ngFor="let order of workOrders" [value]="order.id">
+                {{ order.numeroOrden }} - {{ order.productoNombre }}
+              </option>
+            </select>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="ui-label">Notas</label>
+            <textarea [(ngModel)]="form.notes" name="notes" rows="3" class="ui-input" placeholder="Observaciones adicionales..."></textarea>
+          </div>
+
+          <div class="flex gap-2 pt-1 md:col-span-2">
+            <button type="submit" class="flex-1 ui-btn-primary" [disabled]="loading">
+              {{ loading ? 'Procesando...' : (editingId ? 'Guardar' : 'Agregar') }}
+            </button>
+            <button type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -22,87 +116,7 @@
     <p class="text-sm text-blue-400">⏳ Cargando...</p>
   </div>
 
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-    <!-- Form -->
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">{{ editingId ? 'Editar Relación' : 'Nueva Relación' }}</p>
-        <span class="text-[11px] text-slate-500">Backend</span>
-      </div>
-
-      <form (ngSubmit)="submit()" class="space-y-4">
-        <!-- Lote Padre (requerido) -->
-        <div>
-          <label class="ui-label">Lote Padre <span class="text-red-400">*</span></label>
-          <select [(ngModel)]="form.parentLotId" name="parentLotId" required class="ui-select">
-            <option value="">-- Selecciona lote padre --</option>
-            <option *ngFor="let lot of lots" [value]="lot.id">
-              {{ lot.lotNumber || lot.code || lot.numero }} - {{ lot.productName || lot.description || lot.descripcion || '' }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Lote Hijo (requerido) -->
-        <div>
-          <label class="ui-label">Lote Hijo <span class="text-red-400">*</span></label>
-          <select [(ngModel)]="form.childLotId" name="childLotId" required class="ui-select">
-            <option value="">-- Selecciona lote hijo --</option>
-            <option *ngFor="let lot of lots" [value]="lot.id">
-              {{ lot.lotNumber || lot.code || lot.numero }} - {{ lot.productName || lot.description || lot.descripcion || '' }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Tipo de Relación (requerido) -->
-        <div>
-          <label class="ui-label">Tipo de Relación <span class="text-red-400">*</span></label>
-          <select [(ngModel)]="form.relationType" name="relationType" required class="ui-select">
-            <option *ngFor="let type of relationTypes" [value]="type">
-              {{ getRelationTypeLabel(type) }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Cantidad (requerido) -->
-        <div>
-          <label class="ui-label">Cantidad <span class="text-red-400">*</span></label>
-          <input type="number" [(ngModel)]="form.quantity" name="quantity" min="0" required class="ui-input" placeholder="0" />
-        </div>
-
-        <!-- Unidad de Medida (opcional) -->
-        <div>
-          <label class="ui-label">Unidad de Medida</label>
-          <input [(ngModel)]="form.unitOfMeasure" name="unitOfMeasure" class="ui-input" placeholder="KG, UNIDADES, LITROS..." />
-        </div>
-
-        <!-- Orden de Trabajo (opcional) -->
-        <div>
-          <label class="ui-label">Orden de Trabajo</label>
-          <select [(ngModel)]="form.workOrderId" name="workOrderId" class="ui-select">
-            <option value="">-- Ninguna --</option>
-            <option *ngFor="let order of workOrders" [value]="order.id">
-              {{ order.numeroOrden }} - {{ order.productoNombre }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Notas (opcional) -->
-        <div>
-          <label class="ui-label">Notas</label>
-          <textarea [(ngModel)]="form.notes" name="notes" rows="3" class="ui-input" placeholder="Observaciones adicionales..."></textarea>
-        </div>
-
-        <div class="flex gap-2 pt-1">
-          <button type="submit" class="flex-1 ui-btn-primary" [disabled]="loading">
-            {{ editingId ? 'Guardar' : 'Agregar' }}
-          </button>
-          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
-        </div>
-      </form>
-    </div>
-
-    <!-- List -->
-    <div class="xl:col-span-2 ui-surface p-5">
+  <div class="ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold">Relaciones de Genealogía</p>
         <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
@@ -150,6 +164,5 @@
           <p class="text-slate-500 text-sm">No hay relaciones de genealogía</p>
         </div>
       </div>
-    </div>
   </div>
 </div>

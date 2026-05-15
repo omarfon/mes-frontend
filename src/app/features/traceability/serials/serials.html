@@ -5,10 +5,114 @@
       <p class="ui-subtitle">Gestión de números de serie individuales con trazabilidad completa.</p>
     </div>
 
-    <div class="w-full max-w-sm">
-      <div class="relative">
+    <div class="flex items-center gap-2 w-full max-w-xl justify-end">
+      <div class="relative w-full max-w-sm">
         <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
         <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar..." />
+      </div>
+      <button type="button" class="ui-btn-primary whitespace-nowrap" (click)="openCreatePanel()">
+        <i class="pi pi-plus text-xs mr-1"></i> Nuevo serial
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="formPanelOpen" class="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px]" (click)="cancelEdit()"></div>
+
+  <div *ngIf="formPanelOpen" class="fixed right-0 top-0 z-50 h-full w-full max-w-2xl border-l border-slate-800 bg-slate-950 shadow-2xl">
+    <div class="h-full">
+      <div class="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+        <div>
+          <p class="text-sm font-semibold text-slate-100">{{ editingId ? 'Editar Serial' : 'Nuevo Serial' }}</p>
+          <span class="text-[11px] text-slate-500">Trazabilidad por número de serie</span>
+        </div>
+        <button type="button" class="ui-btn-ghost" (click)="cancelEdit()">Cerrar</button>
+      </div>
+
+      <div class="px-5 pb-5 pt-4 overflow-y-auto h-[calc(100%-74px)]">
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-sm font-semibold text-slate-300">Datos del serial</p>
+        </div>
+
+        <div *ngIf="error" class="mb-3 ui-surface p-4 border-l-4 border-red-500/60 bg-red-500/5">
+          <p class="text-sm text-red-400">{{ error }}</p>
+        </div>
+
+        <div *ngIf="loading" class="mb-3 ui-surface p-4 border-l-4 border-blue-500/60 bg-blue-500/5">
+          <p class="text-sm text-blue-400">Procesando...</p>
+        </div>
+
+        <form (ngSubmit)="submit()" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Número de Serie <span class="text-red-400">*</span></label>
+            <input [(ngModel)]="form.serialNumber" name="serialNumber" required class="ui-input" placeholder="SN-123456789" />
+          </div>
+
+          <div>
+            <label class="ui-label">Estado</label>
+            <select [(ngModel)]="form.status" name="status" class="ui-select">
+              <option *ngFor="let status of statusList" [value]="status">
+                {{ getStatusLabel(status) }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Lote <span class="text-red-400">*</span></label>
+            <select [(ngModel)]="form.lotId" name="lotId" required class="ui-select">
+              <option value="">-- Selecciona lote --</option>
+              <option *ngFor="let lot of lots" [value]="lot.id">
+                {{ lot.lotNumber || lot.code }} - {{ lot.productName || lot.description || '' }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Producto <span class="text-red-400">*</span></label>
+            <select [(ngModel)]="form.productId" name="productId" required class="ui-select">
+              <option value="">-- Selecciona producto --</option>
+              <option *ngFor="let product of products" [value]="product.id">
+                {{ product.code }} - {{ product.name }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Dirección MAC</label>
+            <input [(ngModel)]="form.macAddress" name="macAddress" class="ui-input" placeholder="00:1A:2B:3C:4D:5E" />
+          </div>
+
+          <div>
+            <label class="ui-label">IMEI</label>
+            <input [(ngModel)]="form.imei" name="imei" class="ui-input" placeholder="123456789012345" />
+          </div>
+
+          <div>
+            <label class="ui-label">Versión de Firmware</label>
+            <input [(ngModel)]="form.firmwareVersion" name="firmwareVersion" class="ui-input" placeholder="v1.2.3" />
+          </div>
+
+          <div>
+            <label class="ui-label">Revisión de Hardware</label>
+            <input [(ngModel)]="form.hardwareRevision" name="hardwareRevision" class="ui-input" placeholder="Rev A" />
+          </div>
+
+          <div>
+            <label class="ui-label">Meses de Garantía</label>
+            <input type="number" [(ngModel)]="form.warrantyMonths" name="warrantyMonths" min="0" class="ui-input" placeholder="12" />
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="ui-label">Notas</label>
+            <textarea [(ngModel)]="form.notes" name="notes" class="ui-input min-h-[80px]" placeholder="Notas adicionales..."></textarea>
+          </div>
+
+          <div class="flex gap-2 md:col-span-2">
+            <button type="submit" class="ui-btn-primary flex-1" [disabled]="loading">
+              {{ loading ? 'Procesando...' : (editingId ? 'Actualizar' : 'Crear') }}
+            </button>
+            <button type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -22,103 +126,7 @@
     <p class="text-sm text-blue-400">⏳ Cargando...</p>
   </div>
 
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-    <!-- Form -->
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">{{ editingId ? 'Editar Serial' : 'Nuevo Serial' }}</p>
-        <span class="text-[11px] text-slate-500">Backend</span>
-      </div>
-
-      <form (ngSubmit)="submit()" class="space-y-4">
-        <!-- Número de Serie (requerido) -->
-        <div>
-          <label class="ui-label">Número de Serie <span class="text-red-400">*</span></label>
-          <input [(ngModel)]="form.serialNumber" name="serialNumber" required class="ui-input" placeholder="SN-123456789" />
-        </div>
-
-        <!-- Lote (requerido) -->
-        <div>
-          <label class="ui-label">Lote <span class="text-red-400">*</span></label>
-          <select [(ngModel)]="form.lotId" name="lotId" required class="ui-select">
-            <option value="">-- Selecciona lote --</option>
-            <option *ngFor="let lot of lots" [value]="lot.id">
-              {{ lot.lotNumber || lot.code }} - {{ lot.productName || lot.description || '' }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Producto (requerido) -->
-        <div>
-          <label class="ui-label">Producto <span class="text-red-400">*</span></label>
-          <select [(ngModel)]="form.productId" name="productId" required class="ui-select">
-            <option value="">-- Selecciona producto --</option>
-            <option *ngFor="let product of products" [value]="product.id">
-              {{ product.code }} - {{ product.name }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Estado -->
-        <div>
-          <label class="ui-label">Estado</label>
-          <select [(ngModel)]="form.status" name="status" class="ui-select">
-            <option *ngFor="let status of statusList" [value]="status">
-              {{ getStatusLabel(status) }}
-            </option>
-          </select>
-        </div>
-
-        <!-- MAC Address (opcional) -->
-        <div>
-          <label class="ui-label">Dirección MAC</label>
-          <input [(ngModel)]="form.macAddress" name="macAddress" class="ui-input" placeholder="00:1A:2B:3C:4D:5E" />
-        </div>
-
-        <!-- IMEI (opcional) -->
-        <div>
-          <label class="ui-label">IMEI</label>
-          <input [(ngModel)]="form.imei" name="imei" class="ui-input" placeholder="123456789012345" />
-        </div>
-
-        <!-- Firmware Version (opcional) -->
-        <div>
-          <label class="ui-label">Versión de Firmware</label>
-          <input [(ngModel)]="form.firmwareVersion" name="firmwareVersion" class="ui-input" placeholder="v1.2.3" />
-        </div>
-
-        <!-- Hardware Revision (opcional) -->
-        <div>
-          <label class="ui-label">Revisión de Hardware</label>
-          <input [(ngModel)]="form.hardwareRevision" name="hardwareRevision" class="ui-input" placeholder="Rev A" />
-        </div>
-
-        <!-- Warranty Months (opcional) -->
-        <div>
-          <label class="ui-label">Meses de Garantía</label>
-          <input type="number" [(ngModel)]="form.warrantyMonths" name="warrantyMonths" min="0" class="ui-input" placeholder="12" />
-        </div>
-
-        <!-- Notas (opcional) -->
-        <div>
-          <label class="ui-label">Notas</label>
-          <textarea [(ngModel)]="form.notes" name="notes" class="ui-input min-h-[80px]" placeholder="Notas adicionales..."></textarea>
-        </div>
-
-        <!-- Botones -->
-        <div class="flex gap-2">
-          <button type="submit" class="ui-btn-primary flex-1">
-            {{ editingId ? 'Actualizar' : 'Crear' }}
-          </button>
-          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn">
-            Cancelar
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- Lista -->
-    <div class="xl:col-span-2 ui-surface">
+  <div class="ui-surface">
       <div class="p-5 border-b border-slate-700/50">
         <p class="text-sm font-semibold">Seriales ({{ filtered.length }})</p>
       </div>
@@ -169,6 +177,5 @@
           </tbody>
         </table>
       </div>
-    </div>
   </div>
 </div>

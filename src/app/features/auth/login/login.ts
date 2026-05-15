@@ -38,8 +38,10 @@ export class LoginComponent {
 
   this.auth.login({ email: email, password: password }).subscribe({
     next: () => {
-      const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
-      this.router.navigateByUrl(returnUrl);
+      const rawReturnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+      const returnUrl = typeof rawReturnUrl === 'string' ? rawReturnUrl : '/dashboard';
+      const safeReturnUrl = returnUrl.startsWith('/auth') ? '/dashboard' : returnUrl;
+      this.router.navigateByUrl(safeReturnUrl);
       this.loading = false;
     },
     error: (err) => {

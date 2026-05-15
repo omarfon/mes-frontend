@@ -25,6 +25,7 @@ export class ExecutionComponent implements OnInit {
 
   items: Ejecucion[] = [];
   editingId: string | null = null;
+  formPanelOpen = false;
   q = '';
   loading = false;
   error: string | null = null;
@@ -182,6 +183,7 @@ export class ExecutionComponent implements OnInit {
           this.q = '';
           this.loadEjecuciones();
           this.resetForm();
+          this.formPanelOpen = false;
         },
         error: (err) => {
           console.error('❌ Error creating:', err);
@@ -222,6 +224,7 @@ export class ExecutionComponent implements OnInit {
   }
 
   edit(item: Ejecucion) {
+    this.formPanelOpen = true;
     this.editingId = item.id;
     this.form = {
       ordenId: item.ordenId,
@@ -257,6 +260,13 @@ export class ExecutionComponent implements OnInit {
   cancelEdit() {
     this.editingId = null;
     this.resetForm();
+    this.formPanelOpen = false;
+  }
+
+  openCreatePanel() {
+    this.editingId = null;
+    this.resetForm();
+    this.formPanelOpen = true;
   }
 
   resetForm() {

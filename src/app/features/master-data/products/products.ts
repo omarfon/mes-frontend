@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ProductsService, Product as ApiProduct } from './products.service';
 
 /** Tipos genéricos de producto (aplican a cualquier industria) */
 type ProductType =
@@ -86,49 +87,60 @@ const EMPTY_FORM: ProductForm = {
   imports: [CommonModule, FormsModule],
   templateUrl: './products.html',
 })
-export class ProductsComponent {
+export class ProductsComponent implements OnInit {
   form: ProductForm = { ...EMPTY_FORM };
 
   /** Sección activa del formulario */
   formTab: 'general' | 'inventory' | 'traceability' = 'general';
 
-  items: Product[] = [
-    {
-      id: '1', code: 'PRD-001', name: 'Tornillo M8x30', description: 'Tornillo hex acero zincado',
-      type: 'FINISHED', family: 'Ferretería', subfamily: 'Tornillería',
-      uom: 'un', netWeight: 0.025, weightUnit: 'kg',
-      erpCode: 'FER-T-001', barcode: '7501000001',
-      minStock: 500, maxStock: 5000, reorderPoint: 1000, leadTimeDays: 7,
-      costPrice: 0.12, currency: 'USD',
-      batchManaged: true, serialManaged: false, qualityInspection: true,
-      shelfLifeDays: null, storageConditions: '', spec: 'Acero SAE 1018, zincado', active: true,
-    },
-    {
-      id: '2', code: 'MP-002', name: 'Resina PET', description: 'Polietileno tereftalato grado botella',
-      type: 'RAW_MATERIAL', family: 'Polímeros', subfamily: 'PET',
-      uom: 'kg', netWeight: 25, weightUnit: 'kg',
-      erpCode: 'POL-R-002', barcode: '7501000002',
-      minStock: 200, maxStock: 2000, reorderPoint: 500, leadTimeDays: 14,
-      costPrice: 1.85, currency: 'USD',
-      batchManaged: true, serialManaged: false, qualityInspection: true,
-      shelfLifeDays: 365, storageConditions: 'Ambiente seco, <30°C', spec: 'IV 0.80 ± 0.02', active: true,
-    },
-  ];
+  items: Product[] = [];
+
+  // ── Paginación ──
+  currentPage = 1;
+  readonly limit = 10;
+  total = 0;
+  get totalPages() { return Math.ceil(this.total / this.limit) || 1; }
+
+  loading = false;
+  error: string | null = null;
 
   productTypes: { value: ProductType; label: string }[] = [
     { value: 'RAW_MATERIAL', label: 'Materia prima' },
     { value: 'SEMI_FINISHED', label: 'Semielaborado' },
     { value: 'FINISHED', label: 'Producto terminado' },
-    { value: 'CONSUMABLE', label: 'Consumible' },
-    { value: 'SPARE_PART', label: 'Repuesto' },
     { value: 'PACKAGING', label: 'Empaque' },
-    { value: 'BYPRODUCT', label: 'Subproducto' },
     { value: 'SERVICE', label: 'Servicio' },
     { value: 'OTHER', label: 'Otro' },
   ];
 
   editingId: string | null = null;
   q = '';
+
+  constructor(private svc: ProductsService, private cdr: ChangeDetectorRef) {}
+
+  ngOnInit() { this.load(); }
+
+  load(page = this.currentPage) {
+    this.loading = true;
+    this.error = null;
+    this.svc.getPaginated(page, this.limit, this.q.trim() || undefined).subscribe({
+      next: r => {
+        this.items = r.data as any;
+        this.total = r.total;
+        this.currentPage = r.page;
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => { this.loading = false; this.cdr.detectChanges(); },
+    });
+  }
+
+  onSearch() { this.load(1); }
+
+  goTo(page: number) {
+    if (page < 1 || page > this.totalPages) return;
+    this.load(page);
+  }
 
   /* ── Carga masiva ── */
   showBulkUpload = false;
@@ -151,14 +163,7 @@ export class ProductsComponent {
     'SPARE_PART', 'PACKAGING', 'BYPRODUCT', 'SERVICE', 'OTHER',
   ];
 
-  get filtered() {
-    const t = this.q.trim().toLowerCase();
-    if (!t) return this.items;
-    return this.items.filter(x =>
-      [x.code, x.name, x.type, x.family, x.subfamily, x.erpCode, x.barcode, x.spec]
-        .some(v => (v ?? '').toLowerCase().includes(t)),
-    );
-  }
+  get filtered() { return this.items; }
 
   typeLabel(type: ProductType): string {
     return this.productTypes.find(t => t.value === type)?.label ?? type;
@@ -166,37 +171,46 @@ export class ProductsComponent {
 
   submit() {
     if (!this.form.code || !this.form.name) return;
-
-    if (this.editingId) {
-      const idx = this.items.findIndex(x => x.id === this.editingId);
-      if (idx >= 0) this.items[idx] = { ...this.items[idx], ...this.form };
-      this.cancelEdit();
-      return;
-    }
-
-    const id = crypto.randomUUID?.() ?? String(Date.now());
-    this.items.unshift({ id, ...this.form });
-    this.resetForm();
+    const dto = {
+      code: this.form.code,
+      name: this.form.name,
+      description: this.form.description || undefined,
+      type: this.form.type as any,
+      unitOfMeasure: this.form.uom || undefined,
+      family: this.form.family || undefined,
+      subfamily: this.form.subfamily || undefined,
+      erpCode: this.form.erpCode || undefined,
+    };
+    const obs = this.editingId
+      ? this.svc.update(this.editingId, dto)
+      : this.svc.create(dto);
+    obs.subscribe({
+      next: () => { this.editingId ? this.cancelEdit() : this.resetForm(); this.load(); },
+      error: err => { this.error = this.extractError(err); },
+    });
   }
 
   edit(it: Product) {
     this.editingId = it.id;
-    this.form = { ...it } as ProductForm;
+    this.form = { ...EMPTY_FORM, ...it } as ProductForm;
   }
 
   remove(id: string) {
-    this.items = this.items.filter(x => x.id !== id);
-    if (this.editingId === id) this.cancelEdit();
+    if (!confirm('¿Eliminar este producto?')) return;
+    this.svc.delete(id).subscribe({
+      next: () => { if (this.editingId === id) this.cancelEdit(); this.load(); },
+      error: err => { this.error = this.extractError(err); },
+    });
   }
 
-  cancelEdit() {
-    this.editingId = null;
-    this.resetForm();
-  }
+  cancelEdit() { this.editingId = null; this.resetForm(); }
 
-  resetForm() {
-    this.form = { ...EMPTY_FORM };
-    this.formTab = 'general';
+  resetForm() { this.form = { ...EMPTY_FORM }; this.formTab = 'general'; }
+
+  private extractError(err: any): string {
+    if (typeof err.error?.message === 'string') return err.error.message;
+    if (Array.isArray(err.error?.message)) return err.error.message.join(', ');
+    return err.message || 'Error desconocido';
   }
 
   /* ══════════ CARGA MASIVA ══════════ */

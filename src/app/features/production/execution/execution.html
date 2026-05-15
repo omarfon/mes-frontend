@@ -5,10 +5,103 @@
       <p class="ui-subtitle">Registro de producción en tiempo real por orden y máquina.</p>
     </div>
 
-    <div class="w-full max-w-sm">
-      <div class="relative">
+    <div class="flex items-center gap-2 w-full max-w-xl justify-end">
+      <div class="relative w-full max-w-sm">
         <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
         <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar ejecución..." />
+      </div>
+      <button type="button" class="ui-btn-primary whitespace-nowrap" (click)="openCreatePanel()">
+        <i class="pi pi-plus text-xs mr-1"></i> Nueva ejecución
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="formPanelOpen" class="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px]" (click)="cancelEdit()"></div>
+
+  <div *ngIf="formPanelOpen" class="fixed right-0 top-0 z-50 h-full w-full max-w-2xl border-l border-slate-800 bg-slate-950 shadow-2xl">
+    <div class="h-full">
+      <div class="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+        <div>
+          <p class="text-sm font-semibold text-slate-100">{{ editingId ? 'Editar ejecución' : 'Nueva ejecución' }}</p>
+          <span class="text-[11px] text-slate-500">Campos de operación en línea</span>
+        </div>
+        <button type="button" class="ui-btn-ghost" (click)="cancelEdit()">Cerrar</button>
+      </div>
+
+      <div class="px-5 pb-5 pt-4 overflow-y-auto h-[calc(100%-74px)]">
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-sm font-semibold text-slate-300">Datos de ejecución</p>
+        </div>
+
+        <div *ngIf="error" class="mb-3 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-sm text-red-200">
+          {{ error }}
+        </div>
+
+        <div *ngIf="loading" class="mb-3 p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg text-sm text-blue-200">
+          Procesando...
+        </div>
+
+        <form (ngSubmit)="submit()" class="space-y-4">
+          <div>
+            <label class="ui-label">Orden *</label>
+            <select [(ngModel)]="form.ordenId" name="ordenId" required class="ui-select">
+              <option value="">-- Seleccionar orden --</option>
+              <option *ngFor="let orden of ordenes" [value]="orden.id">
+                {{ orden.numeroOrden }} - {{ orden.productoNombre }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Máquina *</label>
+            <select [(ngModel)]="form.maquinaId" name="maquinaId" required class="ui-select">
+              <option value="">-- Seleccionar máquina --</option>
+              <option *ngFor="let maquina of maquinas" [value]="maquina.id">
+                {{ maquina.code }} - {{ maquina.name }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Operador *</label>
+            <select [(ngModel)]="form.operadorId" name="operadorId" required class="ui-select">
+              <option value="">-- Seleccionar operador --</option>
+              <option *ngFor="let operador of operadores" [value]="operador.id">
+                {{ operador.codigo || operador.code }} - {{ operador.nombre || operador.name }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Estado</label>
+            <select [(ngModel)]="form.estado" name="estado" class="ui-select">
+              <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Fecha Inicio <span class="text-xs text-slate-400">(opcional, usa fecha actual si no se envía)</span></label>
+            <input type="datetime-local" [(ngModel)]="form.fechaInicio" name="fechaInicio" class="ui-input" />
+          </div>
+
+          <div>
+            <label class="ui-label">Parámetros <span class="text-xs text-slate-400">(JSON, opcional)</span></label>
+            <textarea [(ngModel)]="form.parametros" name="parametros" rows="3" class="ui-input font-mono text-xs" placeholder='{"temperatura":180,"velocidad":50}'></textarea>
+            <p class="text-[11px] text-slate-400 mt-1">Formato: JSON válido. Ejemplo: {{ '{' }}"temperatura":180,"presion":120{{ '}' }}</p>
+          </div>
+
+          <div>
+            <label class="ui-label">Observaciones</label>
+            <textarea [(ngModel)]="form.observaciones" name="observaciones" rows="2" class="ui-input" placeholder="Notas adicionales..."></textarea>
+          </div>
+
+          <div class="flex gap-2 pt-1">
+            <button type="submit" class="flex-1 ui-btn-primary" [disabled]="loading">
+              {{ loading ? 'Procesando...' : (editingId ? 'Guardar' : 'Agregar') }}
+            </button>
+            <button type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -22,78 +115,7 @@
     Cargando ejecuciones...
   </div>
 
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-    <!-- Form -->
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">{{ editingId ? 'Editar ejecución' : 'Nueva ejecución' }}</p>
-      </div>
-
-      <form (ngSubmit)="submit()" class="space-y-4">
-        <div>
-          <label class="ui-label">Orden *</label>
-          <select [(ngModel)]="form.ordenId" name="ordenId" required class="ui-select">
-            <option value="">-- Seleccionar orden --</option>
-            <option *ngFor="let orden of ordenes" [value]="orden.id">
-              {{ orden.numeroOrden }} - {{ orden.productoNombre }}
-            </option>
-          </select>
-        </div>
-
-        <div>
-          <label class="ui-label">Máquina *</label>
-          <select [(ngModel)]="form.maquinaId" name="maquinaId" required class="ui-select">
-            <option value="">-- Seleccionar máquina --</option>
-            <option *ngFor="let maquina of maquinas" [value]="maquina.id">
-              {{ maquina.code }} - {{ maquina.name }}
-            </option>
-          </select>
-        </div>
-
-        <div>
-          <label class="ui-label">Operador *</label>
-          <select [(ngModel)]="form.operadorId" name="operadorId" required class="ui-select">
-            <option value="">-- Seleccionar operador --</option>
-            <option *ngFor="let operador of operadores" [value]="operador.id">
-              {{ operador.codigo || operador.code }} - {{ operador.nombre || operador.name }}
-            </option>
-          </select>
-        </div>
-
-        <div>
-          <label class="ui-label">Estado</label>
-          <select [(ngModel)]="form.estado" name="estado" class="ui-select">
-            <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="ui-label">Fecha Inicio <span class="text-xs text-slate-400">(opcional, usa fecha actual si no se envía)</span></label>
-          <input type="datetime-local" [(ngModel)]="form.fechaInicio" name="fechaInicio" class="ui-input" />
-        </div>
-
-        <div>
-          <label class="ui-label">Parámetros <span class="text-xs text-slate-400">(JSON, opcional)</span></label>
-          <textarea [(ngModel)]="form.parametros" name="parametros" rows="3" class="ui-input font-mono text-xs" placeholder='{"temperatura":180,"velocidad":50}'></textarea>
-          <p class="text-[11px] text-slate-400 mt-1">Formato: JSON válido. Ejemplo: {{ '{' }}"temperatura":180,"presion":120{{ '}' }}</p>
-        </div>
-
-        <div>
-          <label class="ui-label">Observaciones</label>
-          <textarea [(ngModel)]="form.observaciones" name="observaciones" rows="2" class="ui-input" placeholder="Notas adicionales..."></textarea>
-        </div>
-
-        <div class="flex gap-2 pt-1">
-          <button type="submit" class="flex-1 ui-btn-primary" [disabled]="loading">
-            {{ editingId ? 'Guardar' : 'Agregar' }}
-          </button>
-          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
-        </div>
-      </form>
-    </div>
-
-    <!-- List -->
-    <div class="xl:col-span-2 ui-surface p-5">
+  <div class="ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
         <div>
           <p class="text-sm font-semibold">Ejecuciones</p>
@@ -140,6 +162,5 @@
           </tbody>
         </table>
       </div>
-    </div>
   </div>
 </div>

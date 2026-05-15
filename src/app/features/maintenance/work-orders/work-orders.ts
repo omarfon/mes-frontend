@@ -19,6 +19,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 export class WorkOrdersComponent {
   view: 'LIST' | 'KANBAN' = 'KANBAN';
   q = '';
+  formPanelOpen = false;
   filterStatus: 'ALL' | WorkOrderStatus = 'ALL';
   filterPriority: 'ALL' | WorkOrderPriority = 'ALL';
 
@@ -86,6 +87,14 @@ export class WorkOrdersComponent {
     this.logTech = w.assignedTo ?? '';
   }
 
+  openCreatePanel() {
+    this.formPanelOpen = true;
+  }
+
+  closeFormPanel() {
+    this.formPanelOpen = false;
+  }
+
   create() {
     this.clearMsg();
 
@@ -113,6 +122,7 @@ export class WorkOrdersComponent {
     this.form.title = '';
     this.form.description = '';
     this.open(wo);
+    this.formPanelOpen = false;
   }
 
   setStatus(w: WorkOrder, st: WorkOrderStatus) {

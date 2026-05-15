@@ -2,19 +2,32 @@
   <div class="ui-page-header">
     <div>
       <h3 class="ui-title">Intervenciones</h3>
-      <p class="ui-subtitle">Ejecución técnica: tiempos, causa raíz, acciones y consumo de repuestos.</p>
+      <p class="ui-subtitle">Ejecucion tecnica: tiempos, causa raiz, acciones y consumo de repuestos.</p>
+    </div>
+
+    <div class="flex items-center gap-2 w-full max-w-xl justify-end">
+      <input [(ngModel)]="q" class="ui-input w-full max-w-sm" placeholder="INT-0001, MAQ-001..." />
+      <button type="button" class="ui-btn-primary" (click)="openCreatePanel()">
+        <i class="pi pi-plus text-xs mr-1"></i> Nueva intervencion
+      </button>
     </div>
   </div>
 
   <div *ngIf="error" class="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200">{{ error }}</div>
   <div *ngIf="success" class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">{{ success }}</div>
 
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-    <!-- Create -->
-    <div class="ui-surface p-5">
-      <p class="text-sm font-semibold mb-3">Nueva intervención</p>
+  <div *ngIf="formPanelOpen" class="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px]" (click)="closeFormPanel()"></div>
+  <div *ngIf="formPanelOpen" class="fixed right-0 top-0 z-50 h-full w-full max-w-2xl border-l border-slate-800 bg-slate-950 shadow-2xl">
+    <div class="h-full">
+      <div class="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+        <div>
+          <p class="text-sm font-semibold text-slate-100">Nueva intervencion</p>
+          <span class="text-[11px] text-slate-500">Registro tecnico</span>
+        </div>
+        <button type="button" class="ui-btn-ghost" (click)="closeFormPanel()">Cerrar</button>
+      </div>
 
-      <div class="space-y-3">
+      <div class="px-5 pb-5 pt-4 overflow-y-auto h-[calc(100%-74px)] grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <label class="ui-label">Activo</label>
           <select [(ngModel)]="form.assetCode" class="ui-select">
@@ -22,59 +35,83 @@
           </select>
         </div>
 
-        <div class="grid grid-cols-2 gap-2">
-          <div><label class="ui-label">WO (opcional)</label><input [(ngModel)]="form.woId" class="ui-input" placeholder="WO-0001" /></div>
-          <div><label class="ui-label">Técnico</label><input [(ngModel)]="form.technician" class="ui-input" /></div>
+        <div>
+          <label class="ui-label">WO (opcional)</label>
+          <input [(ngModel)]="form.woId" class="ui-input" placeholder="WO-0001" />
         </div>
 
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="ui-label">Estado</label>
-            <select [(ngModel)]="form.status" class="ui-select">
-              <option value="PLANNED">PLANNED</option>
-              <option value="IN_PROGRESS">IN_PROGRESS</option>
-              <option value="DONE">DONE</option>
-            </select>
-          </div>
-          <div><label class="ui-label">Downtime (min)</label><input type="number" [(ngModel)]="form.downtimeMinutes" class="ui-input" /></div>
+        <div>
+          <label class="ui-label">Tecnico</label>
+          <input [(ngModel)]="form.technician" class="ui-input" />
         </div>
 
-        <div class="grid grid-cols-2 gap-2">
-          <div><label class="ui-label">Inicio</label><input type="datetime-local" [(ngModel)]="form.startAt" class="ui-input" /></div>
-          <div><label class="ui-label">Fin</label><input type="datetime-local" [(ngModel)]="form.endAt" class="ui-input" /></div>
+        <div>
+          <label class="ui-label">Estado</label>
+          <select [(ngModel)]="form.status" class="ui-select">
+            <option value="PLANNED">PLANNED</option>
+            <option value="IN_PROGRESS">IN_PROGRESS</option>
+            <option value="DONE">DONE</option>
+          </select>
         </div>
 
-        <div><label class="ui-label">Resumen</label><input [(ngModel)]="form.summary" class="ui-input" placeholder="Qué se hizo..." /></div>
-        <div><label class="ui-label">Causa raíz</label><input [(ngModel)]="form.rootCause" class="ui-input" placeholder="Por qué pasó..." /></div>
-        <div><label class="ui-label">Acciones</label><input [(ngModel)]="form.actions" class="ui-input" placeholder="Acciones correctivas..." /></div>
-
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="ui-label">Repuesto usado</label>
-            <select [(ngModel)]="form.usedSpareCode" class="ui-select">
-              <option *ngFor="let s of ms.spares" [value]="s.code">{{ s.code }} · {{ s.name }}</option>
-            </select>
-          </div>
-          <div><label class="ui-label">Qty</label><input type="number" [(ngModel)]="form.usedSpareQty" class="ui-input" /></div>
+        <div>
+          <label class="ui-label">Inicio</label>
+          <input type="datetime-local" [(ngModel)]="form.startAt" class="ui-input" />
         </div>
 
-        <div><label class="ui-label">Notas</label><input [(ngModel)]="form.notes" class="ui-input" /></div>
+        <div>
+          <label class="ui-label">Fin</label>
+          <input type="datetime-local" [(ngModel)]="form.endAt" class="ui-input" />
+        </div>
 
-        <button class="ui-btn-primary w-full" (click)="create()">Crear</button>
+        <div>
+          <label class="ui-label">Downtime (min)</label>
+          <input type="number" [(ngModel)]="form.downtimeMinutes" class="ui-input" />
+        </div>
 
-        <div class="my-2 border-t border-slate-800/70"></div>
-        <label class="ui-label">Buscar</label>
-        <input [(ngModel)]="q" class="ui-input" placeholder="INT-0001, MAQ-001..." />
+        <div>
+          <label class="ui-label">Repuesto usado</label>
+          <select [(ngModel)]="form.usedSpareCode" class="ui-select">
+            <option *ngFor="let s of ms.spares" [value]="s.code">{{ s.code }} · {{ s.name }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="ui-label">Qty</label>
+          <input type="number" [(ngModel)]="form.usedSpareQty" class="ui-input" />
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="ui-label">Resumen</label>
+          <input [(ngModel)]="form.summary" class="ui-input" placeholder="Que se hizo..." />
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="ui-label">Causa raiz</label>
+          <input [(ngModel)]="form.rootCause" class="ui-input" placeholder="Por que paso..." />
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="ui-label">Acciones</label>
+          <input [(ngModel)]="form.actions" class="ui-input" placeholder="Acciones correctivas..." />
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="ui-label">Notas</label>
+          <input [(ngModel)]="form.notes" class="ui-input" />
+        </div>
+
+        <button class="ui-btn-primary md:col-span-2" (click)="create()">Crear</button>
       </div>
     </div>
+  </div>
 
-    <!-- List -->
-    <div class="ui-surface p-5 xl:col-span-1">
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+    <div class="ui-surface p-5">
       <p class="text-sm font-semibold mb-3">Intervenciones</p>
 
       <div class="space-y-2">
-        <button *ngFor="let i of list" (click)="open(i)"
-          class="w-full text-left rounded-xl border border-slate-800/70 bg-slate-950/30 p-3 hover:bg-slate-900/30 transition">
+        <button *ngFor="let i of list" (click)="open(i)" class="w-full text-left rounded-xl border border-slate-800/70 bg-slate-950/30 p-3 hover:bg-slate-900/30 transition">
           <div class="flex items-start justify-between gap-2">
             <div>
               <div class="text-sm font-semibold text-slate-100">{{ i.code }}</div>
@@ -90,46 +127,43 @@
       </div>
     </div>
 
-    <!-- Detail -->
     <div class="ui-surface p-5">
       <div class="flex items-center justify-between mb-3">
         <p class="text-sm font-semibold">Detalle</p>
         <button class="ui-btn-ghost text-xs" (click)="selected=null" *ngIf="selected">Cerrar</button>
       </div>
-      <div *ngIf="!selected" class="text-sm text-slate-500 py-10 text-center">Selecciona una intervención.</div>
-      
+      <div *ngIf="!selected" class="text-sm text-slate-500 py-10 text-center">Selecciona una intervencion.</div>
+
       <div *ngIf="selected" class="space-y-4">
-          <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
-              <div class="flex items-start justify-between gap-2">
-                  <div>
-                      <div class="text-sm font-semibold text-slate-100">{{ selected.code }}</div>
-                      <div class="text-xs text-slate-400 mt-1">{{ selected.assetCode }} · {{ selected.assetName }}</div>
-                      <div class="text-[11px] text-slate-500 mt-1">{{ selected.location }}</div>
-                    </div>
-                    <span [ngClass]="badge(selected.status)">{{ selected.status }}</span>
-                </div>
-                
-                <div class="mt-3 text-xs text-slate-300 space-y-1">
-                    <div>Técnico: <b class="text-slate-100">{{ selected.technician }}</b></div>
-                    <div>WO: <b class="text-slate-100">{{ selected.woId || '—' }}</b></div>
-                    <div>Inicio: <b class="text-slate-100">{{ selected.startAt || '—' }}</b></div>
-                    <div>Fin: <b class="text-slate-100">{{ selected.endAt || '—' }}</b></div>
-                    <div>Downtime: <b class="text-slate-100">{{ selected.downtimeMinutes || 0 }} min</b></div>
-                </div>
-                
-                <div class="mt-3 grid grid-cols-3 gap-2">
-                    <button class="ui-btn-ghost text-xs" (click)="setStatus('PLANNED')">PLANNED</button>
-                    <button class="ui-btn-ghost text-xs" (click)="setStatus('IN_PROGRESS')">IN_PROGRESS</button>
-                    <button class="ui-btn-primary text-xs" (click)="setStatus('DONE')">DONE</button>
-                </div>
-                <button class="ui-btn-ghost text-xs w-full" (click)="goWo()" [disabled]="!selected.woId">
-            Ir a WO
-          </button>
+        <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="text-sm font-semibold text-slate-100">{{ selected.code }}</div>
+              <div class="text-xs text-slate-400 mt-1">{{ selected.assetCode }} · {{ selected.assetName }}</div>
+              <div class="text-[11px] text-slate-500 mt-1">{{ selected.location }}</div>
+            </div>
+            <span [ngClass]="badge(selected.status)">{{ selected.status }}</span>
+          </div>
+
+          <div class="mt-3 text-xs text-slate-300 space-y-1">
+            <div>Tecnico: <b class="text-slate-100">{{ selected.technician }}</b></div>
+            <div>WO: <b class="text-slate-100">{{ selected.woId || '—' }}</b></div>
+            <div>Inicio: <b class="text-slate-100">{{ selected.startAt || '—' }}</b></div>
+            <div>Fin: <b class="text-slate-100">{{ selected.endAt || '—' }}</b></div>
+            <div>Downtime: <b class="text-slate-100">{{ selected.downtimeMinutes || 0 }} min</b></div>
+          </div>
+
+          <div class="mt-3 grid grid-cols-3 gap-2">
+            <button class="ui-btn-ghost text-xs" (click)="setStatus('PLANNED')">PLANNED</button>
+            <button class="ui-btn-ghost text-xs" (click)="setStatus('IN_PROGRESS')">IN_PROGRESS</button>
+            <button class="ui-btn-primary text-xs" (click)="setStatus('DONE')">DONE</button>
+          </div>
+          <button class="ui-btn-ghost text-xs w-full mt-2" (click)="goWo()" [disabled]="!selected.woId">Ir a WO</button>
         </div>
 
         <div class="rounded-2xl border border-slate-800/70 bg-slate-950/30 p-4 space-y-2">
           <div *ngIf="selected.summary"><b class="text-slate-100 text-xs">Resumen:</b> <span class="text-xs text-slate-300">{{ selected.summary }}</span></div>
-          <div *ngIf="selected.rootCause"><b class="text-slate-100 text-xs">Causa raíz:</b> <span class="text-xs text-slate-300">{{ selected.rootCause }}</span></div>
+          <div *ngIf="selected.rootCause"><b class="text-slate-100 text-xs">Causa raiz:</b> <span class="text-xs text-slate-300">{{ selected.rootCause }}</span></div>
           <div *ngIf="selected.actions"><b class="text-slate-100 text-xs">Acciones:</b> <span class="text-xs text-slate-300">{{ selected.actions }}</span></div>
 
           <div>

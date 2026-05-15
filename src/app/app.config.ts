@@ -7,13 +7,17 @@ import { inject } from '@angular/core';
 import { AuthService } from './core/auth/auth.service';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
+import { environment } from '../environmets/environments';
 
 // Interceptor de autenticación (funcional)
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const token = authService.token;
 
-  // Eliminando la verificación del token
+  if (!token) {
+    return next(req);
+  }
+
   const cloned = req.clone({
     setHeaders: {
       Authorization: `Bearer ${token}`,
@@ -33,19 +37,22 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
       // Manejar errores específicos
       if (error.status === 401) {
-        // No autenticado - redirigir al login
-        // EXCEPCIÓN: No redirigir si es un endpoint que aún no está implementado
+        // En desarrollo, muchos endpoints pueden devolver 401 por implementación parcial.
+        // Evitamos expulsar al usuario al login en esos casos.
         const skipRedirectUrls = [
           '/traceability/serials', 
           '/traceability/events', 
           '/audit',
           '/quality/defects',
           '/quality/defect-families',
-          '/quality/severities'
+          '/quality/severities',
+          '/quality/inspections'
         ];
         const shouldSkipRedirect = skipRedirectUrls.some(url => error.url?.includes(url));
+        const isAuthRequest = req.url.includes('/auth/login');
+        const shouldRedirectToLogin = environment.production && !shouldSkipRedirect && !isAuthRequest;
         
-        if (!shouldSkipRedirect) {
+        if (shouldRedirectToLogin) {
           console.error('Sesión expirada - redirigiendo al login');
           try {
             const returnUrl = router.url || window.location.pathname;
@@ -54,7 +61,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             router.navigate(['/auth/login']);
           }
         } else {
-          console.log('ℹ️ Endpoint no implementado:', error.url);
+          console.log('ℹ️ 401 controlado (sin redirección):', error.url);
         }
       } else if (error.status === 403) {
         // No autorizado

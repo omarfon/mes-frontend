@@ -33,6 +33,7 @@ export class ComponentsComponent implements OnInit {
   filterStatus: 'ALL' | ComponentStatus = 'ALL';
   selectedComponent: AssetComponent | null = null;
   editingId: string | null = null;
+  formPanelOpen = false;
 
   components$ = this.componentsService.components$;
   components: AssetComponent[] = [];
@@ -141,6 +142,16 @@ export class ComponentsComponent implements OnInit {
     this.editingId = component.id;
     this.form = { ...component };
     this.selectedComponent = component;
+    this.formPanelOpen = true;
+  }
+
+  openCreatePanel() {
+    this.cancelEdit();
+    this.formPanelOpen = true;
+  }
+
+  closeFormPanel() {
+    this.formPanelOpen = false;
   }
 
   submit() {
@@ -171,6 +182,7 @@ export class ComponentsComponent implements OnInit {
           next: (updated) => {
             this.selectedComponent = updated;
             this.cancelEdit();
+            this.formPanelOpen = false;
           },
           error: (err) => console.error('Error updating component:', err)
         });
@@ -182,6 +194,7 @@ export class ComponentsComponent implements OnInit {
         next: (created) => {
           this.resetForm();
           this.selectComponent(created);
+          this.formPanelOpen = false;
         },
         error: (err) => console.error('Error creating component:', err)
       });

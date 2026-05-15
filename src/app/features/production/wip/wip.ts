@@ -56,6 +56,7 @@ export class WipComponent implements OnInit {
 
   items: WIP[] = [];
   editingId: string | null = null;
+  formPanelOpen = false;
   q = '';
   loading = false;
   error: string | null = null;
@@ -193,6 +194,7 @@ export class WipComponent implements OnInit {
           this.q = '';
           this.loadWIP();
           this.resetForm();
+          this.formPanelOpen = false;
         },
         error: (err) => {
           console.error('❌ Error creating:', err);
@@ -233,6 +235,7 @@ export class WipComponent implements OnInit {
   }
 
   edit(item: WIP) {
+    this.formPanelOpen = true;
     this.editingId = item.id;
     this.form = {
       ordenId: item.ordenId,
@@ -272,6 +275,13 @@ export class WipComponent implements OnInit {
   cancelEdit() {
     this.editingId = null;
     this.resetForm();
+    this.formPanelOpen = false;
+  }
+
+  openCreatePanel() {
+    this.editingId = null;
+    this.resetForm();
+    this.formPanelOpen = true;
   }
 
   resetForm() {

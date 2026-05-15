@@ -14,6 +14,7 @@ import { Observable, map } from 'rxjs';
 export class InspectionsComponent {
   q = '';
   editing: Inspection | null = null;
+  formPanelOpen = false;
   loading = false;
   error: string | null = null;
 
@@ -110,8 +111,18 @@ export class InspectionsComponent {
     };
   }
 
+  openCreatePanel() {
+    this.new();
+    this.formPanelOpen = true;
+  }
+
+  closeFormPanel() {
+    this.formPanelOpen = false;
+  }
+
   edit(i: Inspection) {
     this.editing = i;
+    this.formPanelOpen = true;
     this.error = null;
     this.form = {
       code: i.node?.code || i.nodeId,
@@ -182,6 +193,7 @@ export class InspectionsComponent {
         next: () => {
           this.loading = false;
           this.new();
+          this.formPanelOpen = false;
           console.log('✅ Inspección creada');
         },
         error: (err: any) => {
@@ -212,6 +224,7 @@ export class InspectionsComponent {
         next: () => {
           this.loading = false;
           this.new();
+          this.formPanelOpen = false;
           console.log('✅ Inspección actualizada');
         },
         error: (err: any) => {

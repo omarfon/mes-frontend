@@ -79,6 +79,11 @@ export const MASTER_DATA_ROUTES: Routes = [
         loadComponent: () =>
           import('./suppliers/suppliers').then((m) => m.SuppliersComponent),
       },
+      {
+        path: 'empresas',
+        loadComponent: () =>
+          import('./empresas/empresas').then((m) => m.EmpresasComponent),
+      },
       // ── Productos y Procesos ───────────────────────────────
       {
         path: 'product-variants',

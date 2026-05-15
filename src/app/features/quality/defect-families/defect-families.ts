@@ -13,6 +13,7 @@ import { DefectFamily } from '../../../shared/models/quality.model';
 export class DefectFamiliesComponent {
   q = '';
   editing: DefectFamily | null = null;
+  formPanelOpen = false;
 
   form: Partial<DefectFamily> = {
     code: '',
@@ -36,8 +37,18 @@ export class DefectFamiliesComponent {
     this.form = { code: '', name: '', description: '', isActive: true };
   }
 
+  openCreatePanel() {
+    this.new();
+    this.formPanelOpen = true;
+  }
+
+  closeFormPanel() {
+    this.formPanelOpen = false;
+  }
+
   edit(f: DefectFamily) {
     this.editing = f;
+    this.formPanelOpen = true;
     this.form = { ...f };
   }
 
@@ -67,6 +78,7 @@ export class DefectFamiliesComponent {
       }
     }
     this.new();
+    this.formPanelOpen = false;
   }
 }
 

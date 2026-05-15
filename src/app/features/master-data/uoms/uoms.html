@@ -5,92 +5,104 @@
       <p class="ui-subtitle">Unidades de medida para materiales y producción.</p>
     </div>
 
-    <div class="w-full max-w-sm">
-      <div class="relative">
+    <div class="flex items-center gap-2 w-full max-w-xl justify-end">
+      <div class="relative w-full max-w-sm">
         <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
         <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar unidad..." />
       </div>
+      <button type="button" class="ui-btn-primary whitespace-nowrap" (click)="openCreatePanel()">
+        <i class="pi pi-plus text-xs mr-1"></i> Nueva unidad
+      </button>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">{{ editingId ? 'Editar unidad' : 'Nueva unidad' }}</p>
-        <span class="text-[11px] text-slate-500">Campos completos</span>
+  <div *ngIf="formPanelOpen" class="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px]" (click)="cancelEdit()"></div>
+
+  <div *ngIf="formPanelOpen" class="fixed right-0 top-0 z-50 h-full w-full max-w-2xl border-l border-slate-800 bg-slate-950 shadow-2xl">
+    <div class="h-full">
+      <div class="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+        <div>
+          <p class="text-sm font-semibold text-slate-100">{{ editingId ? 'Editar unidad' : 'Nueva unidad' }}</p>
+          <span class="text-[11px] text-slate-500">Catálogo de unidades de medida</span>
+        </div>
+        <button type="button" class="ui-btn-ghost" (click)="cancelEdit()">Cerrar</button>
       </div>
 
-      <!-- Mensajes de estado -->
-      <div *ngIf="error" class="mb-3 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
-        {{ error }}
-      </div>
-
-      <div *ngIf="loading" class="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
-        Procesando...
-      </div>
-
-      <form #uomForm="ngForm" (ngSubmit)="submit()" class="space-y-4">
-        <div>
-          <label class="ui-label">Código *</label>
-          <input [(ngModel)]="form.codigo" name="codigo" required class="ui-input" placeholder="KG" />
+      <div class="px-5 pb-5 pt-4 overflow-y-auto h-[calc(100%-74px)]">
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-sm font-semibold text-slate-300">Datos de unidad</p>
         </div>
 
-        <div>
-          <label class="ui-label">Nombre *</label>
-          <input [(ngModel)]="form.nombre" name="nombre" required class="ui-input" placeholder="Kilogramo" />
+        <div *ngIf="error" class="mb-3 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
+          {{ error }}
         </div>
 
-        <div>
-          <label class="ui-label">Símbolo *</label>
-          <input [(ngModel)]="form.simbolo" name="simbolo" required class="ui-input" placeholder="kg" />
+        <div *ngIf="loading" class="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+          Procesando...
         </div>
 
-        <div>
-          <label class="ui-label">Tipo *</label>
-          <select [(ngModel)]="form.tipo" name="tipo" required class="ui-select">
-            <option *ngFor="let t of tipos" [value]="t">{{ t }}</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="ui-label">Descripción</label>
-          <textarea [(ngModel)]="form.descripcion" name="descripcion" rows="2" class="ui-input" placeholder="Descripción..."></textarea>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
+        <form #uomForm="ngForm" (ngSubmit)="submit()" class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <label class="ui-label">Factor Conversión</label>
-            <input type="number" [(ngModel)]="form.factorConversion" name="factorConversion" step="0.001" class="ui-input" />
+            <label class="ui-label">Código *</label>
+            <input [(ngModel)]="form.codigo" name="codigo" required class="ui-input" placeholder="KG" />
+          </div>
+
+          <div>
+            <label class="ui-label">Símbolo *</label>
+            <input [(ngModel)]="form.simbolo" name="simbolo" required class="ui-input" placeholder="kg" />
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="ui-label">Nombre *</label>
+            <input [(ngModel)]="form.nombre" name="nombre" required class="ui-input" placeholder="Kilogramo" />
+          </div>
+
+          <div>
+            <label class="ui-label">Tipo *</label>
+            <select [(ngModel)]="form.tipo" name="tipo" required class="ui-select">
+              <option *ngFor="let t of tipos" [value]="t">{{ t }}</option>
+            </select>
           </div>
 
           <div>
             <label class="ui-label">Decimales</label>
             <input type="number" [(ngModel)]="form.decimales" name="decimales" min="0" max="10" class="ui-input" />
           </div>
-        </div>
 
-        <div class="space-y-2">
-          <label class="inline-flex items-center gap-2 text-xs text-slate-700">
-            <input type="checkbox" [(ngModel)]="form.esSI" name="esSI" class="h-4 w-4 rounded border-slate-300" />
-            Es Sistema Internacional (SI)
-          </label>
+          <div>
+            <label class="ui-label">Factor Conversión</label>
+            <input type="number" [(ngModel)]="form.factorConversion" name="factorConversion" step="0.001" class="ui-input" />
+          </div>
 
-          <label class="inline-flex items-center gap-2 text-xs text-slate-700">
-            <input type="checkbox" [(ngModel)]="form.activo" name="activo" class="h-4 w-4 rounded border-slate-300" />
-            Activo
-          </label>
-        </div>
+          <div class="md:col-span-2">
+            <label class="ui-label">Descripción</label>
+            <textarea [(ngModel)]="form.descripcion" name="descripcion" rows="2" class="ui-input" placeholder="Descripción..."></textarea>
+          </div>
 
-        <div class="flex gap-2 pt-1">
-          <button type="submit" [disabled]="loading" class="flex-1 ui-btn-primary">
-            {{ loading ? 'Procesando...' : (editingId ? 'Guardar' : 'Agregar') }}
-          </button>
-          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
-        </div>
-      </form>
+          <div class="space-y-2 md:col-span-2">
+            <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+              <input type="checkbox" [(ngModel)]="form.esSI" name="esSI" class="h-4 w-4 rounded border-slate-600 bg-slate-900" />
+              Es Sistema Internacional (SI)
+            </label>
+
+            <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+              <input type="checkbox" [(ngModel)]="form.activo" name="activo" class="h-4 w-4 rounded border-slate-600 bg-slate-900" />
+              Activo
+            </label>
+          </div>
+
+          <div class="flex gap-2 pt-1 md:col-span-2">
+            <button type="submit" [disabled]="loading" class="flex-1 ui-btn-primary">
+              {{ loading ? 'Procesando...' : (editingId ? 'Guardar' : 'Agregar') }}
+            </button>
+            <button type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+          </div>
+        </form>
+      </div>
     </div>
+  </div>
 
-    <div class="xl:col-span-2 ui-surface p-5">
+  <div class="ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold">Listado</p>
         <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
@@ -143,5 +155,4 @@
         </table>
       </div>
     </div>
-  </div>
 </div>

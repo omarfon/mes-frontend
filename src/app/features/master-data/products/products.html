@@ -16,7 +16,7 @@
       <div class="w-full max-w-sm">
         <div class="relative">
           <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
-          <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar por código, nombre, familia..." />
+          <input [(ngModel)]="q" (ngModelChange)="onSearch()" class="ui-input pl-9" placeholder="Buscar por código, nombre, familia..." />
         </div>
       </div>
     </div>
@@ -401,7 +401,7 @@
                 </div>
               </td>
             </tr>
-            <tr *ngIf="filtered.length === 0">
+            <tr *ngIf="filtered.length === 0 && !loading">
               <td colspan="10" class="px-4 py-10 text-center text-slate-500">
                 No hay productos registrados.
               </td>
@@ -409,6 +409,28 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Paginación -->
+      <div class="flex items-center justify-between mt-4 text-xs text-slate-400">
+        <span>{{ total }} productos · página {{ currentPage }} de {{ totalPages }}</span>
+        <div class="flex gap-1">
+          <button (click)="goTo(1)" [disabled]="currentPage === 1"
+            class="px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-800/50 disabled:opacity-30 transition">«</button>
+          <button (click)="goTo(currentPage - 1)" [disabled]="currentPage === 1"
+            class="px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-800/50 disabled:opacity-30 transition">‹</button>
+          <ng-container *ngFor="let p of [].constructor(totalPages); let i = index">
+            <button *ngIf="i + 1 >= currentPage - 1 && i + 1 <= currentPage + 1"
+              (click)="goTo(i + 1)"
+              [ngClass]="(i + 1) === currentPage ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'border-slate-700 hover:bg-slate-800/50'"
+              class="px-2 py-1 rounded-lg border transition">{{ i + 1 }}</button>
+          </ng-container>
+          <button (click)="goTo(currentPage + 1)" [disabled]="currentPage === totalPages"
+            class="px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-800/50 disabled:opacity-30 transition">›</button>
+          <button (click)="goTo(totalPages)" [disabled]="currentPage === totalPages"
+            class="px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-800/50 disabled:opacity-30 transition">»</button>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>

@@ -99,6 +99,18 @@
           <input type="datetime-local" [(ngModel)]="form.fechaFinPlanificada" name="fechaFinPlanificada" class="ui-input" />
         </div>
 
+        <div class="md:col-span-2">
+          <label class="ui-label">Ruta de trabajo</label>
+          <select [(ngModel)]="form.rutaId" name="rutaId" class="ui-select" [disabled]="routesLoading">
+            <option value="">Seleccionar ruta...</option>
+            <option *ngFor="let route of routings" [value]="route.id">
+              {{ route.code }} - {{ route.name }}
+            </option>
+          </select>
+          <p class="text-[10px] text-slate-500 mt-1" *ngIf="routesLoading">Cargando rutas...</p>
+          <p class="text-[10px] text-slate-500 mt-1" *ngIf="!routesLoading && routings.length === 0">No hay rutas activas disponibles.</p>
+        </div>
+
         <div>
           <label class="ui-label">Lote</label>
           <input [(ngModel)]="form.lote" name="lote" class="ui-input" placeholder="Número de lote" />
@@ -147,7 +159,7 @@
   <div class="ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold">Listado</p>
-        <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
+        <span class="text-[11px] text-slate-500">{{ visibleRecordsCount }} registros</span>
       </div>
 
       <div class="ui-table-wrap">
@@ -164,7 +176,11 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let it of pagedOrders" class="ui-tr">
+            <tr *ngFor="let it of visibleOrders" class="ui-tr transition-all duration-200"
+              [class.bg-blue-500/15]="selectedOrderRoute?.id === it.id || reprogrammingOrder?.id === it.id"
+              [class.ring-2]="selectedOrderRoute?.id === it.id || reprogrammingOrder?.id === it.id"
+              [class.ring-blue-500/40]="selectedOrderRoute?.id === it.id || reprogrammingOrder?.id === it.id"
+              [class.opacity-40]="(selectedOrderRoute || reprogrammingOrder) && selectedOrderRoute?.id !== it.id && reprogrammingOrder?.id !== it.id">
               <td class="ui-td font-medium">{{ it.numeroOrden }}</td>
               <td class="ui-td">
                 <div>{{ it.productoNombre || '-' }}</div>
@@ -179,20 +195,44 @@
                 <span class="ui-badge" [ngClass]="badgeClass(it.estado)">{{ it.estado }}</span>
               </td>
               <td class="ui-td">
-                <div class="flex gap-2">
-                  <button (click)="showRoute(it)" [disabled]="loading" class="ui-btn-ghost text-xs"
-                    [class.text-blue-400]="selectedOrderRoute?.id === it.id">
-                    <i class="pi pi-sitemap text-[10px]"></i> Ruta
+                <div class="flex gap-1.5">
+                  <button
+                    (click)="showRoute(it)"
+                    [disabled]="loading"
+                    class="ui-btn-ghost text-xs w-8 h-8 p-0"
+                    [class.text-blue-400]="selectedOrderRoute?.id === it.id"
+                    title="Ruta"
+                    aria-label="Ver ruta">
+                    <i class="pi pi-sitemap text-[11px]"></i>
                   </button>
-                  <button (click)="openRescheduleModal(it)" [disabled]="loading" class="ui-btn-ghost text-xs" title="Cambiar fechas planificadas">
-                    <i class="pi pi-calendar text-[10px]"></i> Reprogramar
+                  <button
+                    (click)="openRescheduleModal(it)"
+                    [disabled]="loading"
+                    class="ui-btn-ghost text-xs w-8 h-8 p-0"
+                    title="Reprogramar"
+                    aria-label="Reprogramar orden">
+                    <i class="pi pi-calendar text-[11px]"></i>
                   </button>
-                  <button (click)="edit(it)" [disabled]="loading" class="ui-btn-ghost text-xs">Editar</button>
-                  <button (click)="remove(it.id)" [disabled]="loading" class="ui-btn-danger text-xs">Eliminar</button>
+                  <button
+                    (click)="edit(it)"
+                    [disabled]="loading"
+                    class="ui-btn-ghost text-xs w-8 h-8 p-0"
+                    title="Editar"
+                    aria-label="Editar orden">
+                    <i class="pi pi-pencil text-[11px]"></i>
+                  </button>
+                  <button
+                    (click)="remove(it)"
+                    [disabled]="loading"
+                    class="ui-btn-danger text-xs w-8 h-8 p-0"
+                    title="Eliminar"
+                    aria-label="Eliminar orden">
+                    <i class="pi pi-trash text-[11px]"></i>
+                  </button>
                 </div>
               </td>
             </tr>
-            <tr *ngIf="pagedOrders.length === 0">
+            <tr *ngIf="visibleOrders.length === 0">
               <td colspan="7" class="px-4 py-10 text-center text-slate-500">
                 {{ loading ? 'Cargando órdenes...' : 'No hay órdenes registradas.' }}
               </td>
@@ -201,7 +241,7 @@
         </table>
       </div>
 
-      <div class="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
+      <div *ngIf="!selectedOrderRoute" class="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
         <div class="flex items-center gap-2">
           <span>Mostrando {{ pageStart }}-{{ pageEnd }} de {{ filtered.length }}</span>
           <select class="ui-select !py-1 !text-xs" [ngModel]="pageSize" (ngModelChange)="setPageSize($event)">
@@ -234,7 +274,7 @@
           </div>
           <span class="text-xs font-semibold text-emerald-400">{{ routeProgress() }}%</span>
         </div>
-        <button type="button" (click)="selectedOrderRoute = null; routeSteps = []" class="ui-btn-ghost text-xs">✕ Cerrar</button>
+        <button type="button" (click)="closeRouteView()" class="ui-btn-ghost text-xs">✕ Cerrar</button>
       </div>
     </div>
 

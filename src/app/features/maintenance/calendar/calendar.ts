@@ -12,6 +12,7 @@ import { MaintenanceStoreService, CalendarItem, PmFrequency } from '../services/
 export class CalendarComponent {
   // semana actual
   anchor = new Date(); // hoy
+  formPanelOpen = false;
   error = '';
   success = '';
 
@@ -80,6 +81,14 @@ new: Date | undefined;
     this.selectedDayIso = this.fmtDay(day);
   }
 
+  openCreatePanel() {
+    this.formPanelOpen = true;
+  }
+
+  closeFormPanel() {
+    this.formPanelOpen = false;
+  }
+
   createPlan() {
     this.error = '';
     this.success = '';
@@ -98,6 +107,7 @@ new: Date | undefined;
         ],
       });
       this.success = `Plan creado: ${plan.code}`;
+      this.formPanelOpen = false;
     } catch (e: any) {
       this.error = e?.message ?? 'Error creando plan';
     }

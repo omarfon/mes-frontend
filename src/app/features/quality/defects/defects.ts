@@ -14,6 +14,7 @@ import { Observable, combineLatest, map, BehaviorSubject } from 'rxjs';
 export class DefectsComponent {
   q = '';
   editing: Defect | null = null;
+  formPanelOpen = false;
   loading = false;
   error: string | null = null;
 
@@ -96,8 +97,18 @@ export class DefectsComponent {
     };
   }
 
+  openCreatePanel() {
+    this.new();
+    this.formPanelOpen = true;
+  }
+
+  closeFormPanel() {
+    this.formPanelOpen = false;
+  }
+
   edit(d: Defect) {
     this.editing = d;
+    this.formPanelOpen = true;
     this.error = null;
     this.form = {
       code: d.code,
@@ -144,6 +155,7 @@ export class DefectsComponent {
         next: () => {
           this.loading = false;
           this.new();
+          this.formPanelOpen = false;
           console.log('✅ Defecto creado y lista actualizada');
         },
         error: (err) => {
@@ -172,6 +184,7 @@ export class DefectsComponent {
         next: () => {
           this.loading = false;
           this.new();
+          this.formPanelOpen = false;
           console.log('✅ Defecto actualizado');
         },
         error: (err) => {

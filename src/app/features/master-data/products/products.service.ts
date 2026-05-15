@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../../environmets/environments';
@@ -8,9 +8,6 @@ export enum ProductType {
   RAW_MATERIAL = 'RAW_MATERIAL',
   SEMI_FINISHED = 'SEMI_FINISHED',
   FINISHED = 'FINISHED',
-  CONSUMABLE = 'CONSUMABLE',
-  SPARE_PART = 'SPARE_PART',
-  TOOL = 'TOOL',
   PACKAGING = 'PACKAGING',
   SERVICE = 'SERVICE',
   OTHER = 'OTHER'
@@ -37,31 +34,50 @@ export interface Product {
   family?: string;
   subfamily?: string;
   erpCode?: string;
-  activo?: boolean;
+  isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
 
-interface PaginatedResponse {
+export interface ProductPage {
   data: Product[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
+  total: number;
+  page: number;
+  limit: number;
+}
+
+/** Ítem simplificado para selectores */
+export interface ProductSelectItem {
+  id: string;
+  code: string;
+  name: string;
+  unitOfMeasure?: string;
 }
 
 @Injectable({ providedIn: 'root' })
 export class ProductsService {
-  private apiUrl = `${environment.apiUrl}/master-data/productos`;
+  private apiUrl = `${environment.apiUrl}${environment.endpoints.masterData}/products`;
 
   constructor(private http: HttpClient) {}
 
-  getAll(): Observable<Product[]> {
-    return this.http.get<PaginatedResponse>(this.apiUrl).pipe(
-      map(response => response.data || [])
+  getPaginated(page = 1, limit = 10, search?: string): Observable<ProductPage> {
+    let params = new HttpParams()
+      .set('page', String(page))
+      .set('limit', String(limit));
+    if (search) params = params.set('search', search);
+    return this.http.get<ProductPage>(this.apiUrl, { params });
+  }
+
+  getSelectList(search?: string): Observable<ProductSelectItem[]> {
+    let params = new HttpParams().set('page', '1').set('limit', '100');
+    if (search) params = params.set('search', search);
+    return this.http.get<ProductPage>(this.apiUrl, { params }).pipe(
+      map(r => r.data.map(p => ({ id: p.id, code: p.code, name: p.name, unitOfMeasure: p.unitOfMeasure })))
     );
+  }
+
+  getAll(): Observable<Product[]> {
+    return this.getPaginated(1, 100).pipe(map(r => r.data));
   }
 
   getById(id: string): Observable<Product> {

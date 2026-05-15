@@ -32,7 +32,11 @@ export class DispatchComponent implements OnInit {
 
   items: Despacho[] = [];
   editingId: string | null = null;
+  formPanelOpen = false;
   q = '';
+  page = 1;
+  pageSize = 10;
+  readonly pageSizeOptions = [5, 10, 20, 50];
   loading = false;
   error: string | null = null;
 
@@ -57,6 +61,7 @@ export class DispatchComponent implements OnInit {
       next: (data) => {
         console.log('✅ Despachos loaded:', data);
         this.items = data || [];
+        this.ensurePageInRange();
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -78,6 +83,46 @@ export class DispatchComponent implements OnInit {
       [x.numeroDespacho, x.destino, x.transportista, x.numeroGuia, x.estado, x.tipo]
         .some(v => String(v || '').toLowerCase().includes(t))
     );
+  }
+
+  get pagedItems() {
+    const start = (this.page - 1) * this.pageSize;
+    return this.filtered.slice(start, start + this.pageSize);
+  }
+
+  get totalPages() {
+    return Math.max(1, Math.ceil(this.filtered.length / this.pageSize));
+  }
+
+  get pageStart() {
+    if (!this.filtered.length) return 0;
+    return (this.page - 1) * this.pageSize + 1;
+  }
+
+  get pageEnd() {
+    return Math.min(this.page * this.pageSize, this.filtered.length);
+  }
+
+  onSearchChange() {
+    this.page = 1;
+  }
+
+  setPageSize(size: number) {
+    this.pageSize = Number(size);
+    this.page = 1;
+  }
+
+  changePage(delta: number) {
+    this.page = Math.min(this.totalPages, Math.max(1, this.page + delta));
+  }
+
+  private ensurePageInRange() {
+    if (this.page > this.totalPages) {
+      this.page = this.totalPages;
+    }
+    if (this.page < 1) {
+      this.page = 1;
+    }
   }
 
   submit() {
@@ -129,6 +174,7 @@ export class DispatchComponent implements OnInit {
           this.q = '';
           this.loadDespachos();
           this.cancelEdit();
+          this.formPanelOpen = false;
         },
         error: (err) => {
           console.error('Error updating:', err);
@@ -144,6 +190,7 @@ export class DispatchComponent implements OnInit {
           this.q = '';
           this.loadDespachos();
           this.resetForm();
+          this.formPanelOpen = false;
         },
         error: (err) => {
           console.error('Error creating:', err);
@@ -183,6 +230,7 @@ export class DispatchComponent implements OnInit {
   }
 
   edit(item: Despacho) {
+    this.formPanelOpen = true;
     this.editingId = item.id;
     this.form = {
       numeroDespacho: item.numeroDespacho,
@@ -215,6 +263,7 @@ export class DispatchComponent implements OnInit {
       next: () => {
         console.log('Despacho deleted');
         this.loadDespachos();
+        this.ensurePageInRange();
       },
       error: (err) => {
         console.error('Error deleting:', err);
@@ -228,6 +277,13 @@ export class DispatchComponent implements OnInit {
   cancelEdit() {
     this.editingId = null;
     this.resetForm();
+    this.formPanelOpen = false;
+  }
+
+  openCreatePanel() {
+    this.editingId = null;
+    this.resetForm();
+    this.formPanelOpen = true;
   }
 
   resetForm() {

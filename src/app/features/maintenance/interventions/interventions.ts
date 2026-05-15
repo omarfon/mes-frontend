@@ -8,11 +8,12 @@ import { ActivatedRoute, Router } from '@angular/router';
   standalone: true,
   selector: 'app-interventions',
   imports: [CommonModule, FormsModule],
-  templateUrl: './interventions.html',
+  templateUrl: "./interventions.html",
 })
 export class InterventionsComponent {
   q = '';
   selected: Intervention | null = null;
+  formPanelOpen = false;
   error = '';
   success = '';
 
@@ -48,6 +49,14 @@ export class InterventionsComponent {
   open(i: Intervention) {
     this.selected = i;
     this.error=''; this.success='';
+  }
+
+  openCreatePanel() {
+    this.formPanelOpen = true;
+  }
+
+  closeFormPanel() {
+    this.formPanelOpen = false;
   }
 
   create() {
@@ -89,6 +98,7 @@ export class InterventionsComponent {
 
       this.success = `Intervención creada: ${it.code}`;
       this.open(it);
+      this.formPanelOpen = false;
     } catch (e:any) {
       this.error = e?.message ?? 'Error creando intervención';
     }

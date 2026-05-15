@@ -571,6 +571,11 @@
               class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
               <span class="pi pi-truck text-xs mr-1.5 text-slate-400"></span>Proveedores
             </a>
+            <a routerLink="/master-data/empresas" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              [routerLinkActiveOptions]="{ exact: true }"
+              class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
+              <span class="pi pi-building text-xs mr-1.5 text-slate-400"></span>Empresas
+            </a>
             <a routerLink="/master-data/bill-of-materials" routerLinkActive="bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
               class="block px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-800/40 transition text-sm">
               <span class="pi pi-list text-xs mr-1.5 text-slate-400"></span>Listas de materiales (BOM)
@@ -695,9 +700,12 @@
         <!-- Page wrapper -->
         <div class="p-6">
           <!-- Content surface -->
-          <div
-            class="rounded-2xl border border-slate-800/70 bg-slate-950/40 backdrop-blur p-6 shadow-xl shadow-slate-950/30">
-            <router-outlet></router-outlet>
+          <div class="relative rounded-2xl border border-slate-800/70 shadow-xl shadow-slate-950/30">
+            <!-- Blur de fondo como elemento hermano: no afecta position:fixed de los hijos -->
+            <div class="absolute inset-0 rounded-2xl bg-slate-950/40 backdrop-blur pointer-events-none" aria-hidden="true"></div>
+            <div class="relative p-6">
+              <router-outlet></router-outlet>
+            </div>
           </div>
 
           <!-- Footer -->

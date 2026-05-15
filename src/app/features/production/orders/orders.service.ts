@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, forkJoin, of } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 import { environment } from '../../../../environmets/environments';
 
 export enum EstadoOrden {
@@ -86,15 +86,54 @@ interface PaginatedResponse {
 @Injectable({ providedIn: 'root' })
 export class OrdenesService {
   private apiUrl = `${environment.apiUrl}/production/ordenes`;
+  private readonly requestedLimit = 100;
 
   constructor(private http: HttpClient) {}
 
   getAll(): Observable<Orden[]> {
-    return this.http.get<PaginatedResponse>(this.apiUrl, {
-      params: { limit: '100', page: '1' }
-    }).pipe(
-      map(response => response.data || [])
+    return this.getPage(1, this.requestedLimit).pipe(
+      switchMap((firstPage) => {
+        const totalPages = this.getTotalPages(firstPage);
+
+        if (totalPages <= 1) {
+          return of(this.getPageData(firstPage));
+        }
+
+        const requests = Array.from({ length: totalPages - 1 }, (_, index) =>
+          this.getPage(index + 2, this.requestedLimit)
+        );
+
+        return forkJoin([of(firstPage), ...requests]).pipe(
+          map((responses) => responses.flatMap((response) => this.getPageData(response)))
+        );
+      })
     );
+  }
+
+  private getPage(page: number, limit: number): Observable<PaginatedResponse> {
+    return this.http.get<PaginatedResponse>(this.apiUrl, {
+      params: { limit: String(limit), page: String(page) }
+    });
+  }
+
+  private getPageData(response: PaginatedResponse): Orden[] {
+    return Array.isArray(response?.data) ? response.data : [];
+  }
+
+  private getTotalPages(response: PaginatedResponse): number {
+    const metaPages = response?.meta?.totalPages;
+    if (Number.isFinite(metaPages) && metaPages > 0) {
+      return metaPages;
+    }
+
+    const total = response?.meta?.total;
+    const limit = response?.meta?.limit || this.requestedLimit;
+
+    if (Number.isFinite(total) && total > 0 && Number.isFinite(limit) && limit > 0) {
+      return Math.ceil(total / limit);
+    }
+
+    return 1;
   }
 
   getById(id: string): Observable<Orden> {

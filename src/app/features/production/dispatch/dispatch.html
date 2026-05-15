@@ -5,21 +5,30 @@
       <p class="ui-subtitle">Gestiona despachos y entregas de productos.</p>
     </div>
 
-    <div class="w-full max-w-sm">
-      <div class="relative">
+    <div class="flex items-center gap-2 w-full max-w-xl justify-end">
+      <div class="relative w-full max-w-sm">
         <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
-        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar despacho..." />
+        <input [(ngModel)]="q" (ngModelChange)="onSearchChange()" class="ui-input pl-9" placeholder="Buscar despacho..." />
       </div>
+      <button type="button" class="ui-btn-primary whitespace-nowrap" (click)="openCreatePanel()">
+        <i class="pi pi-plus text-xs mr-1"></i> Nuevo despacho
+      </button>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">{{ editingId ? 'Editar despacho' : 'Nuevo despacho' }}</p>
-        <span class="text-[11px] text-slate-500">Campos completos</span>
+  <div *ngIf="formPanelOpen" class="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px]" (click)="cancelEdit()"></div>
+
+  <div *ngIf="formPanelOpen" class="fixed right-0 top-0 z-50 h-full w-full max-w-2xl border-l border-slate-800 bg-slate-950 shadow-2xl">
+    <div class="h-full">
+      <div class="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+        <div>
+          <p class="text-sm font-semibold text-slate-100">{{ editingId ? 'Editar despacho' : 'Nuevo despacho' }}</p>
+          <span class="text-[11px] text-slate-500">Campos completos</span>
+        </div>
+        <button type="button" class="ui-btn-ghost" (click)="cancelEdit()">Cerrar</button>
       </div>
 
+      <div class="px-5 pb-5 pt-4 overflow-y-auto h-[calc(100%-74px)]">
       <!-- Mensajes de estado -->
       <div *ngIf="error" class="mb-3 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
         {{ error }}
@@ -128,12 +137,14 @@
           <button type="submit" [disabled]="loading" class="flex-1 ui-btn-primary">
             {{ loading ? 'Procesando...' : (editingId ? 'Guardar' : 'Agregar') }}
           </button>
-          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+          <button type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
         </div>
       </form>
     </div>
+  </div>
+  </div>
 
-    <div class="xl:col-span-2 ui-surface p-5">
+  <div class="ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold">Despachos</p>
         <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
@@ -153,7 +164,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let it of filtered" class="ui-tr">
+            <tr *ngFor="let it of pagedItems" class="ui-tr">
               <td class="ui-td font-medium">{{ it.numeroDespacho }}</td>
               <td class="ui-td">
                 <div>{{ it.destino }}</div>
@@ -172,7 +183,7 @@
                 </div>
               </td>
             </tr>
-            <tr *ngIf="filtered.length === 0">
+            <tr *ngIf="pagedItems.length === 0">
               <td colspan="7" class="px-4 py-10 text-center text-slate-500">
                 {{ loading ? 'Cargando despachos...' : 'No hay despachos registrados.' }}
               </td>
@@ -180,6 +191,20 @@
           </tbody>
         </table>
       </div>
+
+      <div class="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
+        <div class="flex items-center gap-2">
+          <span>Mostrando {{ pageStart }}-{{ pageEnd }} de {{ filtered.length }}</span>
+          <select class="ui-select !py-1 !text-xs" [ngModel]="pageSize" (ngModelChange)="setPageSize($event)">
+            <option *ngFor="let s of pageSizeOptions" [ngValue]="s">{{ s }} / pág.</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button type="button" class="ui-btn-ghost text-xs" (click)="changePage(-1)" [disabled]="page === 1">Anterior</button>
+          <span class="px-2">Página {{ page }} de {{ totalPages }}</span>
+          <button type="button" class="ui-btn-ghost text-xs" (click)="changePage(1)" [disabled]="page === totalPages">Siguiente</button>
+        </div>
+      </div>
     </div>
-  </div>
 </div>

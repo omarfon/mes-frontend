@@ -35,6 +35,7 @@ export class AssetsComponent {
   filterStatus: 'ALL' | AssetStatus = 'ALL';
   selected: Asset | null = null;
   editingId: string | null = null;
+  formPanelOpen = false;
 
   form: Omit<Asset, 'id' | 'createdAt'> = {
     code: '',
@@ -89,6 +90,16 @@ export class AssetsComponent {
     this.editingId = asset.id;
     this.form = { ...asset };
     this.selected = asset;
+    this.formPanelOpen = true;
+  }
+
+  openCreatePanel() {
+    this.cancelEdit();
+    this.formPanelOpen = true;
+  }
+
+  closeFormPanel() {
+    this.formPanelOpen = false;
   }
 
   submit() {
@@ -103,6 +114,7 @@ export class AssetsComponent {
         };
       }
       this.cancelEdit();
+      this.formPanelOpen = false;
       return;
     }
 
@@ -115,6 +127,7 @@ export class AssetsComponent {
     this.ms.assets.unshift(newAsset);
     this.resetForm();
     this.select(newAsset);
+    this.formPanelOpen = false;
   }
 
   remove(id: string) {

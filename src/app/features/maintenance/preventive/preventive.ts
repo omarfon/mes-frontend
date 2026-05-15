@@ -16,6 +16,7 @@ export class PreventiveComponent {
   filterActive: 'ALL' | 'ACTIVE' | 'INACTIVE' = 'ALL';
   selectedPlanId: string | null = null;
   showForm = false;
+  formPanelOpen = false;
   editingId: string | null = null;
 
   planForm = {
@@ -71,6 +72,7 @@ export class PreventiveComponent {
   selectPlan(p: MaintenancePlan) {
     this.selectedPlanId = p.id;
     this.showForm = false;
+    this.formPanelOpen = false;
   }
 
   newPlan() {
@@ -84,6 +86,7 @@ export class PreventiveComponent {
       active: true,
     };
     this.showForm = true;
+    this.formPanelOpen = true;
     this.selectedPlanId = null;
   }
 
@@ -98,6 +101,7 @@ export class PreventiveComponent {
       active: p.active,
     };
     this.showForm = true;
+    this.formPanelOpen = true;
     this.selectedPlanId = p.id;
   }
 
@@ -130,11 +134,13 @@ export class PreventiveComponent {
       this.selectedPlanId = plan.id;
     }
     this.showForm = false;
+    this.formPanelOpen = false;
     this.editingId = null;
   }
 
   cancelForm() {
     this.showForm = false;
+    this.formPanelOpen = false;
     this.editingId = null;
   }
 

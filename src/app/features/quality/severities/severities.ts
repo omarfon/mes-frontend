@@ -12,6 +12,7 @@ import { QualityStoreService, Severity, SeverityLevel } from '../services/qualit
 export class SeveritiesComponent {
   q = '';
   editing: Severity | null = null;
+  formPanelOpen = false;
 
   form: Partial<Severity> = {
     code: '',
@@ -38,8 +39,18 @@ export class SeveritiesComponent {
     this.form = { code: '', name: '', level: 'LOW' as SeverityLevel, points: 1, isActive: true };
   }
 
+  openCreatePanel() {
+    this.new();
+    this.formPanelOpen = true;
+  }
+
+  closeFormPanel() {
+    this.formPanelOpen = false;
+  }
+
   edit(s: Severity) {
     this.editing = s;
+    this.formPanelOpen = true;
     this.form = { ...s };
   }
 
@@ -65,5 +76,6 @@ export class SeveritiesComponent {
     }
 
     this.new();
+    this.formPanelOpen = false;
   }
 }

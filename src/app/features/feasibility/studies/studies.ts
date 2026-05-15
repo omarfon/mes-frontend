@@ -9,6 +9,8 @@ import {
   RouteStep,
   MaterialLine,
 } from '../feasibility.service';
+import { EmpresasService, EmpresaSelectItem } from '../../master-data/empresas/empresas.service';
+import { ProductsService, ProductSelectItem } from '../../master-data/products/products.service';
 
 @Component({
   standalone: true,
@@ -49,25 +51,61 @@ export class FeasibilityStudiesComponent implements OnInit {
   ];
 
   form: any = this.emptyForm();
+  empresas: EmpresaSelectItem[] = [];
+  products: ProductSelectItem[] = [];
 
   constructor(
     private svc: FeasibilityService,
+    private empresasSvc: EmpresasService,
+    private productsSvc: ProductsService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
     this.load();
+    this.loadEmpresas();
+    this.loadProducts();
+  }
+
+  loadEmpresas() {
+    this.empresasSvc.getSelectList().subscribe({
+      next: (list) => { this.empresas = list; this.cdr.detectChanges(); },
+      error: () => { this.empresas = []; }
+    });
+  }
+
+  loadProducts() {
+    this.productsSvc.getSelectList().subscribe({
+      next: (list) => { this.products = list; this.cdr.detectChanges(); },
+      error: () => { this.products = []; }
+    });
+  }
+
+  onEmpresaChange(id: string) {
+    const found = this.empresas.find(e => e.id === id);
+    if (found) { this.form.clientName = found.name; }
+  }
+
+  onProductChange(id: string) {
+    const found = this.products.find(p => p.id === id);
+    if (found) {
+      this.form.productName = found.name;
+      this.form.productCode = found.code;
+      if (found.unitOfMeasure) { this.form.uom = found.unitOfMeasure; }
+    }
   }
 
   emptyForm(): any {
     return {
       code: '',
       clientName: '',
+      empresaId: '',
       clientContact: '',
       requestDate: new Date().toISOString().substring(0, 10),
       requiredDate: '',
       productName: '',
       productCode: '',
+      productId: '',
       description: '',
       quantity: null,
       uom: 'piezas',
@@ -330,9 +368,19 @@ export class FeasibilityStudiesComponent implements OnInit {
     this.form.estimatedTotalDays = Math.ceil(totalH / 8); // 8h/day
   }
 
+  generateCode(): string {
+    const now = new Date();
+    const year = now.getFullYear();
+    const startOfYear = new Date(year, 0, 0);
+    const dayOfYear = Math.floor((now.getTime() - startOfYear.getTime()) / 86_400_000);
+    const ms = now.getMilliseconds().toString().padStart(3, '0');
+    return `FAC-${year}-${String(dayOfYear).padStart(3, '0')}-${ms}`;
+  }
+
   // ── CRUD ──
   openNew() {
     this.form = this.emptyForm();
+    this.form.code = this.generateCode();
     this.editingId = null;
     this.formTab = 'request';
     this.showForm = true;

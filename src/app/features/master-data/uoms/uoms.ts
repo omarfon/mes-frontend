@@ -24,6 +24,7 @@ export class UomsComponent implements OnInit {
 
   items: UnidadMedida[] = [];
   editingId: string | null = null;
+  formPanelOpen = false;
   q = '';
   loading = false;
   error: string | null = null;
@@ -111,6 +112,7 @@ export class UomsComponent implements OnInit {
           console.log('UoM created:', created);
           this.loadUoms();
           this.resetForm();
+          this.formPanelOpen = false;
         },
         error: (err) => {
           console.error('Error creating:', err);
@@ -151,6 +153,7 @@ export class UomsComponent implements OnInit {
   }
 
   edit(it: UnidadMedida) {
+    this.formPanelOpen = true;
     this.editingId = it.id;
     this.form = {
       codigo: it.codigo,
@@ -163,7 +166,6 @@ export class UomsComponent implements OnInit {
       activo: it.activo !== false,
       decimales: it.decimales || 2,
     };
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   remove(id: string) {
@@ -189,6 +191,13 @@ export class UomsComponent implements OnInit {
   cancelEdit() {
     this.editingId = null;
     this.resetForm();
+    this.formPanelOpen = false;
+  }
+
+  openCreatePanel() {
+    this.editingId = null;
+    this.resetForm();
+    this.formPanelOpen = true;
   }
 
   resetForm() {

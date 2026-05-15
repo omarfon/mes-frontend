@@ -19,6 +19,7 @@ export class AuditComponent implements OnInit {
   };
 
   items: Audit[] = [];
+  formPanelOpen = false;
   q = '';
   loading = false;
   error: string | null = null;
@@ -170,6 +171,7 @@ export class AuditComponent implements OnInit {
         this.error = null;
         this.loadAudits();
         this.resetForm();
+        this.formPanelOpen = false;
       },
       error: (err) => {
         console.error('❌ Error creando auditoría:', err);
@@ -181,6 +183,7 @@ export class AuditComponent implements OnInit {
           this.success = `✓ Auditoría simulada: ${this.getActionLabel(dto.action)} en ${dto.entityType} (ID: ${dto.entityId.slice(0, 8)}...)`;
           this.error = null;
           this.resetForm();
+          this.formPanelOpen = false;
         } else {
           this.error = this.extractErrorMessage(err);
           this.success = null;
@@ -201,6 +204,17 @@ export class AuditComponent implements OnInit {
     };
     this.loading = false;
     this.cdr.detectChanges();
+  }
+
+  openCreatePanel() {
+    this.resetForm();
+    this.success = null;
+    this.error = null;
+    this.formPanelOpen = true;
+  }
+
+  closeCreatePanel() {
+    this.formPanelOpen = false;
   }
 
   clearFilters() {

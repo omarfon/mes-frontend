@@ -55,7 +55,8 @@ export class ErrorInterceptor implements HttpInterceptor {
               '/traceability/serials',
               '/quality/defects',
               '/quality/defect-families',
-              '/quality/severities'
+              '/quality/severities',
+              '/quality/inspections'
             ];
             const shouldSkipRedirect = skipRedirectUrls.some(url => error.url?.includes(url));
             

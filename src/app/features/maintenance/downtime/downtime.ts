@@ -13,6 +13,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 export class DowntimeComponent {
   q = '';
   selected: DowntimeEvent | null = null;
+  formPanelOpen = false;
   error = '';
   success = '';
 
@@ -60,6 +61,14 @@ export class DowntimeComponent {
     this.closeEndAt = new Date().toISOString().slice(0,16); // datetime-local
   }
 
+  openCreatePanel() {
+    this.formPanelOpen = true;
+  }
+
+  closeFormPanel() {
+    this.formPanelOpen = false;
+  }
+
   create() {
     this.clearMsg();
     if (!this.form.startAt) { this.error = 'Start requerido'; return; }
@@ -83,6 +92,7 @@ export class DowntimeComponent {
       this.form.notes = '';
       this.form.woId = '';
       this.open(dt);
+      this.formPanelOpen = false;
     } catch (e: any) {
       this.error = e?.message ?? 'Error creando parada';
     }

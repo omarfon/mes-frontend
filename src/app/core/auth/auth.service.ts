@@ -30,12 +30,24 @@ export class AuthService {
   login(credentials: LoginRequest): Observable<LoginResponse> {
     console.log('AuthService: Iniciando login con', credentials);
     return this.http
-      .post<LoginResponse>(`${this.apiUrl}${environment.endpoints.auth}/login`, credentials)
+      .post<any>(`${this.apiUrl}${environment.endpoints.auth}/login`, credentials)
       .pipe(
         tap((res) => {
-          // Restaurando el almacenamiento del token
-          localStorage.setItem('access_token', res.access_token);
-          localStorage.setItem('current_user', JSON.stringify(res.user));
+          const responseAny = res as any;
+          const payload = responseAny?.data ?? responseAny;
+          const token = payload?.access_token ?? payload?.token ?? payload?.accessToken;
+          const user = payload?.user ?? payload?.usuario ?? null;
+
+          if (!token || String(token).trim() === '') {
+            throw new Error('Login exitoso sin token válido en la respuesta.');
+          }
+
+          localStorage.setItem('access_token', String(token));
+          if (user) {
+            localStorage.setItem('current_user', JSON.stringify(user));
+          } else {
+            localStorage.removeItem('current_user');
+          }
         }),
       );
   }
@@ -51,7 +63,12 @@ export class AuthService {
 
   get currentUser() {
     const raw = localStorage.getItem('current_user');
-    return raw ? JSON.parse(raw) : null;
+    if (!raw || raw === 'undefined' || raw === 'null') return null;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
   }
 
   isAuthenticated(): boolean {

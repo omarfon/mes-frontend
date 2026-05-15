@@ -25,6 +25,7 @@ export class GenealogyComponent implements OnInit {
 
   items: LotGenealogy[] = [];
   editingId: string | null = null;
+  formPanelOpen = false;
   q = '';
   loading = false;
   error: string | null = null;
@@ -180,6 +181,7 @@ export class GenealogyComponent implements OnInit {
           this.q = '';
           this.loadGenealogy();
           this.resetForm();
+          this.formPanelOpen = false;
         },
         error: (err) => {
           console.error('❌ Error creando:', err);
@@ -220,6 +222,7 @@ export class GenealogyComponent implements OnInit {
   }
 
   edit(item: LotGenealogy) {
+    this.formPanelOpen = true;
     this.editingId = item.id;
     this.form = {
       parentLotId: item.parentLotId,
@@ -255,6 +258,13 @@ export class GenealogyComponent implements OnInit {
   cancelEdit() {
     this.editingId = null;
     this.resetForm();
+    this.formPanelOpen = false;
+  }
+
+  openCreatePanel() {
+    this.editingId = null;
+    this.resetForm();
+    this.formPanelOpen = true;
   }
 
   resetForm() {

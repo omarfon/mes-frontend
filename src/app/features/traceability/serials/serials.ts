@@ -27,6 +27,7 @@ export class SerialsComponent implements OnInit {
 
   items: Serial[] = [];
   editingId: string | null = null;
+  formPanelOpen = false;
   q = '';
   loading = false;
   error: string | null = null;
@@ -157,7 +158,7 @@ export class SerialsComponent implements OnInit {
         next: () => {
           console.log('Serial actualizado');
           this.loadSerials();
-          this.resetForm();
+          this.cancelEdit();
         },
         error: (err) => {
           console.error('❌ Error actualizando:', err);
@@ -172,6 +173,7 @@ export class SerialsComponent implements OnInit {
           console.log('Serial creado');
           this.loadSerials();
           this.resetForm();
+          this.formPanelOpen = false;
         },
         error: (err) => {
           console.error('❌ Error creando:', err);
@@ -184,6 +186,7 @@ export class SerialsComponent implements OnInit {
   }
 
   edit(item: Serial) {
+    this.formPanelOpen = true;
     this.editingId = item.id;
     this.form = {
       serialNumber: item.serialNumber,
@@ -222,6 +225,13 @@ export class SerialsComponent implements OnInit {
   cancelEdit() {
     this.editingId = null;
     this.resetForm();
+    this.formPanelOpen = false;
+  }
+
+  openCreatePanel() {
+    this.editingId = null;
+    this.resetForm();
+    this.formPanelOpen = true;
   }
 
   resetForm() {

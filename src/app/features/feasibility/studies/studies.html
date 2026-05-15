@@ -59,8 +59,10 @@
       <div *ngIf="formTab==='request'" class="space-y-4">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div>
-            <label class="ui-label">Código *</label>
-            <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="FAC-0001" />
+            <label class="ui-label">Código</label>
+            <input [(ngModel)]="form.code" name="code" readonly
+                   class="ui-input opacity-60 cursor-default select-all"
+                   title="Generado automáticamente" />
           </div>
           <div>
             <label class="ui-label">Estado</label>
@@ -84,8 +86,18 @@
         <p class="text-[11px] text-slate-500 uppercase tracking-wide">Cliente</p>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="ui-label">Nombre del cliente *</label>
-            <input [(ngModel)]="form.clientName" name="clientName" required class="ui-input" placeholder="Empresa S.A." />
+            <label class="ui-label">Empresa *</label>
+            <select
+              [(ngModel)]="form.empresaId"
+              name="empresaId"
+              required
+              class="ui-input"
+              (ngModelChange)="onEmpresaChange($event)">
+              <option value="">— Seleccionar empresa —</option>
+              <option *ngFor="let e of empresas" [value]="e.id">
+                {{ e.name }} <span *ngIf="e.ruc">({{ e.ruc }})</span>
+              </option>
+            </select>
           </div>
           <div>
             <label class="ui-label">Contacto</label>
@@ -97,12 +109,15 @@
         <p class="text-[11px] text-slate-500 uppercase tracking-wide">Producto solicitado</p>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div class="col-span-2">
-            <label class="ui-label">Nombre del producto *</label>
-            <input [(ngModel)]="form.productName" name="productName" required class="ui-input" placeholder="Nombre del producto" />
+            <label class="ui-label">Producto *</label>
+            <select [(ngModel)]="form.productId" name="productId" required (ngModelChange)="onProductChange($event)" class="ui-input">
+              <option value="">-- Seleccionar producto --</option>
+              <option *ngFor="let p of products" [value]="p.id">{{ p.name }} ({{ p.code }})</option>
+            </select>
           </div>
           <div>
             <label class="ui-label">Código producto</label>
-            <input [(ngModel)]="form.productCode" name="productCode" class="ui-input" placeholder="PROD-XXX" />
+            <input [(ngModel)]="form.productCode" name="productCode" readonly class="ui-input opacity-60 cursor-default" placeholder="Auto" />
           </div>
           <div>
             <label class="ui-label">Fecha requerida</label>

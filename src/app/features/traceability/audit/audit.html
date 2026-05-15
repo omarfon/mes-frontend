@@ -5,10 +5,84 @@
       <p class="ui-subtitle">Registro completo de acciones y eventos del sistema.</p>
     </div>
 
-    <div class="w-full max-w-sm">
-      <div class="relative">
+    <div class="flex items-center gap-2 w-full max-w-xl justify-end">
+      <div class="relative w-full max-w-sm">
         <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
         <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar..." />
+      </div>
+      <button type="button" class="ui-btn-primary whitespace-nowrap" (click)="openCreatePanel()">
+        <i class="pi pi-plus text-xs mr-1"></i> Registrar auditoría
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="formPanelOpen" class="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px]" (click)="closeCreatePanel()"></div>
+
+  <div *ngIf="formPanelOpen" class="fixed right-0 top-0 z-50 h-full w-full max-w-2xl border-l border-slate-800 bg-slate-950 shadow-2xl">
+    <div class="h-full">
+      <div class="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+        <div>
+          <p class="text-sm font-semibold text-slate-100">Registrar Auditoría</p>
+          <span class="text-[11px] text-slate-500">Evento trazable del sistema</span>
+        </div>
+        <button type="button" class="ui-btn-ghost" (click)="closeCreatePanel()">Cerrar</button>
+      </div>
+
+      <div class="px-5 pb-5 pt-4 overflow-y-auto h-[calc(100%-74px)]">
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-sm font-semibold text-slate-300">Datos del evento</p>
+        </div>
+
+        <div *ngIf="error" class="mb-3 ui-surface p-4 border-l-4 border-red-500/60 bg-red-500/5">
+          <p class="text-sm text-red-400">{{ error }}</p>
+        </div>
+
+        <div *ngIf="success" class="mb-3 ui-surface p-4 border-l-4 border-green-500/60 bg-green-500/5">
+          <p class="text-sm text-green-400">{{ success }}</p>
+        </div>
+
+        <form (ngSubmit)="submit()" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label">Acción <span class="text-red-400">*</span></label>
+            <select [(ngModel)]="form.action" name="action" required class="ui-select">
+              <option *ngFor="let action of actions" [value]="action">
+                {{ getActionLabel(action) }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Módulo</label>
+            <select [(ngModel)]="form.module" name="module" class="ui-select">
+              <option value="">-- Selecciona módulo --</option>
+              <option *ngFor="let module of modules" [value]="module">{{ module }}</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">Tipo de Entidad <span class="text-red-400">*</span></label>
+            <select [(ngModel)]="form.entityType" name="entityType" required class="ui-select">
+              <option value="">-- Selecciona tipo --</option>
+              <option *ngFor="let type of entityTypes" [value]="type">{{ type }}</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="ui-label">ID de Entidad <span class="text-red-400">*</span></label>
+            <input [(ngModel)]="form.entityId" name="entityId" required class="ui-input" placeholder="Código o identificador (ej: LOT-001)" />
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="ui-label">Descripción</label>
+            <textarea [(ngModel)]="form.description" name="description" class="ui-input min-h-[80px]" placeholder="Descripción de la acción..."></textarea>
+          </div>
+
+          <div class="md:col-span-2">
+            <button type="submit" class="ui-btn-primary w-full" [disabled]="loading">
+              {{ loading ? 'Procesando...' : 'Registrar Auditoría' }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -52,63 +126,7 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-    <!-- Form -->
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">Registrar Auditoría</p>
-        <span class="text-[11px] text-slate-500">Backend</span>
-      </div>
-
-      <form (ngSubmit)="submit()" class="space-y-4">
-        <!-- Acción (requerido) -->
-        <div>
-          <label class="ui-label">Acción <span class="text-red-400">*</span></label>
-          <select [(ngModel)]="form.action" name="action" required class="ui-select">
-            <option *ngFor="let action of actions" [value]="action">
-              {{ getActionLabel(action) }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Tipo de Entidad (requerido) -->
-        <div>
-          <label class="ui-label">Tipo de Entidad <span class="text-red-400">*</span></label>
-          <select [(ngModel)]="form.entityType" name="entityType" required class="ui-select">
-            <option value="">-- Selecciona tipo --</option>
-            <option *ngFor="let type of entityTypes" [value]="type">{{ type }}</option>
-          </select>
-        </div>
-
-           <div>
-          <label class="ui-label">ID de Entidad <span class="text-red-400">*</span></label>
-          <input [(ngModel)]="form.entityId" name="entityId" required class="ui-input" placeholder="Código o identificador (ej: LOT-001)" />
-        </div>
-
-        <!-- Módulo (opcional) -->
-        <div>
-          <label class="ui-label">Módulo</label>
-          <select [(ngModel)]="form.module" name="module" class="ui-select">
-            <option value="">-- Selecciona módulo --</option>
-            <option *ngFor="let module of modules" [value]="module">{{ module }}</option>
-          </select>
-        </div>
-
-        <!-- Descripción (opcional) -->
-        <div>
-          <label class="ui-label">Descripción</label>
-          <textarea [(ngModel)]="form.description" name="description" class="ui-input min-h-[80px]" placeholder="Descripción de la acción..."></textarea>
-        </div>
-
-        <!-- Botones -->
-        <button type="submit" class="ui-btn-primary w-full">
-          Registrar Auditoría
-        </button>
-      </form>
-    </div>
-
-    <!-- Lista -->
-    <div class="xl:col-span-2 ui-surface">
+  <div class="ui-surface">
       <div class="p-5 border-b border-slate-700/50">
         <p class="text-sm font-semibold">Registros de Auditoría ({{ filtered.length }})</p>
       </div>
@@ -151,5 +169,4 @@
         </table>
       </div>
     </div>
-  </div>
 </div>
