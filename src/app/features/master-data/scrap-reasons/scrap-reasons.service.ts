@@ -15,7 +15,9 @@ export interface ScrapReason {
   affectsEfficiency: boolean;
   reportable: boolean;
   active: boolean;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 

@@ -58,6 +58,15 @@ export class WIPService {
     );
   }
 
+  getPage(page: number, limit: number, search?: string): Observable<PaginatedResponse> {
+    const params: Record<string, string> = {
+      page: String(page),
+      limit: String(limit),
+    };
+    if (search?.trim()) params['search'] = search.trim();
+    return this.http.get<PaginatedResponse>(this.apiUrl, { params });
+  }
+
   getById(id: string): Observable<WIP> {
     return this.http.get<WIP>(`${this.apiUrl}/${id}`);
   }

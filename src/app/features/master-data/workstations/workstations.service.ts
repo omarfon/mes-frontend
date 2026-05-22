@@ -15,7 +15,9 @@ export interface Workstation {
   asset: string;
   operatorSlots: number;
   active: boolean;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 

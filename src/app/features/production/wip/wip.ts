@@ -1,8 +1,14 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { WIPService, WIP, CreateWIPDto } from './wip.service';
 import { OrdenesService } from '../orders/orders.service';
+import { WipRealtimeService, WipTickPayload } from './wip-realtime.service';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environmets/environments';
+import { ConfirmService } from '../../../shared/components/confirm-modal/confirm.service';
+import { ToastService } from '../../../shared/components/toast/toast.service';
 
 export interface WipProcessStep {
   seq: number;
@@ -21,6 +27,7 @@ export interface WipProcessStep {
   startedAt?: string;
   completedAt?: string;
   stops: WipStop[];
+  liveData?: WipTickPayload | null;
 }
 
 export interface WipStop {
@@ -30,8 +37,6 @@ export interface WipStop {
   startedAt: string;
   resolved: boolean;
 }
-import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../../environmets/environments';
 
 @Component({
   standalone: true,
@@ -39,7 +44,7 @@ import { environment } from '../../../../environmets/environments';
   imports: [CommonModule, FormsModule],
   templateUrl: './wip.html',
 })
-export class WipComponent implements OnInit {
+export class WipComponent implements OnInit, OnDestroy {
   form = {
     ordenId: '',
     productoId: '',
@@ -61,21 +66,45 @@ export class WipComponent implements OnInit {
   loading = false;
   error: string | null = null;
 
+  // Paginación
+  pageSize = 10;
+  currentPage = 1;
+  total = 0;
+  totalPages = 1;
+  readonly pageSizeOptions = [5, 10, 25, 50];
+
   // Listas para selects
   ordenes: any[] = [];
   productos: any[] = [];
+
+  expandedId: string | null = null;
+  toggleExpand(id: string) { this.expandedId = this.expandedId === id ? null : id; }
 
   // Process visualization
   selectedWip: WIP | null = null;
   processSteps: WipProcessStep[] = [];
   private fakeProcesses: Record<string, WipProcessStep[]> = {};
 
+  // Real-time data
+  liveData: WipTickPayload | null = null;
+  liveStepSeq: number | null = null;
+  private rtSub: Subscription | null = null;
+  private completedSub: Subscription | null = null;
+
   constructor(
     private wipService: WIPService,
     private ordenesService: OrdenesService,
     private http: HttpClient,
-    private cdr: ChangeDetectorRef
+    private rt: WipRealtimeService,
+    private cdr: ChangeDetectorRef,
+    private confirmSvc: ConfirmService,
+    private toast: ToastService
   ) {}
+
+  ngOnDestroy() {
+    this.stopRealtime();
+    this.rt.disconnect();
+  }
 
   ngOnInit() {
     this.loadWIP();
@@ -86,18 +115,20 @@ export class WipComponent implements OnInit {
   loadWIP() {
     this.loading = true;
     this.error = null;
-    
-    this.wipService.getAll().subscribe({
-      next: (data) => {
-        console.log('✅ WIP loaded:', data);
-        const fakes = this.seedFakeWip();
-        this.items = [...(data || []), ...fakes];
+
+    this.wipService.getPage(this.currentPage, this.pageSize, this.q).subscribe({
+      next: (response) => {
+        this.items = response.data || [];
+        this.total = response.meta?.total ?? 0;
+        this.totalPages = response.meta?.totalPages ?? 1;
         this.loading = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('❌ Error loading WIP:', err);
-        this.items = this.seedFakeWip();
+        this.items = [];
+        this.total = 0;
+        this.totalPages = 1;
         this.error = null;
         this.loading = false;
         this.cdr.detectChanges();
@@ -124,13 +155,46 @@ export class WipComponent implements OnInit {
   }
 
   get filtered() {
-    const t = this.q.trim().toLowerCase();
-    if (!t) return this.items || [];
-    
-    return (this.items || []).filter(x =>
-      [x.ordenId, x.productoNombre, x.lote, x.ubicacion, x.unidadMedida]
-        .some(v => String(v || '').toLowerCase().includes(t))
-    );
+    // Con paginación server-side, `items` ya es la página actual.
+    // Este getter se mantiene para compatibilidad con el template.
+    return this.items;
+  }
+
+  get pageNumbers(): number[] {
+    const total = this.totalPages;
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const cur = this.currentPage;
+    const pages = new Set([1, total, cur - 1, cur, cur + 1].filter(p => p >= 1 && p <= total));
+    return [...pages].sort((a, b) => a - b);
+  }
+
+  get paginatedItems() {
+    return this.items;
+  }
+
+  get pageRangeEnd() {
+    return Math.min(this.currentPage * this.pageSize, this.total);
+  }
+
+  get pageRangeStart() {
+    return this.total === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  setPage(page: number) {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+    this.expandedId = null;
+    this.loadWIP();
+  }
+
+  onSearchChange() {
+    this.currentPage = 1;
+    this.loadWIP();
+  }
+
+  onPageSizeChange() {
+    this.currentPage = 1;
+    this.loadWIP();
   }
 
   submit() {
@@ -175,6 +239,7 @@ export class WipComponent implements OnInit {
       this.wipService.update(this.editingId, dto).subscribe({
         next: (updated) => {
           console.log('WIP updated:', updated);
+          this.toast.show('WIP actualizado');
           this.q = '';
           this.loadWIP();
           this.cancelEdit();
@@ -191,6 +256,7 @@ export class WipComponent implements OnInit {
       this.wipService.create(dto).subscribe({
         next: (created) => {
           console.log('WIP created:', created);
+          this.toast.show('WIP creado');
           this.q = '';
           this.loadWIP();
           this.resetForm();
@@ -255,21 +321,22 @@ export class WipComponent implements OnInit {
   }
 
   remove(id: string) {
-    if (!confirm('¿Eliminar este registro de WIP?')) return;
-
-    this.loading = true;
-    this.wipService.delete(id).subscribe({
-      next: () => {
-        console.log('WIP deleted');
-        this.loadWIP();
-      },
-      error: (err) => {
-        console.error('Error deleting:', err);
-        this.error = this.extractErrorMessage(err);
-        this.loading = false;
-        this.cdr.detectChanges();
-      }
-    });
+    this.confirmSvc.open({ title: 'Eliminar WIP', message: '¿Estás seguro? Esta acción no se puede deshacer.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.loading = true;
+        this.wipService.delete(id).subscribe({
+          next: () => {
+            this.toast.show('WIP eliminado');
+            this.loadWIP();
+          },
+          error: (err) => {
+            this.error = this.extractErrorMessage(err);
+            this.loading = false;
+            this.cdr.detectChanges();
+          }
+        });
+      });
   }
 
   cancelEdit() {
@@ -359,10 +426,61 @@ export class WipComponent implements OnInit {
     if (this.selectedWip?.id === wip.id) {
       this.selectedWip = null;
       this.processSteps = [];
+      this.stopRealtime();
       return;
     }
+    this.stopRealtime();
     this.selectedWip = wip;
     this.processSteps = this.getProcessForWip(wip);
+
+    // Conectar al socket para el paso EN_PROGRESS
+    const activeStep = this.processSteps.find(s => s.status === 'IN_PROGRESS');
+    if (activeStep) {
+      this.connectRealtime(wip, activeStep);
+    }
+  }
+
+  private connectRealtime(wip: WIP, step: WipProcessStep) {
+    this.liveData = null;
+    this.liveStepSeq = step.seq;
+
+    this.rt.subscribe({
+      wipId: wip.id,
+      stepSeq: step.seq,
+      operation: step.operation,
+      machineName: step.machineName,
+      targetQty: step.quantityIn,
+      baseRate: 2.5,
+      baseEfficiency: step.efficiency || 88,
+    });
+
+    this.rtSub = this.rt.tick$.subscribe(tick => {
+      this.liveData = tick;
+      // Actualizar la eficiencia del paso en tiempo real
+      const s = this.processSteps.find(x => x.seq === tick.stepSeq);
+      if (s) {
+        s.efficiency = tick.efficiency;
+        s.quantityOut = tick.totalCount;
+      }
+      this.cdr.detectChanges();
+    });
+
+    this.completedSub = this.rt.completed$.subscribe(() => {
+      const s = this.processSteps.find(x => x.seq === step.seq);
+      if (s) s.status = 'COMPLETED';
+      this.stopRealtime();
+      this.cdr.detectChanges();
+    });
+  }
+
+  private stopRealtime() {
+    this.rt.unsubscribe();
+    this.rtSub?.unsubscribe();
+    this.completedSub?.unsubscribe();
+    this.rtSub = null;
+    this.completedSub = null;
+    this.liveData = null;
+    this.liveStepSeq = null;
   }
 
   private getProcessForWip(wip: WIP): WipProcessStep[] {

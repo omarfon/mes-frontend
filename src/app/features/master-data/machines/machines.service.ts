@@ -50,7 +50,9 @@ export interface Machine {
   isCritical?: boolean;
   requiresCalibration?: boolean;
   status: MachineStatus;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
   deletedAt?: string | null;
 }

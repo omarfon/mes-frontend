@@ -13,7 +13,9 @@ export interface Material {
   type: MaterialType;
   uom: string;
   active: boolean;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 

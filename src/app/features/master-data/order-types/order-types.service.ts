@@ -17,7 +17,9 @@ export interface OrderType {
   requiresQA: boolean;
   requiresRelease: boolean;
   active: boolean;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 

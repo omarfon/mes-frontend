@@ -1,147 +1,207 @@
-<div class="w-screen h-screen flex bg-slate-950 text-slate-100 overflow-hidden">
+﻿<div class="w-screen h-screen flex bg-slate-950 text-slate-100 overflow-hidden">
 
-  <!-- LADO IZQUIERDO (branding) -->
-  <div class="hidden lg:flex flex-1 flex-col justify-between p-16 relative">
+  <!-- ══════════════════════ LADO IZQUIERDO — branding ══════════════════════ -->
+  <div class="hidden lg:flex flex-col justify-between w-[46%] p-12 relative bg-slate-950 overflow-hidden">
 
-    <!-- Background glows -->
-    <div class="absolute -top-40 -left-40 h-96 w-96 bg-blue-600/40 blur-3xl rounded-full"></div>
-    <div class="absolute bottom-0 -right-40 h-96 w-96 bg-cyan-500/30 blur-3xl rounded-full"></div>
+    <!-- Fondos decorativos -->
+    <div class="absolute -top-32 -left-32 h-80 w-80 bg-emerald-600/15 blur-3xl rounded-full pointer-events-none"></div>
+    <div class="absolute top-1/2 -right-20 h-64 w-64 bg-emerald-500/10 blur-3xl rounded-full pointer-events-none"></div>
+    <div class="absolute bottom-0 left-1/4 h-72 w-72 bg-slate-800/40 blur-3xl rounded-full pointer-events-none"></div>
+    <!-- Grid sutil -->
+    <div class="absolute inset-0 opacity-[0.025] pointer-events-none"
+         style="background-image: linear-gradient(#94a3b8 1px, transparent 1px), linear-gradient(90deg, #94a3b8 1px, transparent 1px); background-size: 36px 36px;"></div>
 
-    <!-- Contenido principal -->
-    <div class="relative z-10">
-      <div class="flex items-center gap-2 mb-6">
-        <span class="h-3 w-3 bg-emerald-400 rounded-full animate-pulse"></span>
-        <span class="text-xs text-slate-300">MES Hilandería · Royal Systems</span>
+    <!-- Encabezado de marca -->
+    <div class="relative z-10 flex items-center gap-3">
+      <div class="h-9 w-9 bg-emerald-500/15 border border-emerald-500/30 rounded-xl flex items-center justify-center">
+        <span class="pi pi-cog text-emerald-400 text-sm"></span>
       </div>
+      <div>
+        <p class="text-sm font-semibold text-white leading-none">MES · Hilandería</p>
+        <p class="text-[10px] text-slate-500 mt-0.5">Royal Systems</p>
+      </div>
+      <span class="ml-auto flex items-center gap-1.5 text-[10px] text-emerald-400 bg-emerald-400/10 border border-emerald-500/20 rounded-full px-2.5 py-1">
+        <span class="h-1.5 w-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+        En línea
+      </span>
+    </div>
 
-      <h1 class="text-4xl font-bold leading-tight">
+    <!-- Contenido central -->
+    <div class="relative z-10">
+      <h1 class="text-3xl font-bold leading-snug text-white">
         Control total de tu planta<br />
-        <span class="text-blue-400">en tiempo real</span>
+        <span class="text-emerald-400">en tiempo real</span>
       </h1>
-
-      <p class="mt-4 text-sm leading-relaxed text-slate-300 max-w-lg">
+      <p class="mt-4 text-sm text-slate-400 leading-relaxed max-w-sm">
         Conecta lotes, calidad, producción y dashboards ejecutivos en un solo panel,
-        totalmente integrado con el backend MES en NestJS.
+        integrado con el backend MES en NestJS.
       </p>
 
-      <!-- Features -->
-      <div class="mt-12 space-y-6">
-        <div class="flex gap-4">
-          <div class="h-12 w-12 bg-slate-900/60 border border-slate-700 rounded-xl flex items-center justify-center">
-            <span class="pi pi-sitemap text-xl text-blue-300"></span>
+      <!-- Feature list -->
+      <div class="mt-10 space-y-5">
+        <div class="flex items-start gap-4">
+          <div class="h-10 w-10 shrink-0 bg-slate-900/70 border border-slate-700/50 rounded-xl flex items-center justify-center">
+            <span class="pi pi-sitemap text-emerald-300 text-sm"></span>
           </div>
           <div>
-            <p class="font-medium">Trazabilidad completa</p>
-            <p class="text-slate-400 text-xs w-72">Lotes, prendas, procesos y movimientos en tiempo real.</p>
+            <p class="text-sm font-medium text-slate-200">Trazabilidad completa</p>
+            <p class="text-xs text-slate-500 mt-0.5">Lotes, prendas, procesos y movimientos en tiempo real.</p>
           </div>
         </div>
-
-        <div class="flex gap-4">
-          <div class="h-12 w-12 bg-slate-900/60 border border-slate-700 rounded-xl flex items-center justify-center">
-            <span class="pi pi-flag text-xl text-emerald-300"></span>
+        <div class="flex items-start gap-4">
+          <div class="h-10 w-10 shrink-0 bg-slate-900/70 border border-slate-700/50 rounded-xl flex items-center justify-center">
+            <span class="pi pi-check-circle text-emerald-300 text-sm"></span>
           </div>
           <div>
-            <p class="font-medium">Control de calidad</p>
-            <p class="text-slate-400 text-xs w-72">Catálogo de defectos, severidades y su impacto en producción.</p>
+            <p class="text-sm font-medium text-slate-200">Control de calidad</p>
+            <p class="text-xs text-slate-500 mt-0.5">Catálogo de defectos, severidades y su impacto en producción.</p>
           </div>
         </div>
-
-        <div class="flex gap-4">
-          <div class="h-12 w-12 bg-slate-900/60 border border-slate-700 rounded-xl flex items-center justify-center">
-            <span class="pi pi-chart-line text-xl text-cyan-300"></span>
+        <div class="flex items-start gap-4">
+          <div class="h-10 w-10 shrink-0 bg-slate-900/70 border border-slate-700/50 rounded-xl flex items-center justify-center">
+            <span class="pi pi-chart-bar text-emerald-300 text-sm"></span>
           </div>
           <div>
-            <p class="font-medium">Indicadores ejecutivos</p>
-            <p class="text-slate-400 text-xs w-72">KPIs de planta, OEE y dashboards inteligentes.</p>
+            <p class="text-sm font-medium text-slate-200">Indicadores ejecutivos</p>
+            <p class="text-xs text-slate-500 mt-0.5">KPIs de planta, OEE y dashboards inteligentes.</p>
           </div>
         </div>
       </div>
     </div>
 
-    <footer class="relative z-10 text-xs text-slate-500">
-      ©  Dedalus · MES 2025    </footer>
-
+    <footer class="relative z-10">
+      <p class="text-[10px] text-slate-600">© 2025 Dedalus · MES Hilandería v0.1.0</p>
+    </footer>
   </div>
 
-  <!-- LADO DERECHO (formulario full-height y centrado) -->
-  <div class="flex-1 flex items-center justify-center bg-slate-900 px-10">
+  <!-- Divisor vertical -->
+  <div class="hidden lg:block w-px bg-slate-800/80 shrink-0"></div>
 
-    <div class="w-full max-w-md">
+  <!-- ══════════════════════ LADO DERECHO — formulario ══════════════════════ -->
+  <div class="flex-1 flex items-center justify-center bg-slate-900 px-8">
+    <div class="w-full max-w-sm">
 
-      <div class="mb-10 text-left">
-        <p class="text-xs uppercase tracking-wider text-slate-400 mb-2">
-          Acceso Interno
-        </p>
-        <h2 class="text-3xl font-semibold text-white">
-          Inicia sesión en el MES
-        </h2>
-        <p class="mt-1 text-xs text-slate-400">
-          Usa tus credenciales corporativas de Royal Systems.
-        </p>
+      <!-- Logo móvil (solo < lg) -->
+      <div class="lg:hidden flex items-center gap-2 mb-8">
+        <div class="h-8 w-8 bg-emerald-500/15 border border-emerald-500/30 rounded-lg flex items-center justify-center">
+          <span class="pi pi-cog text-emerald-400 text-xs"></span>
+        </div>
+        <span class="text-sm font-semibold">MES · Hilandería</span>
       </div>
 
-      <div class="bg-slate-950/60 border border-slate-800/80 rounded-2xl shadow-xl p-8 backdrop-blur-sm">
+      <!-- Encabezado del form -->
+      <div class="mb-8">
+        <p class="text-[11px] uppercase tracking-widest text-emerald-500 mb-1.5">Acceso al sistema</p>
+        <h2 class="text-2xl font-bold text-white">Inicia sesión</h2>
+        <p class="mt-1 text-xs text-slate-400">Usa tus credenciales corporativas de Royal Systems.</p>
+      </div>
 
-        <form (ngSubmit)="submit(email, password)" class="space-y-5">
+      <!-- Card del formulario -->
+      <div class="bg-slate-950/50 border border-slate-800 rounded-2xl p-7 shadow-2xl shadow-black/40">
+        <form (ngSubmit)="submit()" class="space-y-5" novalidate>
 
-          <div class="space-y-1">
-            <label class="text-xs font-medium text-slate-300">Email</label>
+          <!-- Email -->
+          <div class="space-y-1.5">
+            <label for="login-email" class="text-xs font-medium text-slate-300">Correo electrónico</label>
             <div class="relative">
-              <span class="pi pi-envelope absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+              <span class="pi pi-envelope absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs pointer-events-none"></span>
               <input
+                id="login-email"
                 type="email"
                 [(ngModel)]="email"
                 name="email"
                 required
-                class="w-full bg-slate-900/80 border border-slate-700/60 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-100
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="ej. operador@royal.com"
+                autocomplete="email"
+                class="w-full bg-slate-900 border border-slate-700/60 rounded-lg pl-9 pr-3 py-2.5 text-sm text-slate-100
+                       placeholder-slate-600 transition-colors
+                       focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50"
+                placeholder="usuario@royal.com"
               />
             </div>
           </div>
 
-          <div class="space-y-1">
-            <label class="text-xs font-medium text-slate-300">Contraseña</label>
+          <!-- Contraseña -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="login-password" class="text-xs font-medium text-slate-300">Contraseña</label>
+              <a routerLink="/auth/forgot-password"
+                 class="text-[10px] text-emerald-500 hover:text-emerald-400 transition-colors">
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
             <div class="relative">
-              <span class="pi pi-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+              <span class="pi pi-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs pointer-events-none"></span>
               <input
-                type="password"
+                id="login-password"
+                [type]="showPassword ? 'text' : 'password'"
                 [(ngModel)]="password"
                 name="password"
                 required
                 minlength="6"
-                class="w-full bg-slate-900/80 border border-slate-700/60 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-100
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                autocomplete="current-password"
+                class="w-full bg-slate-900 border border-slate-700/60 rounded-lg pl-9 pr-10 py-2.5 text-sm text-slate-100
+                       placeholder-slate-600 transition-colors
+                       focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50"
                 placeholder="••••••••"
               />
+              <button
+                type="button"
+                (click)="showPassword = !showPassword"
+                [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">
+                <span [class]="showPassword ? 'pi pi-eye-slash text-xs' : 'pi pi-eye text-xs'"></span>
+              </button>
             </div>
-            <p class="text-[10px] text-slate-500 mt-1">Mínimo 6 caracteres</p>
           </div>
 
-          <p *ngIf="error" class="text-red-400 text-xs bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-            <span class="pi pi-exclamation-circle mr-1"></span>
-            {{ error }}
-          </p>
+          <!-- Recordarme -->
+          <label class="flex items-center gap-2 cursor-pointer select-none group">
+            <input
+              type="checkbox"
+              [(ngModel)]="rememberMe"
+              name="rememberMe"
+              class="h-3.5 w-3.5 rounded border-slate-600 bg-slate-900 accent-emerald-500"
+            />
+            <span class="text-xs text-slate-400 group-hover:text-slate-300 transition-colors">
+              Recordar mi correo
+            </span>
+          </label>
 
+          <!-- Mensaje de error -->
+          @if (error) {
+            <div class="flex items-start gap-2.5 bg-red-500/10 border border-red-500/30 rounded-lg px-3.5 py-3">
+              <span class="pi pi-exclamation-triangle text-red-400 text-xs mt-0.5 shrink-0"></span>
+              <span class="text-xs text-red-300">{{ error }}</span>
+            </div>
+          }
+
+          <!-- Botón submit -->
           <button
             type="submit"
             [disabled]="loading"
-            class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-60
-                   text-white py-2 rounded-lg text-sm font-medium transition">
-            <span *ngIf="!loading">Ingresar</span>
-            <span *ngIf="loading" class="flex items-center gap-2">
-              <span class="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-              Ingresando...
-            </span>
+            class="w-full flex items-center justify-center gap-2
+                   bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700
+                   disabled:opacity-50 disabled:cursor-not-allowed
+                   text-white py-2.5 rounded-lg text-sm font-medium transition-colors duration-150">
+            @if (!loading) {
+              <span class="pi pi-sign-in text-xs"></span>
+              Ingresar al sistema
+            } @else {
+              <span class="h-3.5 w-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              Verificando credenciales...
+            }
           </button>
+
         </form>
-
-        <div class="mt-6 flex justify-between text-[11px] text-slate-500">
-          <span>Ambiente: <span class="text-emerald-400">DEV</span></span>
-          <span>Versión: 0.1.0</span>
-        </div>
-
       </div>
+
+      <!-- Footer info -->
+      <p class="mt-5 text-center text-[10px] text-slate-600">
+        Ambiente:&nbsp;<span class="text-emerald-500">DEV</span>
+        &nbsp;·&nbsp;
+        Versión:&nbsp;<span class="text-slate-500">0.1.0</span>
+      </p>
+
     </div>
   </div>
 

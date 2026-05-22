@@ -144,6 +144,150 @@
   </div>
   </div>
 
+  <!-- Overlay y panel de VISTA DETALLE -->
+  <div *ngIf="viewingDespacho" class="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px]" (click)="closeView()"></div>
+
+  <div *ngIf="viewingDespacho" class="fixed right-0 top-0 z-50 h-full w-full max-w-xl border-l border-slate-800 bg-slate-950 shadow-2xl flex flex-col">
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-slate-800 px-5 py-4 shrink-0">
+      <div>
+        <p class="text-sm font-semibold text-slate-100">Detalle de despacho</p>
+        <span class="text-[11px] text-slate-500">{{ viewingDespacho.numeroDespacho }}</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="ui-badge text-xs" [ngClass]="badgeClass(viewingDespacho.estado)">{{ viewingDespacho.estado }}</span>
+        <button type="button" class="ui-btn-ghost" (click)="closeView()"><i class="pi pi-times text-xs"></i></button>
+      </div>
+    </div>
+
+    <!-- Contenido -->
+    <div class="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+
+      <!-- Identificación y logística -->
+      <div class="ui-surface-inner rounded-xl p-4 space-y-3">
+        <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Identificación</p>
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <p class="text-[10px] text-slate-500">Número despacho</p>
+            <p class="font-semibold text-white mt-0.5">{{ viewingDespacho.numeroDespacho }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500">Tipo</p>
+            <p class="text-slate-200 mt-0.5">{{ viewingDespacho.tipo || '—' }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500">Número de guía</p>
+            <p class="text-slate-200 mt-0.5">{{ viewingDespacho.numeroGuia || '—' }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500">Orden asociada</p>
+            <p class="text-slate-200 mt-0.5 font-mono text-xs truncate">{{ viewingDespacho.ordenId || '—' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Destino y contacto -->
+      <div class="ui-surface-inner rounded-xl p-4 space-y-3">
+        <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Destino</p>
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          <div class="col-span-2">
+            <p class="text-[10px] text-slate-500">Destino / Cliente</p>
+            <p class="font-semibold text-white mt-0.5">{{ viewingDespacho.destino }}</p>
+          </div>
+          <div class="col-span-2">
+            <p class="text-[10px] text-slate-500">Dirección</p>
+            <p class="text-slate-200 mt-0.5">{{ viewingDespacho.direccion || '—' }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500">Contacto</p>
+            <p class="text-slate-200 mt-0.5">{{ viewingDespacho.contacto || '—' }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500">Teléfono</p>
+            <p class="text-slate-200 mt-0.5">{{ viewingDespacho.telefono || '—' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transporte -->
+      <div class="ui-surface-inner rounded-xl p-4 space-y-3">
+        <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Transporte</p>
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <p class="text-[10px] text-slate-500">Transportista</p>
+            <p class="text-slate-200 mt-0.5">{{ viewingDespacho.transportista || '—' }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500">Conductor</p>
+            <p class="text-slate-200 mt-0.5">{{ viewingDespacho.conductor || '—' }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500">Vehículo / Placa</p>
+            <p class="text-slate-200 mt-0.5">{{ viewingDespacho.vehiculo || '—' }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500">Fecha programada</p>
+            <p class="text-slate-200 mt-0.5">{{ viewingDespacho.fechaProgramada ? (viewingDespacho.fechaProgramada | date:'dd/MM/yyyy HH:mm') : '—' }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500">Fecha real entrega</p>
+            <p class="text-emerald-400 mt-0.5">{{ viewingDespacho.fechaReal ? (viewingDespacho.fechaReal | date:'dd/MM/yyyy HH:mm') : '—' }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500">Peso / Volumen</p>
+            <p class="text-slate-200 mt-0.5">{{ viewingDespacho.pesoTotal ? viewingDespacho.pesoTotal + ' kg' : '—' }} · {{ viewingDespacho.volumenTotal ? viewingDespacho.volumenTotal + ' m³' : '—' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Items -->
+      <div *ngIf="viewingDespacho.items?.length" class="ui-surface-inner rounded-xl p-4 space-y-3">
+        <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Items ({{ viewingDespacho.items.length }})</p>
+        <div class="space-y-1.5">
+          <div *ngFor="let item of viewingDespacho.items; let i = index"
+            class="flex items-start gap-2 text-xs px-2 py-1.5 bg-slate-900/50 rounded-lg">
+            <span class="text-slate-500 w-5 shrink-0">{{ i + 1 }}.</span>
+            <span class="text-slate-200">{{ item | json }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Observaciones -->
+      <div *ngIf="viewingDespacho.observaciones" class="ui-surface-inner rounded-xl p-4 space-y-2">
+        <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Observaciones</p>
+        <p class="text-sm text-slate-300 whitespace-pre-wrap">{{ viewingDespacho.observaciones }}</p>
+      </div>
+
+      <!-- Auditoría -->
+      <div class="ui-surface-inner rounded-xl p-4 space-y-3">
+        <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Auditoría</p>
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div>
+            <p class="text-slate-500">Preparado por</p>
+            <p class="text-slate-300 mt-0.5">{{ viewingDespacho.preparadoPor || '—' }}</p>
+          </div>
+          <div>
+            <p class="text-slate-500">Creado</p>
+            <p class="text-slate-300 mt-0.5">{{ viewingDespacho.createdAt ? (viewingDespacho.createdAt | date:'dd/MM/yyyy HH:mm') : '—' }}</p>
+          </div>
+          <div>
+            <p class="text-slate-500">Última modificación</p>
+            <p class="text-slate-300 mt-0.5">{{ viewingDespacho.updatedAt ? (viewingDespacho.updatedAt | date:'dd/MM/yyyy HH:mm') : '—' }}</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="px-5 py-4 border-t border-slate-800 flex gap-2 shrink-0">
+      <button type="button" (click)="edit(viewingDespacho); closeView()" class="flex-1 ui-btn-ghost">
+        <i class="pi pi-pencil text-xs mr-1.5"></i> Editar
+      </button>
+      <button type="button" (click)="closeView()" class="ui-btn-ghost">Cerrar</button>
+    </div>
+  </div>
+
   <div class="ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold">Despachos</p>
@@ -177,7 +321,8 @@
                 <span class="ui-badge" [ngClass]="badgeClass(it.estado)">{{ it.estado }}</span>
               </td>
               <td class="ui-td">
-                <div class="flex gap-2">
+                <div class="flex gap-1.5">
+                  <button (click)="view(it)" [disabled]="loading" class="ui-btn-ghost text-xs w-8 h-8 p-0" title="Ver detalle"><i class="pi pi-eye text-[11px]"></i></button>
                   <button (click)="edit(it)" [disabled]="loading" class="ui-btn-ghost text-xs">Editar</button>
                   <button (click)="remove(it.id)" [disabled]="loading" class="ui-btn-danger text-xs">Eliminar</button>
                 </div>

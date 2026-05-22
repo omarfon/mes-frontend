@@ -2,11 +2,15 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductVariantsService, ProductVariant, CreateProductVariantDto } from './product-variants.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuditHistoryComponent } from '../../../shared/components/audit-history/audit-history';
+import { ConfirmService } from '../../../shared/components/confirm-modal/confirm.service';
+import { ToastService } from '../../../shared/components/toast/toast.service';
 
 @Component({
   standalone: true,
   selector: 'app-product-variants',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AuditHistoryComponent],
   templateUrl: './product-variants.html',
 })
 export class ProductVariantsComponent implements OnInit {
@@ -17,6 +21,9 @@ export class ProductVariantsComponent implements OnInit {
 
   items: ProductVariant[] = [];
   editingId: string | null = null;
+  currentItem: ProductVariant | null = null;
+  formPanelOpen = false;
+  viewOnly = false;
   filterProduct = '';
   q = '';
   loading = false;
@@ -24,7 +31,7 @@ export class ProductVariantsComponent implements OnInit {
 
   readonly weightUnits = ['kg', 'g', 'lb', 'oz', 'un', 'm', 'yd'];
 
-  constructor(private svc: ProductVariantsService, private cdr: ChangeDetectorRef) {}
+  constructor(private svc: ProductVariantsService, private cdr: ChangeDetectorRef, private authSvc: AuthService, private confirmSvc: ConfirmService, private toast: ToastService) {}
 
   ngOnInit() { this.load(); }
 
@@ -51,36 +58,63 @@ export class ProductVariantsComponent implements OnInit {
     return list;
   }
 
+  openCreatePanel() { this.editingId = null; this.currentItem = null; this.resetForm(); this.viewOnly = false; this.formPanelOpen = true; }
+
   submit() {
     if (!this.form.sku || !this.form.productCode) return;
     this.loading = true;
+    const payload = { ...this.form } as any;
+    const username = this.authSvc.getCurrentUsername();
+    if (!this.editingId) {
+      payload.createdBy = username;
+    } else {
+      payload.updatedBy = username;
+    }
     const obs = this.editingId
-      ? this.svc.update(this.editingId, this.form)
-      : this.svc.create(this.form);
+      ? this.svc.update(this.editingId, payload)
+      : this.svc.create(payload);
     obs.subscribe({
-      next: () => { this.load(); this.editingId ? this.cancelEdit() : this.resetForm(); },
+      next: () => { this.toast.show(this.editingId ? 'Registro actualizado' : 'Registro creado'); this.load(); this.editingId ? this.cancelEdit() : this.resetForm(); this.formPanelOpen = false; },
       error: err => { this.error = this.extractError(err); this.loading = false; },
     });
   }
 
   edit(it: ProductVariant) {
     this.editingId = it.id;
+    this.currentItem = it;
     this.form = {
       sku: it.sku, productCode: it.productCode, color: it.color, size: it.size,
       presentation: it.presentation, barcode: it.barcode, netWeight: it.netWeight,
       weightUnit: it.weightUnit, active: it.active,
     };
+    this.viewOnly = false;
+    this.formPanelOpen = true;
+  }
+
+  view(it: ProductVariant) {
+    this.editingId = it.id;
+    this.currentItem = it;
+    this.form = {
+      sku: it.sku, productCode: it.productCode, color: it.color, size: it.size,
+      presentation: it.presentation, barcode: it.barcode, netWeight: it.netWeight,
+      weightUnit: it.weightUnit, active: it.active,
+    };
+    this.viewOnly = true;
+    this.formPanelOpen = true;
   }
 
   remove(id: string) {
-    if (!confirm('¿Eliminar esta variante?')) return;
-    this.svc.delete(id).subscribe({
-      next: () => { this.load(); if (this.editingId === id) this.cancelEdit(); },
-      error: err => { this.error = this.extractError(err); },
-    });
+    this.confirmSvc.open({ title: 'Eliminar variante', message: '¿Estás seguro? Esta acción no se puede deshacer.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.svc.delete(id).subscribe({
+          next: () => { this.toast.show('Variante eliminada'); this.load(); if (this.editingId === id) this.cancelEdit(); },
+          error: err => { this.error = this.extractError(err); },
+        });
+      });
   }
 
-  cancelEdit() { this.editingId = null; this.resetForm(); }
+  cancelEdit() { this.editingId = null; this.currentItem = null; this.viewOnly = false; this.resetForm(); this.formPanelOpen = false; }
 
   resetForm() {
     this.form = { sku: '', productCode: '', color: '', size: '', presentation: '', barcode: '', netWeight: null, weightUnit: 'kg', active: true };

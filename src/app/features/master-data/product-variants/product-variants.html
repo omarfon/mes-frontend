@@ -1,134 +1,152 @@
-<div class="space-y-5">
+﻿<div class="space-y-5">
   <div class="ui-page-header">
     <div>
-      <h3 class="ui-title">Maestro · Variantes / Versiones de Producto</h3>
-      <p class="ui-subtitle">SKUs individuales por color, talla, presentación o calibre.</p>
+      <h3 class="ui-title">Maestro Â· Variantes / Versiones de Producto</h3>
+      <p class="ui-subtitle">SKUs individuales por color, talla, presentaciÃ³n o calibre.</p>
     </div>
-    <div class="w-full max-w-sm">
+    <div class="flex items-center gap-3">
       <div class="relative">
         <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
         <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar SKU, color, talla..." />
       </div>
+      <button (click)="openCreatePanel()" class="ui-btn-primary shrink-0">
+        <span class="pi pi-plus text-xs mr-1"></span> Nueva variante
+      </button>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-    <!-- Form -->
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">{{ editingId ? 'Editar variante' : 'Nueva variante' }}</p>
-        <span class="text-[11px] text-slate-500">Campos mínimos</span>
+  <div class="ui-surface p-5">
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+      <p class="text-sm font-semibold">Listado</p>
+      <div class="flex items-center gap-2">
+        <select [(ngModel)]="filterProduct" class="ui-select text-xs py-1">
+          <option value="">Todos los productos</option>
+          <option *ngFor="let p of uniqueProducts" [value]="p">{{ p }}</option>
+        </select>
+        <span class="text-[11px] text-slate-500">{{ filtered.length }} variantes</span>
       </div>
-
-      <form (ngSubmit)="submit()" class="space-y-4">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="ui-label">SKU</label>
-            <input [(ngModel)]="form.sku" name="sku" required class="ui-input" placeholder="HIL-100-BL-N8" />
-          </div>
-          <div>
-            <label class="ui-label">Producto (código)</label>
-            <input [(ngModel)]="form.productCode" name="productCode" required class="ui-input" placeholder="PRD-HIL-100" />
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="ui-label">Color</label>
-            <input [(ngModel)]="form.color" name="color" class="ui-input" placeholder="Blanco" />
-          </div>
-          <div>
-            <label class="ui-label">Talla / Calibre / Título</label>
-            <input [(ngModel)]="form.size" name="size" class="ui-input" placeholder="Nm 8/1" />
-          </div>
-        </div>
-
-        <div>
-          <label class="ui-label">Presentación</label>
-          <input [(ngModel)]="form.presentation" name="presentation" class="ui-input" placeholder="Cono 1 kg, Bobina, Caja..." />
-        </div>
-
-        <div>
-          <label class="ui-label">Código de barras</label>
-          <input [(ngModel)]="form.barcode" name="barcode" class="ui-input" placeholder="7501000101" />
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="ui-label">Peso neto</label>
-            <input type="number" [(ngModel)]="form.netWeight" name="netWeight" min="0" step="0.001" class="ui-input" placeholder="1.000" />
-          </div>
-          <div>
-            <label class="ui-label">Unidad peso</label>
-            <select [(ngModel)]="form.weightUnit" name="weightUnit" class="ui-select">
-              <option *ngFor="let u of weightUnits" [value]="u">{{ u }}</option>
-            </select>
-          </div>
-        </div>
-
-        <label class="inline-flex items-center gap-2 text-xs text-slate-300">
-          <input type="checkbox" [(ngModel)]="form.active" name="active" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
-          Activa
-        </label>
-
-        <div class="flex gap-2 pt-1">
-          <button type="submit" class="flex-1 ui-btn-primary">{{ editingId ? 'Guardar cambios' : 'Agregar' }}</button>
-          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
-        </div>
-      </form>
     </div>
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead class="ui-thead">
+          <tr>
+            <th class="ui-th">SKU</th>
+            <th class="ui-th">Producto</th>
+            <th class="ui-th">Color</th>
+            <th class="ui-th">Talla/Calibre</th>
+            <th class="ui-th">PresentaciÃ³n</th>
+            <th class="ui-th">Peso</th>
+            <th class="ui-th">Estado</th>
+            <th class="ui-th w-28">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="bg-slate-950/20">
+          <tr *ngFor="let it of filtered" class="ui-tr">
+            <td class="ui-td font-mono text-xs font-semibold">{{ it.sku }}</td>
+            <td class="ui-td text-xs text-slate-400">{{ it.productCode }}</td>
+            <td class="ui-td text-sm">{{ it.color || '-' }}</td>
+            <td class="ui-td text-sm">{{ it.size || '-' }}</td>
+            <td class="ui-td text-xs text-slate-300">{{ it.presentation || '-' }}</td>
+            <td class="ui-td text-xs text-slate-400">{{ it.netWeight !== null ? (it.netWeight + ' ' + it.weightUnit) : '-' }}</td>
+            <td class="ui-td"><span [ngClass]="it.active ? 'ui-badge-ok' : 'ui-badge-bad'">{{ it.active ? 'Activa' : 'Inactiva' }}</span></td>
+            <td class="ui-td">
+              <div class="flex items-center gap-1">
+                <button (click)="view(it)" title="Ver" class="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition"><i class="pi pi-eye text-xs"></i></button>
+                <button (click)="edit(it)" title="Editar" class="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-800 text-slate-400 hover:text-blue-400 transition"><i class="pi pi-pencil text-xs"></i></button>
+                <button (click)="remove(it.id)" title="Eliminar" class="w-7 h-7 flex items-center justify-center rounded hover:bg-red-900/40 text-slate-400 hover:text-red-400 transition"><i class="pi pi-trash text-xs"></i></button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filtered.length === 0">
+            <td colspan="8" class="px-4 py-10 text-center text-slate-500">No hay variantes.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-    <!-- Table -->
-    <div class="xl:col-span-2 ui-surface p-5">
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">Listado</p>
-        <div class="flex items-center gap-2">
-          <select [(ngModel)]="filterProduct" class="ui-select text-xs py-1">
-            <option value="">Todos los productos</option>
-            <option *ngFor="let p of uniqueProducts" [value]="p">{{ p }}</option>
-          </select>
-          <span class="text-[11px] text-slate-500">{{ filtered.length }} variantes</span>
-        </div>
+  <div *ngIf="formPanelOpen" class="fixed inset-0 z-40 flex justify-end">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" (click)="cancelEdit()"></div>
+    <aside class="relative z-50 w-full max-w-xl h-full bg-slate-950 border-l border-slate-800 shadow-2xl flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-800 shrink-0">
+        <p class="text-sm font-semibold">{{ viewOnly ? 'Ver variante' : (editingId ? 'Editar variante' : 'Nueva variante') }}</p>
+        <button type="button" (click)="cancelEdit()" class="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-800 text-slate-400 transition"><span class="pi pi-times text-xs"></span></button>
       </div>
-
-      <div class="ui-table-wrap">
-        <table class="ui-table">
-          <thead class="ui-thead">
-            <tr>
-              <th class="ui-th">SKU</th>
-              <th class="ui-th">Producto</th>
-              <th class="ui-th">Color</th>
-              <th class="ui-th">Talla/Calibre</th>
-              <th class="ui-th">Presentación</th>
-              <th class="ui-th">Peso</th>
-              <th class="ui-th">Estado</th>
-              <th class="ui-th w-36">Acciones</th>
-            </tr>
-          </thead>
-          <tbody class="bg-slate-950/20">
-            <tr *ngFor="let it of filtered" class="ui-tr">
-              <td class="ui-td font-mono text-xs font-semibold">{{ it.sku }}</td>
-              <td class="ui-td text-xs text-slate-400">{{ it.productCode }}</td>
-              <td class="ui-td text-sm">{{ it.color || '-' }}</td>
-              <td class="ui-td text-sm">{{ it.size || '-' }}</td>
-              <td class="ui-td text-xs text-slate-300">{{ it.presentation || '-' }}</td>
-              <td class="ui-td text-xs text-slate-400">{{ it.netWeight !== null ? (it.netWeight + ' ' + it.weightUnit) : '-' }}</td>
-              <td class="ui-td">
-                <span [ngClass]="it.active ? 'ui-badge-ok' : 'ui-badge-bad'">{{ it.active ? 'Activa' : 'Inactiva' }}</span>
-              </td>
-              <td class="ui-td">
-                <div class="flex gap-2">
-                  <button (click)="edit(it)" class="ui-btn-ghost text-xs">Editar</button>
-                  <button (click)="remove(it.id)" class="ui-btn-danger text-xs">Eliminar</button>
+      <div class="flex-1 overflow-y-auto px-5 py-4">
+        <form (ngSubmit)="submit()" id="product-variant-form">
+          <fieldset [disabled]="viewOnly" class="space-y-4 border-0 m-0 p-0 min-w-0">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="ui-label">SKU</label>
+                <input [(ngModel)]="form.sku" name="sku" required class="ui-input" placeholder="HIL-100-BL-N8" />
+              </div>
+              <div>
+                <label class="ui-label">Producto (cÃ³digo)</label>
+                <input [(ngModel)]="form.productCode" name="productCode" required class="ui-input" placeholder="PRD-HIL-100" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="ui-label">Color</label>
+                <input [(ngModel)]="form.color" name="color" class="ui-input" placeholder="Blanco" />
+              </div>
+              <div>
+                <label class="ui-label">Talla / Calibre / TÃ­tulo</label>
+                <input [(ngModel)]="form.size" name="size" class="ui-input" placeholder="Nm 8/1" />
+              </div>
+            </div>
+            <div>
+              <label class="ui-label">PresentaciÃ³n</label>
+              <input [(ngModel)]="form.presentation" name="presentation" class="ui-input" placeholder="Cono 1 kg, Bobina, Caja..." />
+            </div>
+            <div>
+              <label class="ui-label">CÃ³digo de barras</label>
+              <input [(ngModel)]="form.barcode" name="barcode" class="ui-input" placeholder="7501000101" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="ui-label">Peso neto</label>
+                <input type="number" [(ngModel)]="form.netWeight" name="netWeight" min="0" step="0.001" class="ui-input" placeholder="1.000" />
+              </div>
+              <div>
+                <label class="ui-label">Unidad peso</label>
+                <select [(ngModel)]="form.weightUnit" name="weightUnit" class="ui-select">
+                  <option *ngFor="let u of weightUnits" [value]="u">{{ u }}</option>
+                </select>
+              </div>
+            </div>
+            <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+              <input type="checkbox" [(ngModel)]="form.active" name="active" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+              Activa
+            </label>
+            <div *ngIf="currentItem" class="px-3 py-2.5 rounded-lg bg-slate-900/50 border border-slate-800">
+              <p class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">AuditorÃ­a</p>
+              <div class="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <span class="text-slate-500">Creado por:</span>
+                  <span class="text-slate-300 ml-1">{{ currentItem?.createdBy || 'â€”' }}</span>
+                  <div *ngIf="currentItem?.createdAt" class="text-[10px] text-slate-600 mt-0.5">{{ currentItem?.createdAt | date: 'dd/MM/yyyy HH:mm' }}</div>
                 </div>
-              </td>
-            </tr>
-            <tr *ngIf="filtered.length === 0">
-              <td colspan="8" class="px-4 py-10 text-center text-slate-500">No hay variantes.</td>
-            </tr>
-          </tbody>
-        </table>
+                <div>
+                  <span class="text-slate-500">Modificado por:</span>
+                  <span class="text-slate-300 ml-1">{{ currentItem?.updatedBy || 'â€”' }}</span>
+                  <div *ngIf="currentItem?.updatedAt" class="text-[10px] text-slate-600 mt-0.5">{{ currentItem?.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</div>
+                </div>
+              </div>
+            </div>
+            <app-audit-history *ngIf="editingId" entityType="ProductVariant" [entityId]="editingId" />
+          </fieldset>
+        </form>
       </div>
-    </div>
+      <div class="px-5 py-4 border-t border-slate-800 flex gap-2 shrink-0">
+        <ng-container *ngIf="viewOnly; else editActions">
+          <button type="button" (click)="cancelEdit()" class="flex-1 ui-btn-ghost">Cerrar</button>
+        </ng-container>
+        <ng-template #editActions>
+          <button type="submit" form="product-variant-form" class="flex-1 ui-btn-primary">{{ editingId ? 'Guardar cambios' : 'Agregar' }}</button>
+          <button type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+        </ng-template>
+      </div>
+    </aside>
   </div>
 </div>

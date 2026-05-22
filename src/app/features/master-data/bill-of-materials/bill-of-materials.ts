@@ -2,11 +2,15 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BillOfMaterialsService, Bom, BomLine, CreateBomDto, CreateBomLineDto } from './bill-of-materials.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuditHistoryComponent } from '../../../shared/components/audit-history/audit-history';
+import { ConfirmService } from '../../../shared/components/confirm-modal/confirm.service';
+import { ToastService } from '../../../shared/components/toast/toast.service';
 
 @Component({
   standalone: true,
   selector: 'app-bill-of-materials',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AuditHistoryComponent],
   templateUrl: './bill-of-materials.html',
 })
 export class BillOfMaterialsComponent implements OnInit {
@@ -23,13 +27,16 @@ export class BillOfMaterialsComponent implements OnInit {
   items: Bom[] = [];
   selectedLines: BomLine[] = [];
   editingId: string | null = null;
+  currentItem: Bom | null = null;
   editingLineId: string | null = null;
   selectedId: string | null = null;
+  formPanelOpen = false;
+  viewOnly = false;
   q = '';
   loading = false;
   error: string | null = null;
 
-  constructor(private svc: BillOfMaterialsService, private cdr: ChangeDetectorRef) {}
+  constructor(private svc: BillOfMaterialsService, private cdr: ChangeDetectorRef, private authSvc: AuthService, private confirmSvc: ConfirmService, private toast: ToastService) {}
 
   ngOnInit() { this.load(); }
 
@@ -75,12 +82,20 @@ export class BillOfMaterialsComponent implements OnInit {
   submit() {
     if (!this.form.code || !this.form.productCode) return;
     this.loading = true;
-    const obs = this.editingId ? this.svc.update(this.editingId, this.form) : this.svc.create(this.form);
+    const payload = { ...this.form } as any;
+    const username = this.authSvc.getCurrentUsername();
+    if (!this.editingId) {
+      payload.createdBy = username;
+    } else {
+      payload.updatedBy = username;
+    }
+    const obs = this.editingId ? this.svc.update(this.editingId, payload) : this.svc.create(payload);
     obs.subscribe({
       next: bom => {
+        this.toast.show(this.editingId ? 'BOM actualizada' : 'BOM creada');
         this.load();
         if (!this.editingId) this.selectedId = bom.id;
-        this.editingId ? this.cancelEdit() : this.resetForm();
+        this.cancelEdit();
       },
       error: err => { this.error = this.extractError(err); this.loading = false; },
     });
@@ -88,25 +103,42 @@ export class BillOfMaterialsComponent implements OnInit {
 
   edit(it: Bom) {
     this.editingId = it.id;
+    this.currentItem = it;
     this.form = { code: it.code, productCode: it.productCode, productName: it.productName, version: it.version, baseQty: it.baseQty, baseUom: it.baseUom, validFrom: it.validFrom, active: it.active };
+    this.viewOnly = false;
+    this.formPanelOpen = true;
+  }
+
+  view(it: Bom) {
+    this.editingId = it.id;
+    this.currentItem = it;
+    this.form = { code: it.code, productCode: it.productCode, productName: it.productName, version: it.version, baseQty: it.baseQty, baseUom: it.baseUom, validFrom: it.validFrom, active: it.active };
+    this.viewOnly = true;
+    this.formPanelOpen = true;
   }
 
   remove(id: string) {
-    if (!confirm('¿Eliminar esta BOM y sus líneas?')) return;
-    this.svc.delete(id).subscribe({
-      next: () => {
-        if (this.editingId === id) this.cancelEdit();
-        if (this.selectedId === id) {
-          this.selectedId = null;
-          this.selectedLines = [];
-        }
-        this.load();
-      },
-      error: err => { this.error = this.extractError(err); },
-    });
+    this.confirmSvc.open({ title: 'Eliminar BOM', message: '¿Estás seguro? Se eliminarán todas sus líneas.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.svc.delete(id).subscribe({
+          next: () => {
+            this.toast.show('BOM eliminada');
+            if (this.editingId === id) this.cancelEdit();
+            if (this.selectedId === id) {
+              this.selectedId = null;
+              this.selectedLines = [];
+            }
+            this.load();
+          },
+          error: err => { this.error = this.extractError(err); },
+        });
+      });
   }
 
-  cancelEdit() { this.editingId = null; this.resetForm(); }
+  cancelEdit() { this.formPanelOpen = false; this.editingId = null; this.currentItem = null; this.viewOnly = false; this.resetForm(); }
+
+  openCreatePanel() { this.editingId = null; this.currentItem = null; this.resetForm(); this.viewOnly = false; this.formPanelOpen = true; }
 
   resetForm() {
     this.form = { code: '', productCode: '', productName: '', version: '1.0', baseQty: 1, baseUom: 'kg', validFrom: '', active: true };
@@ -135,18 +167,23 @@ export class BillOfMaterialsComponent implements OnInit {
   }
 
   removeLine(id?: string) {
-    if (!id || !this.selectedId || !confirm('¿Eliminar esta línea?')) return;
-    this.svc.deleteLine(this.selectedId, id).subscribe({
-      next: () => {
-        this.selectedLines = this.selectedLines.filter(l => l.id !== id);
-        if (this.editingLineId === id) {
-          this.editingLineId = null;
-          this.resetLineForm();
-        }
-        this.cdr.detectChanges();
-      },
-      error: err => { this.error = this.extractError(err); },
-    });
+    if (!id || !this.selectedId) return;
+    this.confirmSvc.open({ title: 'Eliminar línea', message: '¿Estás seguro? Esta acción no se puede deshacer.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.svc.deleteLine(this.selectedId!, id).subscribe({
+          next: () => {
+            this.toast.show('Línea eliminada');
+            this.selectedLines = this.selectedLines.filter(l => l.id !== id);
+            if (this.editingLineId === id) {
+              this.editingLineId = null;
+              this.resetLineForm();
+            }
+            this.cdr.detectChanges();
+          },
+          error: err => { this.error = this.extractError(err); },
+        });
+      });
   }
 
   cancelLineEdit() { this.editingLineId = null; this.resetLineForm(); }

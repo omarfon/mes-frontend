@@ -2,11 +2,15 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UomsService, UnidadMedida, TipoUnidadMedida, CreateUnidadMedidaDto } from './uoms.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuditHistoryComponent } from '../../../shared/components/audit-history/audit-history';
+import { ConfirmService } from '../../../shared/components/confirm-modal/confirm.service';
+import { ToastService } from '../../../shared/components/toast/toast.service';
 
 @Component({
   standalone: true,
   selector: 'app-uoms',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AuditHistoryComponent],
   templateUrl: './uoms.html',
 })
 export class UomsComponent implements OnInit {
@@ -24,7 +28,9 @@ export class UomsComponent implements OnInit {
 
   items: UnidadMedida[] = [];
   editingId: string | null = null;
+  currentItem: UnidadMedida | null = null;
   formPanelOpen = false;
+  viewOnly = false;
   q = '';
   loading = false;
   error: string | null = null;
@@ -34,7 +40,10 @@ export class UomsComponent implements OnInit {
 
   constructor(
     private uomsService: UomsService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private authSvc: AuthService,
+    private confirmSvc: ConfirmService,
+    private toast: ToastService
   ) {}
 
   ngOnInit() {
@@ -54,7 +63,8 @@ export class UomsComponent implements OnInit {
       },
       error: (err) => {
         console.error('❌ Error loading UoMs:', err);
-        this.error = 'No se pudieron cargar las unidades de medida.';
+        const msg = err?.error?.message || err?.message || 'Error desconocido';
+        this.error = `No se pudieron cargar las unidades de medida. (${msg})`;
         this.loading = false;
         this.items = [];
         this.cdr.detectChanges();
@@ -93,10 +103,19 @@ export class UomsComponent implements OnInit {
       decimales: this.form.decimales || undefined,
     };
 
+    const payload = dto as any;
+    const username = this.authSvc.getCurrentUsername();
+    if (!this.editingId) {
+      payload.createdBy = username;
+    } else {
+      payload.updatedBy = username;
+    }
+
     if (this.editingId) {
-      this.uomsService.update(this.editingId, dto).subscribe({
+      this.uomsService.update(this.editingId, payload).subscribe({
         next: (updated) => {
           console.log('UoM updated:', updated);
+          this.toast.show('Unidad actualizada');
           this.loadUoms();
           this.cancelEdit();
         },
@@ -107,9 +126,10 @@ export class UomsComponent implements OnInit {
         }
       });
     } else {
-      this.uomsService.create(dto).subscribe({
+      this.uomsService.create(payload).subscribe({
         next: (created) => {
           console.log('UoM created:', created);
+          this.toast.show('Unidad creada');
           this.loadUoms();
           this.resetForm();
           this.formPanelOpen = false;
@@ -155,6 +175,7 @@ export class UomsComponent implements OnInit {
   edit(it: UnidadMedida) {
     this.formPanelOpen = true;
     this.editingId = it.id;
+    this.currentItem = it;
     this.form = {
       codigo: it.codigo,
       nombre: it.nombre,
@@ -166,37 +187,61 @@ export class UomsComponent implements OnInit {
       activo: it.activo !== false,
       decimales: it.decimales || 2,
     };
+    this.viewOnly = false;
+  }
+
+  view(it: UnidadMedida) {
+    this.formPanelOpen = true;
+    this.editingId = it.id;
+    this.currentItem = it;
+    this.form = {
+      codigo: it.codigo,
+      nombre: it.nombre,
+      simbolo: it.simbolo,
+      tipo: it.tipo,
+      descripcion: it.descripcion || '',
+      factorConversion: it.factorConversion || 1,
+      esSI: it.esSI || false,
+      activo: it.activo !== false,
+      decimales: it.decimales || 2,
+    };
+    this.viewOnly = true;
   }
 
   remove(id: string) {
-    if (!confirm('¿Estás seguro de eliminar esta unidad de medida?')) return;
-
-    this.loading = true;
-    this.error = null;
-
-    this.uomsService.delete(id).subscribe({
-      next: () => {
-        console.log('UoM deleted');
-        this.loadUoms();
-        if (this.editingId === id) this.cancelEdit();
-      },
-      error: (err) => {
-        console.error('Error deleting:', err);
-        this.error = this.extractErrorMessage(err);
-        this.loading = false;
-      }
-    });
+    this.confirmSvc.open({ title: 'Eliminar unidad de medida', message: '¿Estás seguro? Esta acción no se puede deshacer.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.loading = true;
+        this.error = null;
+        this.uomsService.delete(id).subscribe({
+          next: () => {
+            this.toast.show('Unidad de medida eliminada');
+            this.loadUoms();
+            if (this.editingId === id) this.cancelEdit();
+          },
+          error: (err) => {
+            console.error('Error deleting:', err);
+            this.error = this.extractErrorMessage(err);
+            this.loading = false;
+          }
+        });
+      });
   }
 
   cancelEdit() {
     this.editingId = null;
+    this.currentItem = null;
     this.resetForm();
+    this.viewOnly = false;
     this.formPanelOpen = false;
   }
 
   openCreatePanel() {
     this.editingId = null;
+    this.currentItem = null;
     this.resetForm();
+    this.viewOnly = false;
     this.formPanelOpen = true;
   }
 

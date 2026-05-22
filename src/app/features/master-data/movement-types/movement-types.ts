@@ -2,11 +2,15 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MovementTypesService, MovementType, MovCategory, MovDirection, CreateMovementTypeDto } from './movement-types.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuditHistoryComponent } from '../../../shared/components/audit-history/audit-history';
+import { ConfirmService } from '../../../shared/components/confirm-modal/confirm.service';
+import { ToastService } from '../../../shared/components/toast/toast.service';
 
 @Component({
   standalone: true,
   selector: 'app-movement-types',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AuditHistoryComponent],
   templateUrl: './movement-types.html',
 })
 export class MovementTypesComponent implements OnInit {
@@ -17,6 +21,9 @@ export class MovementTypesComponent implements OnInit {
 
   items: MovementType[] = [];
   editingId: string | null = null;
+  currentItem: MovementType | null = null;
+  formPanelOpen = false;
+  viewOnly = false;
   q = '';
   filterCategory: MovCategory | '' = '';
   loading = false;
@@ -37,7 +44,7 @@ export class MovementTypesComponent implements OnInit {
     { value: 'TRANSFER', label: 'Transferencia', cls: 'text-indigo-300' },
   ];
 
-  constructor(private svc: MovementTypesService, private cdr: ChangeDetectorRef) {}
+  constructor(private svc: MovementTypesService, private cdr: ChangeDetectorRef, private authSvc: AuthService, private confirmSvc: ConfirmService, private toast: ToastService) {}
 
   ngOnInit() { this.load(); }
 
@@ -63,30 +70,53 @@ export class MovementTypesComponent implements OnInit {
   directionCls(d: MovDirection): string { return this.directions.find(x => x.value === d)?.cls ?? ''; }
   directionLabel(d: MovDirection): string { return this.directions.find(x => x.value === d)?.label ?? d; }
 
+  openCreatePanel() { this.editingId = null; this.currentItem = null; this.resetForm(); this.viewOnly = false; this.formPanelOpen = true; }
+
   submit() {
     if (!this.form.code || !this.form.name) return;
     this.loading = true;
-    const obs = this.editingId ? this.svc.update(this.editingId, this.form) : this.svc.create(this.form);
+    const payload = { ...this.form } as any;
+    const username = this.authSvc.getCurrentUsername();
+    if (!this.editingId) {
+      payload.createdBy = username;
+    } else {
+      payload.updatedBy = username;
+    }
+    const obs = this.editingId ? this.svc.update(this.editingId, payload) : this.svc.create(payload);
     obs.subscribe({
-      next: () => { this.load(); this.editingId ? this.cancelEdit() : this.resetForm(); },
+      next: () => { this.toast.show(this.editingId ? 'Registro actualizado' : 'Registro creado'); this.load(); this.editingId ? this.cancelEdit() : this.resetForm(); this.formPanelOpen = false; },
       error: err => { this.error = this.extractError(err); this.loading = false; },
     });
   }
 
   edit(it: MovementType) {
     this.editingId = it.id;
+    this.currentItem = it;
     this.form = { code: it.code, name: it.name, category: it.category, direction: it.direction, affectsStock: it.affectsStock, requiresLot: it.requiresLot, requiresReason: it.requiresReason, autoConsumed: it.autoConsumed, active: it.active, notes: it.notes };
+    this.viewOnly = false;
+    this.formPanelOpen = true;
+  }
+
+  view(it: MovementType) {
+    this.editingId = it.id;
+    this.currentItem = it;
+    this.form = { code: it.code, name: it.name, category: it.category, direction: it.direction, affectsStock: it.affectsStock, requiresLot: it.requiresLot, requiresReason: it.requiresReason, autoConsumed: it.autoConsumed, active: it.active, notes: it.notes };
+    this.viewOnly = true;
+    this.formPanelOpen = true;
   }
 
   remove(id: string) {
-    if (!confirm('¿Eliminar este tipo de movimiento?')) return;
-    this.svc.delete(id).subscribe({
-      next: () => { this.load(); if (this.editingId === id) this.cancelEdit(); },
-      error: err => { this.error = this.extractError(err); },
-    });
+    this.confirmSvc.open({ title: 'Eliminar tipo de movimiento', message: '¿Estás seguro? Esta acción no se puede deshacer.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.svc.delete(id).subscribe({
+          next: () => { this.toast.show('Tipo de movimiento eliminado'); this.load(); if (this.editingId === id) this.cancelEdit(); },
+          error: err => { this.error = this.extractError(err); },
+        });
+      });
   }
 
-  cancelEdit() { this.editingId = null; this.resetForm(); }
+  cancelEdit() { this.editingId = null; this.currentItem = null; this.resetForm(); this.viewOnly = false; this.formPanelOpen = false; }
 
   resetForm() {
     this.form = { code: '', name: '', category: 'CONSUMPTION', direction: 'OUT', affectsStock: true, requiresLot: false, requiresReason: false, autoConsumed: false, active: true, notes: '' };

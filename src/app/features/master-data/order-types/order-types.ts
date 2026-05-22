@@ -2,11 +2,15 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OrderTypesService, OrderType, OrderPriority, CreateOrderTypeDto } from './order-types.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuditHistoryComponent } from '../../../shared/components/audit-history/audit-history';
+import { ConfirmService } from '../../../shared/components/confirm-modal/confirm.service';
+import { ToastService } from '../../../shared/components/toast/toast.service';
 
 @Component({
   standalone: true,
   selector: 'app-order-types',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AuditHistoryComponent],
   templateUrl: './order-types.html',
 })
 export class OrderTypesComponent implements OnInit {
@@ -17,6 +21,9 @@ export class OrderTypesComponent implements OnInit {
 
   items: OrderType[] = [];
   editingId: string | null = null;
+  currentItem: OrderType | null = null;
+  formPanelOpen = false;
+  viewOnly = false;
   q = '';
   loading = false;
   error: string | null = null;
@@ -28,7 +35,7 @@ export class OrderTypesComponent implements OnInit {
     { value: 'URGENT', label: 'Urgente', cls: 'bg-red-500/10 text-red-400 border border-red-500/30' },
   ];
 
-  constructor(private svc: OrderTypesService, private cdr: ChangeDetectorRef) {}
+  constructor(private svc: OrderTypesService, private cdr: ChangeDetectorRef, private authSvc: AuthService, private confirmSvc: ConfirmService, private toast: ToastService) {}
 
   ngOnInit() { this.load(); }
 
@@ -55,20 +62,30 @@ export class OrderTypesComponent implements OnInit {
     return this.priorities.find(p => p.value === priority)?.label ?? priority;
   }
 
+  openCreatePanel() { this.editingId = null; this.currentItem = null; this.resetForm(); this.viewOnly = false; this.formPanelOpen = true; }
+
   submit() {
     if (!this.form.code || !this.form.name) return;
     this.loading = true;
+    const payload = { ...this.form } as any;
+    const username = this.authSvc.getCurrentUsername();
+    if (!this.editingId) {
+      payload.createdBy = username;
+    } else {
+      payload.updatedBy = username;
+    }
     const obs = this.editingId
-      ? this.svc.update(this.editingId, this.form)
-      : this.svc.create(this.form);
+      ? this.svc.update(this.editingId, payload)
+      : this.svc.create(payload);
     obs.subscribe({
-      next: () => { this.load(); this.editingId ? this.cancelEdit() : this.resetForm(); },
+      next: () => { this.toast.show(this.editingId ? 'Registro actualizado' : 'Registro creado'); this.load(); this.editingId ? this.cancelEdit() : this.resetForm(); this.formPanelOpen = false; },
       error: err => { this.error = this.extractError(err); this.loading = false; },
     });
   }
 
   edit(it: OrderType) {
     this.editingId = it.id;
+    this.currentItem = it;
     this.form = {
       code: it.code,
       name: it.name,
@@ -80,17 +97,40 @@ export class OrderTypesComponent implements OnInit {
       requiresRelease: it.requiresRelease,
       active: it.active,
     };
+    this.viewOnly = false;
+    this.formPanelOpen = true;
+  }
+
+  view(it: OrderType) {
+    this.editingId = it.id;
+    this.currentItem = it;
+    this.form = {
+      code: it.code,
+      name: it.name,
+      description: it.description,
+      priority: it.priority,
+      color: it.color,
+      allowsRework: it.allowsRework,
+      requiresQA: it.requiresQA,
+      requiresRelease: it.requiresRelease,
+      active: it.active,
+    };
+    this.viewOnly = true;
+    this.formPanelOpen = true;
   }
 
   remove(id: string) {
-    if (!confirm('¿Eliminar este tipo de orden?')) return;
-    this.svc.delete(id).subscribe({
-      next: () => { this.load(); if (this.editingId === id) this.cancelEdit(); },
-      error: err => { this.error = this.extractError(err); },
-    });
+    this.confirmSvc.open({ title: 'Eliminar tipo de orden', message: '¿Estás seguro? Esta acción no se puede deshacer.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.svc.delete(id).subscribe({
+          next: () => { this.toast.show('Tipo de orden eliminado'); this.load(); if (this.editingId === id) this.cancelEdit(); },
+          error: err => { this.error = this.extractError(err); },
+        });
+      });
   }
 
-  cancelEdit() { this.editingId = null; this.resetForm(); }
+  cancelEdit() { this.editingId = null; this.currentItem = null; this.viewOnly = false; this.resetForm(); this.formPanelOpen = false; }
 
   resetForm() {
     this.form = { code: '', name: '', description: '', priority: 'NORMAL', color: '#10b981', allowsRework: false, requiresQA: false, requiresRelease: false, active: true };

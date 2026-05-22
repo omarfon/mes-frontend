@@ -2,11 +2,15 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AreasService, Area, AreaType, CreateAreaDto } from './areas.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuditHistoryComponent } from '../../../shared/components/audit-history/audit-history';
+import { ConfirmService } from '../../../shared/components/confirm-modal/confirm.service';
+import { ToastService } from '../../../shared/components/toast/toast.service';
 
 @Component({
   standalone: true,
   selector: 'app-areas',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AuditHistoryComponent],
   templateUrl: './areas.html',
 })
 export class AreasComponent implements OnInit {
@@ -16,6 +20,9 @@ export class AreasComponent implements OnInit {
 
   items: Area[] = [];
   editingId: string | null = null;
+  currentItem: Area | null = null;
+  formPanelOpen = false;
+  viewOnly = false;
   q = '';
   loading = false;
   error: string | null = null;
@@ -32,7 +39,7 @@ export class AreasComponent implements OnInit {
     { value: 'OTHER', label: 'Otro' },
   ];
 
-  constructor(private svc: AreasService, private cdr: ChangeDetectorRef) {}
+  constructor(private svc: AreasService, private cdr: ChangeDetectorRef, private authSvc: AuthService, private confirmSvc: ConfirmService, private toast: ToastService) {}
 
   ngOnInit() { this.load(); }
 
@@ -72,32 +79,61 @@ export class AreasComponent implements OnInit {
     return 'inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] ' + (map[type] ?? map['OTHER']);
   }
 
+  openCreatePanel() {
+    this.editingId = null;
+    this.currentItem = null;
+    this.resetForm();
+    this.viewOnly = false;
+    this.formPanelOpen = true;
+  }
+
   submit() {
     if (!this.form.code || !this.form.name) return;
     this.loading = true;
+    const payload = { ...this.form } as any;
+    const username = this.authSvc.getCurrentUsername();
+    if (!this.editingId) {
+      payload.createdBy = username;
+    } else {
+      payload.updatedBy = username;
+    }
     const obs = this.editingId
-      ? this.svc.update(this.editingId, this.form)
-      : this.svc.create(this.form);
+      ? this.svc.update(this.editingId, payload)
+      : this.svc.create(payload);
     obs.subscribe({
-      next: () => { this.load(); this.editingId ? this.cancelEdit() : this.resetForm(); },
+      next: () => { this.toast.show(this.editingId ? 'Registro actualizado' : 'Registro creado'); this.load(); this.editingId ? this.cancelEdit() : this.resetForm(); this.formPanelOpen = false; },
       error: err => { this.error = this.extractError(err); this.loading = false; },
     });
   }
 
   edit(it: Area) {
     this.editingId = it.id;
+    this.currentItem = it;
     this.form = { code: it.code, name: it.name, plantCode: it.plantCode, type: it.type, description: it.description, active: it.active };
+    this.viewOnly = false;
+    this.formPanelOpen = true;
+  }
+
+  view(it: Area) {
+    this.editingId = it.id;
+    this.currentItem = it;
+    this.form = { code: it.code, name: it.name, plantCode: it.plantCode, type: it.type, description: it.description, active: it.active };
+    this.viewOnly = true;
+    this.formPanelOpen = true;
   }
 
   remove(id: string) {
-    if (!confirm('¿Eliminar esta área?')) return;
-    this.svc.delete(id).subscribe({
-      next: () => { this.load(); if (this.editingId === id) this.cancelEdit(); },
-      error: err => { this.error = this.extractError(err); },
-    });
+    this.confirmSvc.open({ title: 'Eliminar área', message: '¿Estás seguro? Esta acción no se puede deshacer.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.svc.delete(id).subscribe({
+          next: () => { this.toast.show('Área eliminada'); this.load(); if (this.editingId === id) this.cancelEdit(); },
+          error: err => { this.error = this.extractError(err); },
+        });
+      });
   }
 
-  cancelEdit() { this.editingId = null; this.resetForm(); }
+  cancelEdit() { this.editingId = null; this.currentItem = null; this.resetForm(); this.viewOnly = false; this.formPanelOpen = false; }
 
   resetForm() {
     this.form = { code: '', name: '', plantCode: '', type: 'SPINNING', description: '', active: true };

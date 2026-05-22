@@ -26,7 +26,9 @@ export interface ProcessRecipe {
   approvedAt: string;
   active: boolean;
   params: RecipeParam[];
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 

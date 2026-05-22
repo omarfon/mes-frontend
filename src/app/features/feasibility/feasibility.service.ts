@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { environment } from '../../../environmets/environments';
 
@@ -84,16 +84,53 @@ export interface FeasibilityStudy {
   updatedAt: string;
 }
 
+export interface HistoryRecord {
+  id: string;
+  studyCode: string;
+  clientName: string;
+  productName: string;
+  quantity: number;
+  uom: string;
+  approvedDate: string;
+  approvedBy: string;
+  quotePrice: number;
+  currency: string;
+  resultType: 'PRODUCTION_ORDER' | 'PURCHASE_REQUEST';
+  resultCode: string;
+  resultDate: string;
+  status: 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  // Auditoría
+  fechaCreacion?: string;
+  usuCreacion?: string | null;
+  fechaEdicion?: string;
+  usuEdicion?: string | null;
+}
+
+export interface HistoryPage {
+  data: HistoryRecord[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class FeasibilityService {
   private apiUrl = `${environment.apiUrl}/feasibility`;
 
   constructor(private http: HttpClient) {}
 
+  getHistory(page = 1, limit = 10, search?: string, resultType?: string, status?: string): Observable<HistoryPage> {
+    let params = new HttpParams()
+      .set('page', page)
+      .set('limit', limit);
+    if (search)     params = params.set('search', search);
+    if (resultType) params = params.set('resultType', resultType);
+    if (status)     params = params.set('status', status);
+    return this.http.get<HistoryPage>(`${this.apiUrl}/history`, { params });
+  }
+
   getAll(): Observable<FeasibilityStudy[]> {
-    return this.http.get<any>(this.apiUrl).pipe(
-      // handle paginated or array response
-    );
+    return this.http.get<FeasibilityStudy[]>(this.apiUrl);
   }
 
   getById(id: string): Observable<FeasibilityStudy> {

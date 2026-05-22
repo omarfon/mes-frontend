@@ -2,11 +2,15 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RoutingsService, Routing, RoutingStep, CreateRoutingDto, CreateRoutingStepDto } from './routings.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuditHistoryComponent } from '../../../shared/components/audit-history/audit-history';
+import { ConfirmService } from '../../../shared/components/confirm-modal/confirm.service';
+import { ToastService } from '../../../shared/components/toast/toast.service';
 
 @Component({
   standalone: true,
   selector: 'app-routings',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AuditHistoryComponent],
   templateUrl: './routings.html',
 })
 export class RoutingsComponent implements OnInit {
@@ -22,14 +26,19 @@ export class RoutingsComponent implements OnInit {
   items: Routing[] = [];
   selectedSteps: RoutingStep[] = [];
   editingId: string | null = null;
+  currentItem: Routing | null = null;
   selectedId: string | null = null;
   editingStepSeq: number | null = null;
   editingStepId: string | null = null;
+  formPanelOpen = false;
+  viewOnly = false;
   q = '';
   loading = false;
   error: string | null = null;
 
-  constructor(private svc: RoutingsService, private cdr: ChangeDetectorRef) {}
+  constructor(private svc: RoutingsService, private cdr: ChangeDetectorRef, private authSvc: AuthService, private confirmSvc: ConfirmService, private toast: ToastService) {}
+
+  openCreatePanel() { this.editingId = null; this.currentItem = null; this.resetForm(); this.viewOnly = false; this.formPanelOpen = true; }
 
   ngOnInit() { this.load(); }
 
@@ -76,11 +85,19 @@ export class RoutingsComponent implements OnInit {
   submit() {
     if (!this.form.code || !this.form.productCode) return;
     this.loading = true;
+    const payload = { ...this.form } as any;
+    const username = this.authSvc.getCurrentUsername();
+    if (!this.editingId) {
+      payload.createdBy = username;
+    } else {
+      payload.updatedBy = username;
+    }
     const obs = this.editingId
-      ? this.svc.update(this.editingId, this.form)
-      : this.svc.create(this.form);
+      ? this.svc.update(this.editingId, payload)
+      : this.svc.create(payload);
     obs.subscribe({
       next: () => {
+        this.toast.show(this.editingId ? 'Ruta actualizada' : 'Ruta creada');
         this.load();
         this.editingId ? this.cancelEdit() : this.resetForm();
       },
@@ -90,25 +107,40 @@ export class RoutingsComponent implements OnInit {
 
   edit(it: Routing) {
     this.editingId = it.id;
+    this.currentItem = it;
     this.form = { code: it.code, name: it.name, productCode: it.productCode, version: it.version, active: it.active };
+    this.viewOnly = false;
+    this.formPanelOpen = true;
+  }
+
+  view(it: Routing) {
+    this.editingId = it.id;
+    this.currentItem = it;
+    this.form = { code: it.code, name: it.name, productCode: it.productCode, version: it.version, active: it.active };
+    this.viewOnly = true;
+    this.formPanelOpen = true;
   }
 
   remove(id: string) {
-    if (!confirm('¿Eliminar esta ruta y todos sus pasos?')) return;
-    this.svc.delete(id).subscribe({
-      next: () => {
-        if (this.selectedId === id) {
-          this.selectedId = null;
-          this.selectedSteps = [];
-        }
-        if (this.editingId === id) this.cancelEdit();
-        this.load();
-      },
-      error: err => { this.error = this.extractError(err); },
-    });
+    this.confirmSvc.open({ title: 'Eliminar ruta', message: '¿Estás seguro? Se eliminarán todos sus pasos.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.svc.delete(id).subscribe({
+          next: () => {
+            this.toast.show('Ruta eliminada');
+            if (this.selectedId === id) {
+              this.selectedId = null;
+              this.selectedSteps = [];
+            }
+            if (this.editingId === id) this.cancelEdit();
+            this.load();
+          },
+          error: err => { this.error = this.extractError(err); },
+        });
+      });
   }
 
-  cancelEdit() { this.editingId = null; this.resetForm(); }
+  cancelEdit() { this.editingId = null; this.currentItem = null; this.viewOnly = false; this.resetForm(); this.formPanelOpen = false; }
 
   resetForm() {
     this.form = { code: '', name: '', productCode: '', version: '1.0', active: true };
@@ -150,18 +182,22 @@ export class RoutingsComponent implements OnInit {
   }
 
   removeStep(seq: number) {
-    if (!this.selectedId || !confirm('¿Eliminar este paso?')) return;
+    if (!this.selectedId) return;
     const step = this.selectedSteps.find(s => s.seq === seq);
     if (!step) return;
-
-    this.svc.deleteStep(this.selectedId, step.id ?? String(seq)).subscribe({
-      next: () => {
-        this.selectedSteps = this.selectedSteps.filter(s => s.seq !== seq);
-        if (this.editingStepSeq === seq) this.cancelStepEdit();
-        this.cdr.detectChanges();
-      },
-      error: err => { this.error = this.extractError(err); },
-    });
+    this.confirmSvc.open({ title: 'Eliminar paso', message: '¿Estás seguro? Esta acción no se puede deshacer.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.svc.deleteStep(this.selectedId!, step.id ?? String(seq)).subscribe({
+          next: () => {
+            this.toast.show('Paso eliminado');
+            this.selectedSteps = this.selectedSteps.filter(s => s.seq !== seq);
+            if (this.editingStepSeq === seq) this.cancelStepEdit();
+            this.cdr.detectChanges();
+          },
+          error: err => { this.error = this.extractError(err); },
+        });
+      });
   }
 
   moveStep(seq: number, dir: 1 | -1) {

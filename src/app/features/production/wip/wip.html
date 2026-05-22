@@ -8,7 +8,7 @@
     <div class="flex items-center gap-2 w-full max-w-xl justify-end">
       <div class="relative w-full max-w-sm">
         <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
-        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar WIP..." />
+        <input [(ngModel)]="q" (ngModelChange)="onSearchChange()" class="ui-input pl-9" placeholder="Buscar WIP..." />
       </div>
       <button type="button" class="ui-btn-primary whitespace-nowrap" (click)="openCreatePanel()">
         <i class="pi pi-plus text-xs mr-1"></i> Nuevo WIP
@@ -62,44 +62,48 @@
             </select>
           </div>
 
-          <div>
-            <label class="ui-label">Nombre Producto <span class="text-red-400">*</span></label>
-            <input [(ngModel)]="form.productoNombre" name="productoNombre" required class="ui-input" placeholder="Nombre del producto" />
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="ui-label">Nombre Producto <span class="text-red-400">*</span></label>
+              <input [(ngModel)]="form.productoNombre" name="productoNombre" required class="ui-input" placeholder="Nombre del producto" />
+            </div>
+            <div>
+              <label class="ui-label">Work Center ID</label>
+              <input [(ngModel)]="form.workCenterId" name="workCenterId" class="ui-input" placeholder="UUID del centro" />
+            </div>
           </div>
 
-          <div>
-            <label class="ui-label">Work Center ID</label>
-            <input [(ngModel)]="form.workCenterId" name="workCenterId" class="ui-input" placeholder="UUID del centro de trabajo" />
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="ui-label">Work Center Nombre</label>
+              <input [(ngModel)]="form.workCenterNombre" name="workCenterNombre" class="ui-input" placeholder="Nombre del centro" />
+            </div>
+            <div>
+              <label class="ui-label">Cantidad Actual <span class="text-red-400">*</span></label>
+              <input type="number" [(ngModel)]="form.cantidadActual" name="cantidadActual" min="0" required class="ui-input" placeholder="0" />
+            </div>
           </div>
 
-          <div>
-            <label class="ui-label">Work Center Nombre</label>
-            <input [(ngModel)]="form.workCenterNombre" name="workCenterNombre" class="ui-input" placeholder="Nombre del centro de trabajo" />
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="ui-label">Unidad de Medida <span class="text-red-400">*</span></label>
+              <input [(ngModel)]="form.unidadMedida" name="unidadMedida" required class="ui-input" placeholder="KG, UNIDADES…" />
+            </div>
+            <div>
+              <label class="ui-label">Lote</label>
+              <input [(ngModel)]="form.lote" name="lote" class="ui-input" placeholder="Número de lote" />
+            </div>
           </div>
 
-          <div>
-            <label class="ui-label">Cantidad Actual <span class="text-red-400">*</span></label>
-            <input type="number" [(ngModel)]="form.cantidadActual" name="cantidadActual" min="0" required class="ui-input" placeholder="0" />
-          </div>
-
-          <div>
-            <label class="ui-label">Unidad de Medida <span class="text-red-400">*</span></label>
-            <input [(ngModel)]="form.unidadMedida" name="unidadMedida" required class="ui-input" placeholder="KG, UNIDADES, METROS..." />
-          </div>
-
-          <div>
-            <label class="ui-label">Lote</label>
-            <input [(ngModel)]="form.lote" name="lote" class="ui-input" placeholder="Número de lote" />
-          </div>
-
-          <div>
-            <label class="ui-label">Ubicación</label>
-            <input [(ngModel)]="form.ubicacion" name="ubicacion" class="ui-input" placeholder="Almacén, pasillo, estante..." />
-          </div>
-
-          <div>
-            <label class="ui-label">Fecha Entrada <span class="text-red-400">*</span></label>
-            <input type="datetime-local" [(ngModel)]="form.fechaEntrada" name="fechaEntrada" required class="ui-input" />
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="ui-label">Ubicación</label>
+              <input [(ngModel)]="form.ubicacion" name="ubicacion" class="ui-input" placeholder="Almacén, pasillo…" />
+            </div>
+            <div>
+              <label class="ui-label">Fecha Entrada <span class="text-red-400">*</span></label>
+              <input type="datetime-local" [(ngModel)]="form.fechaEntrada" name="fechaEntrada" required class="ui-input" />
+            </div>
           </div>
 
           <div>
@@ -131,13 +135,22 @@
   <div class="ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold">Registros WIP</p>
-        <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
+        <div class="flex items-center gap-3">
+          <span class="text-[11px] text-slate-500">{{ total }} registros</span>
+          <div class="flex items-center gap-1.5">
+            <label class="text-[11px] text-slate-500">Filas:</label>
+            <select [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()" class="text-[11px] bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-slate-300">
+              <option *ngFor="let s of pageSizeOptions" [value]="s">{{ s }}</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <div class="ui-table-wrap">
         <table class="ui-table">
           <thead class="ui-thead">
             <tr>
+              <th class="ui-th w-8"></th>
               <th class="ui-th">Orden</th>
               <th class="ui-th">Producto</th>
               <th class="ui-th">Cantidad</th>
@@ -150,34 +163,133 @@
           </thead>
 
           <tbody class="bg-slate-950/20">
-            <tr *ngFor="let it of filtered" class="ui-tr">
-              <td class="ui-td">{{ getOrdenInfo(it.ordenId) }}</td>
-              <td class="ui-td">{{ it.productoNombre }}</td>
-              <td class="ui-td">{{ it.cantidadActual }}</td>
-              <td class="ui-td">{{ it.unidadMedida }}</td>
-              <td class="ui-td">{{ it.lote || '-' }}</td>
-              <td class="ui-td">{{ it.ubicacion || '-' }}</td>
-              <td class="ui-td">{{ it.fechaEntrada | date:'short' }}</td>
-              <td class="ui-td">
-                <div class="flex gap-2">
-                  <button (click)="showProcess(it)" class="ui-btn-icon" title="Ver proceso"
-                    [class.text-blue-400]="selectedWip?.id === it.id">
-                    <span class="pi pi-sitemap"></span>
-                  </button>
-                  <button (click)="edit(it)" class="ui-btn-icon" title="Editar">
-                    <span class="pi pi-pencil"></span>
-                  </button>
-                  <button (click)="remove(it.id)" class="ui-btn-icon-danger" title="Eliminar">
-                    <span class="pi pi-trash"></span>
-                  </button>
-                </div>
-              </td>
-            </tr>
+            <ng-container *ngFor="let it of paginatedItems">
+              <tr class="ui-tr cursor-pointer transition-colors"
+                  [class.bg-emerald-900/20]="expandedId === it.id"
+                  [class.border-l-2]="expandedId === it.id"
+                  [class.border-l-emerald-500]="expandedId === it.id"
+                  (click)="toggleExpand(it.id)">
+                <td class="ui-td text-center">
+                  <i class="pi text-slate-400 text-xs transition-transform duration-200"
+                     [class.pi-chevron-down]="expandedId === it.id"
+                     [class.pi-chevron-right]="expandedId !== it.id"></i>
+                </td>
+                <td class="ui-td">{{ getOrdenInfo(it.ordenId) }}</td>
+                <td class="ui-td">{{ it.productoNombre }}</td>
+                <td class="ui-td">{{ it.cantidadActual }}</td>
+                <td class="ui-td">{{ it.unidadMedida }}</td>
+                <td class="ui-td">{{ it.lote || '-' }}</td>
+                <td class="ui-td">{{ it.ubicacion || '-' }}</td>
+                <td class="ui-td">{{ it.fechaEntrada | date:'short' }}</td>
+                <td class="ui-td">
+                  <div class="flex gap-1.5" (click)="$event.stopPropagation()">
+                    <button (click)="showProcess(it)" title="Ver proceso"
+                      class="w-7 h-7 flex items-center justify-center rounded-full bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-blue-400 transition"
+                      [class.bg-blue-500/20]="selectedWip?.id === it.id"
+                      [class.text-blue-400]="selectedWip?.id === it.id">
+                      <span class="pi pi-sitemap text-xs"></span>
+                    </button>
+                    <button (click)="edit(it)" title="Editar"
+                      class="w-7 h-7 flex items-center justify-center rounded-full bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition">
+                      <span class="pi pi-pencil text-xs"></span>
+                    </button>
+                    <button (click)="remove(it.id)" title="Eliminar"
+                      class="w-7 h-7 flex items-center justify-center rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition">
+                      <span class="pi pi-trash text-xs"></span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <!-- Fila expandible de detalle -->
+              <tr *ngIf="expandedId === it.id">
+                <td colspan="9" class="bg-slate-900/60 px-6 py-4 border-b border-slate-800">
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3 text-xs">
+                    <div>
+                      <p class="text-slate-500 mb-0.5">Orden ID</p>
+                      <p class="text-slate-200 font-mono">{{ it.ordenId }}</p>
+                    </div>
+                    <div>
+                      <p class="text-slate-500 mb-0.5">Producto ID</p>
+                      <p class="text-slate-200 font-mono">{{ it.productoId }}</p>
+                    </div>
+                    <div>
+                      <p class="text-slate-500 mb-0.5">Work Center ID</p>
+                      <p class="text-slate-200 font-mono">{{ it.workCenterId || '-' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-slate-500 mb-0.5">Work Center</p>
+                      <p class="text-slate-200">{{ it.workCenterNombre || '-' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-slate-500 mb-0.5">Cantidad Actual</p>
+                      <p class="text-slate-200">{{ it.cantidadActual }} {{ it.unidadMedida }}</p>
+                    </div>
+                    <div>
+                      <p class="text-slate-500 mb-0.5">Lote</p>
+                      <p class="text-slate-200">{{ it.lote || '-' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-slate-500 mb-0.5">Ubicación</p>
+                      <p class="text-slate-200">{{ it.ubicacion || '-' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-slate-500 mb-0.5">Estado</p>
+                      <span class="ui-badge" [class.ui-badge-ok]="it.activo" [class.ui-badge-bad]="!it.activo">
+                        {{ it.activo ? 'Activo' : 'Inactivo' }}
+                      </span>
+                    </div>
+                    <div>
+                      <p class="text-slate-500 mb-0.5">Fecha Entrada</p>
+                      <p class="text-slate-200">{{ it.fechaEntrada | date:'medium' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-slate-500 mb-0.5">Creado</p>
+                      <p class="text-slate-200">{{ it.createdAt | date:'short' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-slate-500 mb-0.5">Actualizado</p>
+                      <p class="text-slate-200">{{ it.updatedAt | date:'short' }}</p>
+                    </div>
+                    <div *ngIf="it.movimientos" class="col-span-2 md:col-span-4">
+                      <p class="text-slate-500 mb-1">Movimientos</p>
+                      <pre class="bg-slate-950 border border-slate-800 rounded p-2 text-emerald-300 text-[11px] overflow-x-auto">{{ it.movimientos | json }}</pre>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
           </tbody>
         </table>
 
-        <div *ngIf="!loading && filtered.length === 0" class="py-12 text-center">
+        <div *ngIf="!loading && total === 0" class="py-12 text-center">
           <p class="text-slate-500 text-sm">No hay registros de WIP</p>
+        </div>
+      </div>
+
+      <!-- Paginación -->
+      <div *ngIf="total > 0" class="flex items-center justify-between mt-4 pt-4 border-t border-slate-800">
+        <span class="text-[11px] text-slate-500">
+          Mostrando {{ pageRangeStart }}–{{ pageRangeEnd }} de {{ total }}
+        </span>
+        <div class="flex items-center gap-1">
+          <button class="w-7 h-7 flex items-center justify-center rounded bg-slate-800/60 hover:bg-slate-700 text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed transition"
+            [disabled]="currentPage === 1" (click)="setPage(currentPage - 1)">
+            <i class="pi pi-chevron-left text-xs"></i>
+          </button>
+          <ng-container *ngFor="let p of pageNumbers; let i = index">
+            <span *ngIf="i > 0 && p - pageNumbers[i-1] > 1" class="px-1 text-slate-600 text-xs">…</span>
+            <button class="w-7 h-7 flex items-center justify-center rounded text-xs font-medium transition"
+              [class.bg-blue-600]="p === currentPage"
+              [class.text-white]="p === currentPage"
+              [class.bg-slate-800\/60]="p !== currentPage"
+              [class.hover\:bg-slate-700]="p !== currentPage"
+              [class.text-slate-400]="p !== currentPage"
+              (click)="setPage(p)">{{ p }}</button>
+          </ng-container>
+          <button class="w-7 h-7 flex items-center justify-center rounded bg-slate-800/60 hover:bg-slate-700 text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed transition"
+            [disabled]="currentPage === totalPages" (click)="setPage(currentPage + 1)">
+            <i class="pi pi-chevron-right text-xs"></i>
+          </button>
         </div>
       </div>
   </div>
@@ -291,6 +403,86 @@
                     <div class="h-full rounded-full transition-all" [ngClass]="efficiencyBarColor(step.efficiency)" [style.width.%]="step.efficiency"></div>
                   </div>
                 </div>
+
+                <!-- ══ Telemetría en tiempo real ══ -->
+                <ng-container *ngIf="step.status === 'IN_PROGRESS'">
+                  <!-- EN VIVO badge + alerta -->
+                  <div class="flex items-center justify-between">
+                    <span class="flex items-center gap-1 text-[9px] font-bold text-emerald-400">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block"></span>
+                      EN VIVO
+                    </span>
+                    <span *ngIf="step.liveData?.status === 'ALERT'"
+                      class="text-[9px] font-bold text-amber-400 animate-pulse">⚠ ALERTA</span>
+                  </div>
+
+                  <ng-container *ngIf="step.liveData; else liveSkeleton">
+                    <!-- Contador principal -->
+                    <div class="text-center bg-slate-900/60 rounded-lg px-2 py-1.5">
+                      <div class="text-2xl font-black tabular-nums"
+                        [class.text-emerald-400]="step.liveData.status === 'RUNNING'"
+                        [class.text-amber-400]="step.liveData.status === 'ALERT'">
+                        {{ step.liveData.countPerSecond | number:'1.1-1' }}
+                        <span class="text-xs font-normal text-slate-400">u/s</span>
+                      </div>
+                      <div class="text-[10px] text-slate-400 mt-0.5">
+                        {{ step.liveData.totalCount | number:'1.0-0' }} / {{ step.liveData.targetQty | number:'1.0-0' }} {{ step.uom }}
+                      </div>
+                    </div>
+
+                    <!-- Barra de avance animada -->
+                    <div>
+                      <div class="flex justify-between text-[9px] mb-0.5">
+                        <span class="text-slate-500">Avance</span>
+                        <span class="font-bold text-blue-300">{{ step.liveData.progressPct | number:'1.1-1' }}%</span>
+                      </div>
+                      <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full transition-all duration-700"
+                          [class.bg-blue-500]="step.liveData.status === 'RUNNING'"
+                          [class.bg-amber-500]="step.liveData.status === 'ALERT'"
+                          [style.width.%]="step.liveData.progressPct"></div>
+                      </div>
+                    </div>
+
+                    <!-- Métricas fila -->
+                    <div class="grid grid-cols-3 gap-1 text-center text-[9px]">
+                      <div class="bg-slate-900/50 rounded p-1">
+                        <div class="text-slate-400">RPM</div>
+                        <div class="font-bold text-white">{{ step.liveData.rpm ?? '—' }}</div>
+                      </div>
+                      <div class="bg-slate-900/50 rounded p-1">
+                        <div class="text-slate-400">Temp</div>
+                        <div class="font-bold"
+                          [class.text-amber-400]="(step.liveData.temperature ?? 0) > 73"
+                          [class.text-white]="(step.liveData.temperature ?? 0) <= 73">
+                          {{ step.liveData.temperature ?? '—' }}°
+                        </div>
+                      </div>
+                      <div class="bg-slate-900/50 rounded p-1">
+                        <div class="text-slate-400">Efic.</div>
+                        <div class="font-bold" [ngClass]="efficiencyColor(step.liveData.efficiency)">{{ step.liveData.efficiency }}%</div>
+                      </div>
+                    </div>
+
+                    <!-- Tiempo transcurrido -->
+                    <div class="flex items-center justify-between text-[9px]">
+                      <span class="text-slate-500 flex items-center gap-1">
+                        <i class="pi pi-clock text-[9px]"></i> Transcurrido
+                      </span>
+                      <span class="font-mono text-slate-300">
+                        {{ (step.liveData.elapsedSec / 60 | number:'2.0-0') }}:{{ (step.liveData.elapsedSec % 60 | number:'2.0-0') }}
+                      </span>
+                    </div>
+                  </ng-container>
+
+                  <!-- Skeleton mientras conecta -->
+                  <ng-template #liveSkeleton>
+                    <div class="flex items-center justify-center py-3 gap-2 text-[10px] text-slate-500">
+                      <i class="pi pi-spin pi-spinner text-blue-400"></i>
+                      Conectando al sensor…
+                    </div>
+                  </ng-template>
+                </ng-container>
 
                 <!-- Quantity flow -->
                 <div class="flex justify-between text-[9px] pt-1 border-t border-slate-800/50">

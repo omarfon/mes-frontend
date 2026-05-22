@@ -29,7 +29,9 @@ export interface UnidadMedida {
   esSI?: boolean;
   activo?: boolean;
   decimales?: number | null;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
   deletedAt?: string | null;
 }

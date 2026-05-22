@@ -8,7 +8,7 @@
     <div class="flex items-center gap-2 w-full max-w-xl justify-end">
       <div class="relative w-full max-w-sm">
         <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
-        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar ejecución..." />
+        <input [(ngModel)]="q" (ngModelChange)="onSearchChange()" class="ui-input pl-9" placeholder="Buscar ejecución..." />
       </div>
       <button type="button" class="ui-btn-primary whitespace-nowrap" (click)="openCreatePanel()">
         <i class="pi pi-plus text-xs mr-1"></i> Nueva ejecución
@@ -52,36 +52,38 @@
             </select>
           </div>
 
-          <div>
-            <label class="ui-label">Máquina *</label>
-            <select [(ngModel)]="form.maquinaId" name="maquinaId" required class="ui-select">
-              <option value="">-- Seleccionar máquina --</option>
-              <option *ngFor="let maquina of maquinas" [value]="maquina.id">
-                {{ maquina.code }} - {{ maquina.name }}
-              </option>
-            </select>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="ui-label">Máquina *</label>
+              <select [(ngModel)]="form.maquinaId" name="maquinaId" required class="ui-select">
+                <option value="">-- Seleccionar máquina --</option>
+                <option *ngFor="let maquina of maquinas" [value]="maquina.id">
+                  {{ maquina.code }} - {{ maquina.name }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="ui-label">Operador *</label>
+              <select [(ngModel)]="form.operadorId" name="operadorId" required class="ui-select">
+                <option value="">-- Seleccionar operador --</option>
+                <option *ngFor="let operador of operadores" [value]="operador.id">
+                  {{ operador.codigo || operador.code }} - {{ operador.nombre || operador.name }}
+                </option>
+              </select>
+            </div>
           </div>
 
-          <div>
-            <label class="ui-label">Operador *</label>
-            <select [(ngModel)]="form.operadorId" name="operadorId" required class="ui-select">
-              <option value="">-- Seleccionar operador --</option>
-              <option *ngFor="let operador of operadores" [value]="operador.id">
-                {{ operador.codigo || operador.code }} - {{ operador.nombre || operador.name }}
-              </option>
-            </select>
-          </div>
-
-          <div>
-            <label class="ui-label">Estado</label>
-            <select [(ngModel)]="form.estado" name="estado" class="ui-select">
-              <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="ui-label">Fecha Inicio <span class="text-xs text-slate-400">(opcional, usa fecha actual si no se envía)</span></label>
-            <input type="datetime-local" [(ngModel)]="form.fechaInicio" name="fechaInicio" class="ui-input" />
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="ui-label">Estado</label>
+              <select [(ngModel)]="form.estado" name="estado" class="ui-select">
+                <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="ui-label">Fecha Inicio <span class="text-xs text-slate-400">(opcional)</span></label>
+              <input type="datetime-local" [(ngModel)]="form.fechaInicio" name="fechaInicio" class="ui-input" />
+            </div>
           </div>
 
           <div>
@@ -93,6 +95,16 @@
           <div>
             <label class="ui-label">Observaciones</label>
             <textarea [(ngModel)]="form.observaciones" name="observaciones" rows="2" class="ui-input" placeholder="Notas adicionales..."></textarea>
+          </div>
+
+          <app-audit-history *ngIf="editingId" entityType="Execution" [entityId]="editingId" />
+
+          <div *ngIf="!editingId" class="mt-4 border-t border-slate-800 pt-4">
+            <p class="text-[10px] uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-2">
+              <i class="pi pi-history text-[11px]"></i>
+              Historial de cambios
+            </p>
+            <p class="text-xs text-slate-600 py-1">Guarda el registro para ver el historial.</p>
           </div>
 
           <div class="flex gap-2 pt-1">
@@ -120,7 +132,15 @@
         <div>
           <p class="text-sm font-semibold">Ejecuciones</p>
         </div>
-        <span class="text-[11px] text-slate-500">{{ filtered.length }} ejecuciones</span>
+        <div class="flex items-center gap-3">
+          <span class="text-[11px] text-slate-500">{{ total }} ejecuciones</span>
+          <div class="flex items-center gap-1.5">
+            <label class="text-[11px] text-slate-500">Filas:</label>
+            <select [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()" class="text-[11px] bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-slate-300">
+              <option *ngFor="let s of pageSizeOptions" [value]="s">{{ s }}</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <div class="ui-table-wrap">
@@ -137,30 +157,165 @@
           </thead>
 
           <tbody class="bg-slate-950/20">
-            <tr *ngFor="let it of filtered" class="ui-tr">
+            <tr *ngFor="let it of items" class="ui-tr">
               <td class="ui-td">{{ getOrdenInfo(it.ordenId) }}</td>
-              <td class="ui-td text-xs">{{ getMaquinaInfo(it.maquinaId) }}</td>
+              <td class="ui-td text-xs">{{ it.maquina ? (it.maquina.code + ' - ' + it.maquina.name) : getMaquinaInfo(it.maquinaId) }}</td>
               <td class="ui-td">
-                <span class="text-white">{{ getOperadorInfo(it.operadorId).split(' (')[0] }}</span>
-                <span class="text-xs text-slate-400 ml-1">({{ getOperadorInfo(it.operadorId).split(' (')[1]?.replace(')', '') }})</span>
+                <span class="text-white">{{ it.operador?.nombre || getOperadorInfo(it.operadorId).split(' (')[0] }}</span>
+                <span *ngIf="it.operador?.codigo" class="text-xs text-slate-400 ml-1">({{ it.operador!.codigo }})</span>
               </td>
               <td class="ui-td text-xs">{{ it.fechaInicio | date:'short' }}</td>
               <td class="ui-td">
                 <span [ngClass]="badgeClass(it.estado)" class="ui-badge">{{ it.estado }}</span>
               </td>
               <td class="ui-td">
-                <div class="flex gap-2">
-                  <button (click)="edit(it)" class="ui-btn-ghost text-xs">Editar</button>
-                  <button (click)="remove(it.id)" class="ui-btn-danger text-xs">Eliminar</button>
+                <div class="flex gap-1.5">
+                  <button (click)="view(it)" title="Ver detalle"
+                    class="w-7 h-7 flex items-center justify-center rounded-full bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition">
+                    <i class="pi pi-eye text-xs"></i>
+                  </button>
+                  <button (click)="edit(it)" title="Editar"
+                    class="w-7 h-7 flex items-center justify-center rounded-full bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition">
+                    <i class="pi pi-pencil text-xs"></i>
+                  </button>
+                  <button (click)="remove(it.id)" title="Eliminar"
+                    class="w-7 h-7 flex items-center justify-center rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition">
+                    <i class="pi pi-trash text-xs"></i>
+                  </button>
                 </div>
               </td>
             </tr>
 
-            <tr *ngIf="filtered.length === 0 && !loading">
+            <tr *ngIf="total === 0 && !loading">
               <td colspan="6" class="px-4 py-10 text-center text-slate-500">No hay ejecuciones registradas.</td>
             </tr>
           </tbody>
         </table>
       </div>
+
+      <!-- Paginación -->
+      <div *ngIf="total > 0" class="flex items-center justify-between mt-4 pt-4 border-t border-slate-800">
+        <span class="text-[11px] text-slate-500">
+          Mostrando {{ pageRangeStart }}–{{ pageRangeEnd }} de {{ total }}
+        </span>
+        <div class="flex items-center gap-1">
+          <button class="w-7 h-7 flex items-center justify-center rounded bg-slate-800/60 hover:bg-slate-700 text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed transition"
+            [disabled]="currentPage === 1" (click)="setPage(currentPage - 1)">
+            <i class="pi pi-chevron-left text-xs"></i>
+          </button>
+          <ng-container *ngFor="let p of pageNumbers; let i = index">
+            <span *ngIf="i > 0 && p - pageNumbers[i-1] > 1" class="px-1 text-slate-600 text-xs">…</span>
+            <button class="w-7 h-7 flex items-center justify-center rounded text-xs font-medium transition"
+              [class.bg-blue-600]="p === currentPage"
+              [class.text-white]="p === currentPage"
+              [class.bg-slate-800\/60]="p !== currentPage"
+              [class.hover\:bg-slate-700]="p !== currentPage"
+              [class.text-slate-400]="p !== currentPage"
+              (click)="setPage(p)">{{ p }}</button>
+          </ng-container>
+          <button class="w-7 h-7 flex items-center justify-center rounded bg-slate-800/60 hover:bg-slate-700 text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed transition"
+            [disabled]="currentPage === totalPages" (click)="setPage(currentPage + 1)">
+            <i class="pi pi-chevron-right text-xs"></i>
+          </button>
+        </div>
+      </div>
   </div>
 </div>
+
+<!-- Panel de detalle (Ver) -->
+@if (viewingItem) {
+  <div class="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px]" (click)="closeView()"></div>
+  <div class="fixed right-0 top-0 z-50 h-full w-full max-w-lg border-l border-slate-800 bg-slate-950 shadow-2xl flex flex-col">
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+      <div>
+        <p class="text-sm font-semibold text-slate-100">Detalle de ejecución</p>
+        <span class="text-[11px] text-slate-500">Solo lectura</span>
+      </div>
+      <div class="flex gap-2">
+        <button type="button" class="ui-btn-ghost text-xs" (click)="edit(viewingItem); closeView()">
+          <i class="pi pi-pencil text-xs mr-1"></i> Editar
+        </button>
+        <button type="button" class="ui-btn-ghost" (click)="closeView()">
+          <i class="pi pi-times text-xs"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="overflow-y-auto flex-1 px-5 py-4 space-y-5">
+
+      <!-- Estado badge -->
+      <div class="flex items-center gap-3">
+        <span [ngClass]="badgeClass(viewingItem.estado)" class="ui-badge text-xs px-3 py-1">{{ viewingItem.estado }}</span>
+        <span class="text-[11px] text-slate-500">ID: {{ viewingItem.id }}</span>
+      </div>
+
+      <!-- Identificación -->
+      <div class="ui-surface-inner p-4 space-y-3">
+        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Identificación</p>
+        <div class="grid grid-cols-1 gap-2">
+          <div>
+            <p class="text-[11px] text-slate-500">Orden</p>
+            <p class="text-sm text-slate-100">{{ getOrdenInfo(viewingItem.ordenId) }}</p>
+          </div>
+          <div>
+            <p class="text-[11px] text-slate-500">Máquina</p>
+            <p class="text-sm text-slate-100">{{ viewingItem.maquina ? (viewingItem.maquina.code + ' - ' + viewingItem.maquina.name) : getMaquinaInfo(viewingItem.maquinaId) }}</p>
+          </div>
+          <div>
+            <p class="text-[11px] text-slate-500">Operador</p>
+            <p class="text-sm text-slate-100">{{ viewingItem.operador ? (viewingItem.operador.nombre + ' (' + viewingItem.operador.codigo + ')') : getOperadorInfo(viewingItem.operadorId) }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fechas -->
+      <div class="ui-surface-inner p-4 space-y-3">
+        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Fechas</p>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <p class="text-[11px] text-slate-500">Fecha inicio</p>
+            <p class="text-sm text-slate-100">{{ viewingItem.fechaInicio | date:'short' }}</p>
+          </div>
+          <div>
+            <p class="text-[11px] text-slate-500">Fecha fin</p>
+            <p class="text-sm text-slate-100">{{ viewingItem.fechaFin ? (viewingItem.fechaFin | date:'short') : '—' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Parámetros -->
+      @if (viewingItem.parametros) {
+        <div class="ui-surface-inner p-4 space-y-2">
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Parámetros</p>
+          <pre class="text-xs text-slate-300 font-mono bg-slate-900/60 rounded p-3 overflow-x-auto">{{ viewingItem.parametros | json }}</pre>
+        </div>
+      }
+
+      <!-- Observaciones -->
+      @if (viewingItem.observaciones) {
+        <div class="ui-surface-inner p-4 space-y-2">
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Observaciones</p>
+          <p class="text-sm text-slate-300 whitespace-pre-wrap">{{ viewingItem.observaciones }}</p>
+        </div>
+      }
+
+      <!-- Auditoría -->
+      <div class="ui-surface-inner p-4 space-y-2">
+        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Auditoría</p>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <p class="text-[11px] text-slate-500">Creado</p>
+            <p class="text-xs text-slate-300">{{ viewingItem.createdAt ? (viewingItem.createdAt | date:'short') : '—' }}</p>
+          </div>
+          <div>
+            <p class="text-[11px] text-slate-500">Actualizado</p>
+            <p class="text-xs text-slate-300">{{ viewingItem.updatedAt ? (viewingItem.updatedAt | date:'short') : '—' }}</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+}

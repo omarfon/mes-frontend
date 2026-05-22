@@ -17,6 +17,11 @@ export const ADMIN_ROUTES: Routes = [
           import('./audit-logs/audit-logs').then((m) => m.AuditLogsComponent),
       },
       {
+        path: 'activity-log',
+        loadComponent: () =>
+          import('./activity-log/activity-log').then((m) => m.ActivityLogViewComponent),
+      },
+      {
         path: 'system-params',
         loadComponent: () =>
           import('./system-params/system-params').then((m) => m.SystemParamsComponent),

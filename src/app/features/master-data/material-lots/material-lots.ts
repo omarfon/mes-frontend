@@ -2,11 +2,15 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MaterialLotsService, MaterialLot, LotStatus, CreateMaterialLotDto } from './material-lots.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuditHistoryComponent } from '../../../shared/components/audit-history/audit-history';
+import { ConfirmService } from '../../../shared/components/confirm-modal/confirm.service';
+import { ToastService } from '../../../shared/components/toast/toast.service';
 
 @Component({
   standalone: true,
   selector: 'app-material-lots',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AuditHistoryComponent],
   templateUrl: './material-lots.html',
 })
 export class MaterialLotsComponent implements OnInit {
@@ -18,6 +22,7 @@ export class MaterialLotsComponent implements OnInit {
 
   items: MaterialLot[] = [];
   editingId: string | null = null;
+  currentItem: MaterialLot | null = null;
   filterStatus: LotStatus | '' = '';
   filterMaterial = '';
   q = '';
@@ -32,7 +37,7 @@ export class MaterialLotsComponent implements OnInit {
     { value: 'REJECTED', label: 'Rechazado', cls: 'bg-red-500/10 text-red-400 border border-red-500/30', icon: 'pi-times-circle' },
   ];
 
-  constructor(private svc: MaterialLotsService, private cdr: ChangeDetectorRef) {}
+  constructor(private svc: MaterialLotsService, private cdr: ChangeDetectorRef, private authSvc: AuthService, private confirmSvc: ConfirmService, private toast: ToastService) {}
 
   ngOnInit() { this.load(); }
 
@@ -79,27 +84,38 @@ export class MaterialLotsComponent implements OnInit {
   submit() {
     if (!this.form.lotNumber || !this.form.materialCode) return;
     this.loading = true;
-    const obs = this.editingId ? this.svc.update(this.editingId, this.form) : this.svc.create(this.form);
+    const payload = { ...this.form } as any;
+    const username = this.authSvc.getCurrentUsername();
+    if (!this.editingId) {
+      payload.createdBy = username;
+    } else {
+      payload.updatedBy = username;
+    }
+    const obs = this.editingId ? this.svc.update(this.editingId, payload) : this.svc.create(payload);
     obs.subscribe({
-      next: () => { this.load(); this.editingId ? this.cancelEdit() : this.resetForm(); },
+      next: () => { this.toast.show(this.editingId ? 'Registro actualizado' : 'Registro creado'); this.load(); this.editingId ? this.cancelEdit() : this.resetForm(); },
       error: err => { this.error = this.extractError(err); this.loading = false; },
     });
   }
 
   edit(it: MaterialLot) {
     this.editingId = it.id;
+    this.currentItem = it;
     this.form = { lotNumber: it.lotNumber, materialCode: it.materialCode, materialName: it.materialName, supplierCode: it.supplierCode, supplierLot: it.supplierLot, receivedDate: it.receivedDate, expiryDate: it.expiryDate, initialQty: it.initialQty, availableQty: it.availableQty, uom: it.uom, locationCode: it.locationCode, status: it.status, notes: it.notes };
   }
 
   remove(id: string) {
-    if (!confirm('¿Eliminar este lote?')) return;
-    this.svc.delete(id).subscribe({
-      next: () => { this.load(); if (this.editingId === id) this.cancelEdit(); },
-      error: err => { this.error = this.extractError(err); },
-    });
+    this.confirmSvc.open({ title: 'Eliminar lote', message: '¿Estás seguro? Esta acción no se puede deshacer.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.svc.delete(id).subscribe({
+          next: () => { this.toast.show('Lote eliminado'); this.load(); if (this.editingId === id) this.cancelEdit(); },
+          error: err => { this.error = this.extractError(err); },
+        });
+      });
   }
 
-  cancelEdit() { this.editingId = null; this.resetForm(); }
+  cancelEdit() { this.editingId = null; this.currentItem = null; this.resetForm(); }
 
   resetForm() {
     this.form = { lotNumber: '', materialCode: '', materialName: '', supplierCode: '', supplierLot: '', receivedDate: '', expiryDate: '', initialQty: 0, availableQty: 0, uom: 'kg', locationCode: '', status: 'AVAILABLE', notes: '' };

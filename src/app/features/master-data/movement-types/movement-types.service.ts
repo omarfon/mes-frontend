@@ -19,7 +19,9 @@ export interface MovementType {
   autoConsumed: boolean;
   active: boolean;
   notes: string;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 

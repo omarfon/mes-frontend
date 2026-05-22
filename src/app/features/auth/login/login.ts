@@ -1,68 +1,77 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
   standalone: true,
   selector: 'app-login',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './login.html',
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   email = '';
   password = '';
   loading = false;
   error: string | null = null;
-  Date = new Date; // Agregar esta línea
+  showPassword = false;
+  rememberMe = false;
 
-  constructor(private auth: AuthService, private router: Router, private route: ActivatedRoute) {}
+  constructor(private auth: AuthService, private router: Router, private route: ActivatedRoute, private cdr: ChangeDetectorRef) {}
 
-  submit(email: string, password: string) {
-  console.log('Intentando iniciar sesión con', email, password);
-  
-  // Validación básica en frontend
-  if (!email || !password) {
-    this.error = 'Por favor complete todos los campos';
-    return;
+  ngOnInit() {
+    const saved = localStorage.getItem('mes_remembered_email');
+    if (saved) {
+      this.email = saved;
+      this.rememberMe = true;
+    }
   }
-  
-  if (password.length < 6) {
-    this.error = 'La contraseña debe tener al menos 6 caracteres';
-    return;
-  }
-  
-  this.loading = true;
-  this.error = null;
 
-  this.auth.login({ email: email, password: password }).subscribe({
-    next: () => {
-      const rawReturnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
-      const returnUrl = typeof rawReturnUrl === 'string' ? rawReturnUrl : '/dashboard';
-      const safeReturnUrl = returnUrl.startsWith('/auth') ? '/dashboard' : returnUrl;
-      this.router.navigateByUrl(safeReturnUrl);
-      this.loading = false;
-    },
-    error: (err) => {
-      this.loading = false;
-      console.error('Error en login:', err);
-      
-      // Extraer mensajes de error del backend
-      if (err.error?.message) {
-        if (Array.isArray(err.error.message)) {
-          this.error = err.error.message.join(', ');
+  submit() {
+    if (!this.email || !this.password) {
+      this.error = 'Por favor complete todos los campos';
+      this.cdr.detectChanges();
+      return;
+    }
+    if (this.password.length < 6) {
+      this.error = 'La contraseña debe tener al menos 6 caracteres';
+      this.cdr.detectChanges();
+      return;
+    }
+    this.loading = true;
+    this.error = null;
+    if (this.rememberMe) {
+      localStorage.setItem('mes_remembered_email', this.email);
+    } else {
+      localStorage.removeItem('mes_remembered_email');
+    }
+
+    this.auth.login({ email: this.email, password: this.password }).subscribe({
+      next: () => {
+        const rawReturnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+        const returnUrl = typeof rawReturnUrl === 'string' ? rawReturnUrl : '/dashboard';
+        const safeReturnUrl = returnUrl.startsWith('/auth') ? '/dashboard' : returnUrl;
+        this.router.navigateByUrl(safeReturnUrl);
+        this.loading = false;
+      },
+      error: (err) => {
+        this.loading = false;
+        if (err.error?.message) {
+          this.error = Array.isArray(err.error.message)
+            ? err.error.message.join(', ')
+            : err.error.message;
+        } else if (err.status === 401) {
+          this.error = 'Credenciales inválidas';
+        } else if (err.status === 422) {
+          this.error = 'Datos inválidos. Verifica tu email y contraseña';
+        } else if (err.status === 0) {
+          this.error = 'No se puede conectar con el servidor';
         } else {
-          this.error = err.error.message;
+          this.error = 'Error al iniciar sesión. Intenta nuevamente';
         }
-      } else if (err.status === 401) {
-        this.error = 'Credenciales inválidas';
-      } else if (err.status === 422) {
-        this.error = 'Datos inválidos. Verifica tu email y contraseña';
-      } else {
-        this.error = 'Error al iniciar sesión. Intenta nuevamente';
-      }
-    },
-  });
+        this.cdr.detectChanges();
+      },
+    });
   }
 }

@@ -2,11 +2,15 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShiftsService, Shift, CreateShiftDto } from './schifts.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuditHistoryComponent } from '../../../shared/components/audit-history/audit-history';
+import { ConfirmService } from '../../../shared/components/confirm-modal/confirm.service';
+import { ToastService } from '../../../shared/components/toast/toast.service';
 
 @Component({
   standalone: true,
   selector: 'app-shifts',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AuditHistoryComponent],
   templateUrl: './schifts.html',
 })
 export class ShiftsComponent implements OnInit {
@@ -22,13 +26,19 @@ export class ShiftsComponent implements OnInit {
 
   items: Shift[] = [];
   editingId: string | null = null;
+  currentItem: Shift | null = null;
+  formPanelOpen = false;
+  viewOnly = false;
   q = '';
   loading = false;
   error: string | null = null;
 
   constructor(
     private shiftsService: ShiftsService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private authSvc: AuthService,
+    private confirmSvc: ConfirmService,
+    private toast: ToastService
   ) {}
 
   ngOnInit() {
@@ -85,12 +95,22 @@ export class ShiftsComponent implements OnInit {
       breakMinutes: this.form.breakMinutes || undefined,
     };
 
+    const payload = dto as any;
+    const username = this.authSvc.getCurrentUsername();
+    if (!this.editingId) {
+      payload.createdBy = username;
+    } else {
+      payload.updatedBy = username;
+    }
+
     if (this.editingId) {
-      this.shiftsService.update(this.editingId, dto).subscribe({
+      this.shiftsService.update(this.editingId, payload).subscribe({
         next: (updated) => {
           console.log('Shift updated:', updated);
+          this.toast.show('Turno actualizado');
           this.loadShifts();
           this.cancelEdit();
+          this.formPanelOpen = false;
         },
         error: (err) => {
           console.error('Error updating:', err);
@@ -99,11 +119,13 @@ export class ShiftsComponent implements OnInit {
         }
       });
     } else {
-      this.shiftsService.create(dto).subscribe({
+      this.shiftsService.create(payload).subscribe({
         next: (created) => {
           console.log('Shift created:', created);
+          this.toast.show('Turno creado');
           this.loadShifts();
           this.resetForm();
+          this.formPanelOpen = false;
         },
         error: (err) => {
           console.error('Error creating:', err);
@@ -143,6 +165,7 @@ export class ShiftsComponent implements OnInit {
 
   edit(it: Shift) {
     this.editingId = it.id;
+    this.currentItem = it;
     this.form = {
       code: it.code,
       name: it.name,
@@ -152,32 +175,61 @@ export class ShiftsComponent implements OnInit {
       crossesMidnight: it.crossesMidnight || false,
       breakMinutes: it.breakMinutes || 30,
     };
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.viewOnly = false;
+    this.formPanelOpen = true;
+  }
+
+  view(it: Shift) {
+    this.editingId = it.id;
+    this.currentItem = it;
+    this.form = {
+      code: it.code,
+      name: it.name,
+      description: it.description || '',
+      startTime: it.startTime,
+      endTime: it.endTime,
+      crossesMidnight: it.crossesMidnight || false,
+      breakMinutes: it.breakMinutes || 30,
+    };
+    this.viewOnly = true;
+    this.formPanelOpen = true;
   }
 
   remove(id: string) {
-    if (!confirm('¿Estás seguro de eliminar este turno?')) return;
-
-    this.loading = true;
-    this.error = null;
-
-    this.shiftsService.delete(id).subscribe({
-      next: () => {
-        console.log('Shift deleted');
-        this.loadShifts();
-        if (this.editingId === id) this.cancelEdit();
-      },
-      error: (err) => {
-        console.error('Error deleting:', err);
-        this.error = this.extractErrorMessage(err);
-        this.loading = false;
-      }
-    });
+    this.confirmSvc.open({ title: 'Eliminar turno', message: '¿Estás seguro? Esta acción no se puede deshacer.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.loading = true;
+        this.error = null;
+        this.shiftsService.delete(id).subscribe({
+          next: () => {
+            this.toast.show('Turno eliminado');
+            this.loadShifts();
+            if (this.editingId === id) this.cancelEdit();
+          },
+          error: (err) => {
+            console.error('Error deleting:', err);
+            this.error = this.extractErrorMessage(err);
+            this.loading = false;
+          }
+        });
+      });
   }
 
   cancelEdit() {
     this.editingId = null;
+    this.currentItem = null;
+    this.viewOnly = false;
     this.resetForm();
+    this.formPanelOpen = false;
+  }
+
+  openCreatePanel() {
+    this.editingId = null;
+    this.currentItem = null;
+    this.resetForm();
+    this.viewOnly = false;
+    this.formPanelOpen = true;
   }
 
   resetForm() {

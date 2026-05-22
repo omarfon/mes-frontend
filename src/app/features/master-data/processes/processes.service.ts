@@ -47,7 +47,9 @@ export interface Proceso {
   costoEstandar?: number | null;
   notas?: string | null;
   procesoPadreId?: string | null;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
   deletedAt?: string | null;
 }

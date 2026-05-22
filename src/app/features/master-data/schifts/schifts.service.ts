@@ -13,7 +13,9 @@ export interface Shift {
   endTime: string;   // HH:mm
   crossesMidnight?: boolean;
   breakMinutes?: number | null;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
   deletedAt?: string | null;
 }

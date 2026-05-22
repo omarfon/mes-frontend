@@ -15,7 +15,9 @@ export interface ProductVariant {
   netWeight: number | null;
   weightUnit: string;
   active: boolean;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 

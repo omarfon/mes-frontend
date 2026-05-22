@@ -8,11 +8,15 @@ import {
   TipoParada,
   CreateDowntimeReasonDto 
 } from './downtimes-reasons.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuditHistoryComponent } from '../../../shared/components/audit-history/audit-history';
+import { ConfirmService } from '../../../shared/components/confirm-modal/confirm.service';
+import { ToastService } from '../../../shared/components/toast/toast.service';
 
 @Component({
   standalone: true,
   selector: 'app-downtime-reasons',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AuditHistoryComponent],
   templateUrl: './downtimes-reasons.html',
 })
 export class DowntimeReasonsComponent implements OnInit {
@@ -36,6 +40,9 @@ export class DowntimeReasonsComponent implements OnInit {
 
   items: DowntimeReason[] = [];
   editingId: string | null = null;
+  currentItem: DowntimeReason | null = null;
+  formPanelOpen = false;
+  viewOnly = false;
   q = '';
   loading = false;
   error: string | null = null;
@@ -46,8 +53,13 @@ export class DowntimeReasonsComponent implements OnInit {
 
   constructor(
     private downtimeReasonsService: DowntimeReasonsService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private authSvc: AuthService,
+    private confirmSvc: ConfirmService,
+    private toast: ToastService
   ) {}
+
+  openCreatePanel() { this.editingId = null; this.currentItem = null; this.resetForm(); this.viewOnly = false; this.formPanelOpen = true; }
 
   ngOnInit() {
     this.loadReasons();
@@ -111,12 +123,22 @@ submit() {
       activo: this.form.activo,
     };
 
+    const payload = dto as any;
+    const username = this.authSvc.getCurrentUsername();
+    if (!this.editingId) {
+      payload.createdBy = username;
+    } else {
+      payload.updatedBy = username;
+    }
+
     if (this.editingId) {
-      this.downtimeReasonsService.update(this.editingId, dto).subscribe({
+      this.downtimeReasonsService.update(this.editingId, payload).subscribe({
         next: (updated) => {
           console.log('Downtime reason updated:', updated);
+          this.toast.show('Motivo actualizado');
           this.loadReasons();
           this.cancelEdit();
+          this.formPanelOpen = false;
         },
         error: (err) => {
           console.error('Error updating:', err);
@@ -125,11 +147,13 @@ submit() {
         }
       });
     } else {
-      this.downtimeReasonsService.create(dto).subscribe({
+      this.downtimeReasonsService.create(payload).subscribe({
         next: (created) => {
           console.log('Downtime reason created:', created);
+          this.toast.show('Motivo creado');
           this.loadReasons();
           this.resetForm();
+          this.formPanelOpen = false;
         },
         error: (err) => {
           console.error('Error creating:', err);
@@ -173,6 +197,7 @@ submit() {
 
   edit(it: DowntimeReason) {
     this.editingId = it.id;
+    this.currentItem = it;
     this.form = {
       codigo: it.codigo,
       nombre: it.nombre,
@@ -190,34 +215,61 @@ submit() {
       departamentoResponsable: it.departamentoResponsable || '',
       activo: it.activo !== false,
     };
-    
-    // Scroll al formulario
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.viewOnly = false;
+    this.formPanelOpen = true;
+  }
+
+  view(it: DowntimeReason) {
+    this.editingId = it.id;
+    this.currentItem = it;
+    this.form = {
+      codigo: it.codigo,
+      nombre: it.nombre,
+      descripcion: it.descripcion || '',
+      categoria: it.categoria,
+      tipo: it.tipo || TipoParada.CORTA,
+      requiereAprobacion: it.requiereAprobacion || false,
+      requiereComentario: it.requiereComentario || false,
+      requiereEvidencia: it.requiereEvidencia || false,
+      color: it.color || '#e74c3c',
+      icono: it.icono || '⚠️',
+      tiempoEstandardMinutos: it.tiempoEstandardMinutos || 0,
+      prioridad: it.prioridad || 3,
+      impactaOEE: it.impactaOEE !== false,
+      departamentoResponsable: it.departamentoResponsable || '',
+      activo: it.activo !== false,
+    };
+    this.viewOnly = true;
+    this.formPanelOpen = true;
   }
 
   remove(id: string) {
-    if (!confirm('¿Estás seguro de eliminar este motivo de parada?')) return;
-
-    this.loading = true;
-    this.error = null;
-
-    this.downtimeReasonsService.delete(id).subscribe({
-      next: () => {
-        console.log('Downtime reason deleted');
-        this.loadReasons();
-        if (this.editingId === id) this.cancelEdit();
-      },
-      error: (err) => {
-        console.error('Error deleting:', err);
-        this.error = this.extractErrorMessage(err);
-        this.loading = false;
-      }
-    });
+    this.confirmSvc.open({ title: 'Eliminar motivo de parada', message: '¿Estás seguro? Esta acción no se puede deshacer.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.loading = true;
+        this.error = null;
+        this.downtimeReasonsService.delete(id).subscribe({
+          next: () => {
+            this.toast.show('Motivo de parada eliminado');
+            this.loadReasons();
+            if (this.editingId === id) this.cancelEdit();
+          },
+          error: (err) => {
+            console.error('Error deleting:', err);
+            this.error = this.extractErrorMessage(err);
+            this.loading = false;
+          }
+        });
+      });
   }
 
   cancelEdit() {
     this.editingId = null;
+    this.currentItem = null;
+    this.viewOnly = false;
     this.resetForm();
+    this.formPanelOpen = false;
   }
 
   resetForm() {

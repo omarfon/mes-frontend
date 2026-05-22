@@ -1,135 +1,151 @@
-<div class="space-y-5">
+﻿<div class="space-y-5">
   <div class="ui-page-header">
     <div>
-      <h3 class="ui-title">Maestro · Tipos de Orden de Producción</h3>
-      <p class="ui-subtitle">Clasifica las órdenes: normal, reproceso, muestra, urgencia, etc.</p>
+      <h3 class="ui-title">Maestro Â· Tipos de Orden de ProducciÃ³n</h3>
+      <p class="ui-subtitle">Clasifica las Ã³rdenes: normal, reproceso, muestra, urgencia, etc.</p>
     </div>
-    <div class="w-full max-w-sm">
+    <div class="flex items-center gap-3">
       <div class="relative">
         <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
         <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar tipo de orden..." />
       </div>
+      <button (click)="openCreatePanel()" class="ui-btn-primary shrink-0">
+        <span class="pi pi-plus text-xs mr-1"></span> Nuevo tipo
+      </button>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-    <!-- Form -->
-    <div class="ui-surface p-5">
-      <p class="text-sm font-semibold mb-4">{{ editingId ? 'Editar tipo' : 'Nuevo tipo de orden' }}</p>
-      <form (ngSubmit)="submit()" class="space-y-3">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="ui-label">Código</label>
-            <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="OT-NORMAL" />
-          </div>
-          <div>
-            <label class="ui-label">Nombre</label>
-            <input [(ngModel)]="form.name" name="name" required class="ui-input" placeholder="Producción Normal" />
-          </div>
-        </div>
-        <div>
-          <label class="ui-label">Descripción</label>
-          <input [(ngModel)]="form.description" name="description" class="ui-input" placeholder="Descripción breve..." />
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="ui-label">Prioridad</label>
-            <select [(ngModel)]="form.priority" name="priority" class="ui-select">
-              <option *ngFor="let p of priorities" [value]="p.value">{{ p.label }}</option>
-            </select>
-          </div>
-          <div>
-            <label class="ui-label">Color identificador</label>
-            <input type="color" [(ngModel)]="form.color" name="color" class="h-9 w-full rounded-md border border-slate-700 bg-slate-900 cursor-pointer p-1" />
-          </div>
-        </div>
-        <div class="space-y-2 pt-1">
-          <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer w-full">
-            <input type="checkbox" [(ngModel)]="form.allowsRework" name="allowsRework" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
-            Permite reproceso
-          </label>
-          <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer w-full">
-            <input type="checkbox" [(ngModel)]="form.requiresQA" name="requiresQA" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
-            Requiere inspección de calidad
-          </label>
-          <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer w-full">
-            <input type="checkbox" [(ngModel)]="form.requiresRelease" name="requiresRelease" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
-            Requiere liberación previa
-          </label>
-          <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer w-full">
-            <input type="checkbox" [(ngModel)]="form.active" name="active" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
-            Activo
-          </label>
-        </div>
-        <div class="flex gap-2 pt-1">
-          <button type="submit" class="flex-1 ui-btn-primary">{{ editingId ? 'Guardar cambios' : 'Agregar' }}</button>
-          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
-        </div>
-      </form>
+  <div class="ui-surface p-5">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-sm font-semibold">Listado</p>
+      <span class="text-[11px] text-slate-500">{{ filtered.length }} tipo(s)</span>
     </div>
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead class="ui-thead">
+          <tr>
+            <th class="ui-th w-6">Color</th>
+            <th class="ui-th">CÃ³digo</th>
+            <th class="ui-th">Nombre</th>
+            <th class="ui-th">Prioridad</th>
+            <th class="ui-th text-center">Reproceso</th>
+            <th class="ui-th text-center">Control QA</th>
+            <th class="ui-th text-center">LiberaciÃ³n</th>
+            <th class="ui-th text-center">Estado</th>
+            <th class="ui-th w-28">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="bg-slate-950/20">
+          <tr *ngFor="let it of filtered" class="ui-tr">
+            <td class="ui-td"><span class="block h-5 w-5 rounded-full border-2 border-slate-700" [style.background-color]="it.color"></span></td>
+            <td class="ui-td font-mono text-xs font-bold">{{ it.code }}</td>
+            <td class="ui-td">
+              <p class="text-sm font-semibold">{{ it.name }}</p>
+              <p *ngIf="it.description" class="text-[11px] text-slate-500">{{ it.description }}</p>
+            </td>
+            <td class="ui-td"><span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" [ngClass]="priorityCls(it.priority)">{{ priorityLabel(it.priority) }}</span></td>
+            <td class="ui-td text-center"><span class="pi" [ngClass]="it.allowsRework ? 'pi-check-circle text-emerald-400' : 'pi-times-circle text-slate-600'"></span></td>
+            <td class="ui-td text-center"><span class="pi" [ngClass]="it.requiresQA ? 'pi-check-circle text-emerald-400' : 'pi-times-circle text-slate-600'"></span></td>
+            <td class="ui-td text-center"><span class="pi" [ngClass]="it.requiresRelease ? 'pi-check-circle text-emerald-400' : 'pi-times-circle text-slate-600'"></span></td>
+            <td class="ui-td text-center"><span [ngClass]="it.active ? 'ui-badge-ok' : 'ui-badge-bad'">{{ it.active ? 'Activo' : 'Inactivo' }}</span></td>
+            <td class="ui-td">
+              <div class="flex items-center gap-1">
+                <button (click)="view(it)" title="Ver" class="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition"><i class="pi pi-eye text-xs"></i></button>
+                <button (click)="edit(it)" title="Editar" class="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-800 text-slate-400 hover:text-blue-400 transition"><i class="pi pi-pencil text-xs"></i></button>
+                <button (click)="remove(it.id)" title="Eliminar" class="w-7 h-7 flex items-center justify-center rounded hover:bg-red-900/40 text-slate-400 hover:text-red-400 transition"><i class="pi pi-trash text-xs"></i></button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filtered.length === 0">
+            <td colspan="9" class="px-4 py-10 text-center text-slate-500">Sin tipos de orden.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-    <!-- Table / Cards -->
-    <div class="xl:col-span-2 ui-surface p-5">
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">Listado</p>
-        <span class="text-[11px] text-slate-500">{{ filtered.length }} tipo(s)</span>
+  <div *ngIf="formPanelOpen" class="fixed inset-0 z-40 flex justify-end">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" (click)="cancelEdit()"></div>
+    <aside class="relative z-50 w-full max-w-xl h-full bg-slate-950 border-l border-slate-800 shadow-2xl flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-800 shrink-0">
+        <p class="text-sm font-semibold">{{ viewOnly ? 'Ver tipo de orden' : (editingId ? 'Editar tipo de orden' : 'Nuevo tipo de orden') }}</p>
+        <button type="button" (click)="cancelEdit()" class="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-800 text-slate-400 transition"><span class="pi pi-times text-xs"></span></button>
       </div>
-
-      <div class="ui-table-wrap">
-        <table class="ui-table">
-          <thead class="ui-thead">
-            <tr>
-              <th class="ui-th w-6">Color</th>
-              <th class="ui-th">Código</th>
-              <th class="ui-th">Nombre</th>
-              <th class="ui-th">Prioridad</th>
-              <th class="ui-th text-center">Reproceso</th>
-              <th class="ui-th text-center">Control QA</th>
-              <th class="ui-th text-center">Liberación</th>
-              <th class="ui-th text-center">Estado</th>
-              <th class="ui-th w-28">Acciones</th>
-            </tr>
-          </thead>
-          <tbody class="bg-slate-950/20">
-            <tr *ngFor="let it of filtered" class="ui-tr">
-              <td class="ui-td">
-                <span class="block h-5 w-5 rounded-full border-2 border-slate-700" [style.background-color]="it.color"></span>
-              </td>
-              <td class="ui-td font-mono text-xs font-bold">{{ it.code }}</td>
-              <td class="ui-td">
-                <p class="text-sm font-semibold">{{ it.name }}</p>
-                <p *ngIf="it.description" class="text-[11px] text-slate-500">{{ it.description }}</p>
-              </td>
-              <td class="ui-td">
-                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" [ngClass]="priorityCls(it.priority)">
-                  {{ priorityLabel(it.priority) }}
-                </span>
-              </td>
-              <td class="ui-td text-center">
-                <span class="pi" [ngClass]="it.allowsRework ? 'pi-check-circle text-emerald-400' : 'pi-times-circle text-slate-600'"></span>
-              </td>
-              <td class="ui-td text-center">
-                <span class="pi" [ngClass]="it.requiresQA ? 'pi-check-circle text-emerald-400' : 'pi-times-circle text-slate-600'"></span>
-              </td>
-              <td class="ui-td text-center">
-                <span class="pi" [ngClass]="it.requiresRelease ? 'pi-check-circle text-emerald-400' : 'pi-times-circle text-slate-600'"></span>
-              </td>
-              <td class="ui-td text-center">
-                <span [ngClass]="it.active ? 'ui-badge-ok' : 'ui-badge-bad'">{{ it.active ? 'Activo' : 'Inactivo' }}</span>
-              </td>
-              <td class="ui-td">
-                <div class="flex gap-2">
-                  <button (click)="edit(it)" class="ui-btn-ghost text-xs">Editar</button>
-                  <button (click)="remove(it.id)" class="ui-btn-danger text-xs">Del</button>
+      <div class="flex-1 overflow-y-auto px-5 py-4">
+        <form (ngSubmit)="submit()" id="order-type-form">
+          <fieldset [disabled]="viewOnly" class="space-y-4 border-0 m-0 p-0 min-w-0">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="ui-label">CÃ³digo</label>
+                <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="OT-NORMAL" />
+              </div>
+              <div>
+                <label class="ui-label">Nombre</label>
+                <input [(ngModel)]="form.name" name="name" required class="ui-input" placeholder="ProducciÃ³n Normal" />
+              </div>
+            </div>
+            <div>
+              <label class="ui-label">DescripciÃ³n</label>
+              <input [(ngModel)]="form.description" name="description" class="ui-input" placeholder="DescripciÃ³n breve..." />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="ui-label">Prioridad</label>
+                <select [(ngModel)]="form.priority" name="priority" class="ui-select">
+                  <option *ngFor="let p of priorities" [value]="p.value">{{ p.label }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="ui-label">Color identificador</label>
+                <input type="color" [(ngModel)]="form.color" name="color" class="h-9 w-full rounded-md border border-slate-700 bg-slate-900 cursor-pointer p-1" />
+              </div>
+            </div>
+            <div class="space-y-2 pt-1">
+              <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer w-full">
+                <input type="checkbox" [(ngModel)]="form.allowsRework" name="allowsRework" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+                Permite reproceso
+              </label>
+              <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer w-full">
+                <input type="checkbox" [(ngModel)]="form.requiresQA" name="requiresQA" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+                Requiere inspecciÃ³n de calidad
+              </label>
+              <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer w-full">
+                <input type="checkbox" [(ngModel)]="form.requiresRelease" name="requiresRelease" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+                Requiere liberaciÃ³n previa
+              </label>
+              <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer w-full">
+                <input type="checkbox" [(ngModel)]="form.active" name="active" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+                Activo
+              </label>
+            </div>
+            <div *ngIf="currentItem" class="px-3 py-2.5 rounded-lg bg-slate-900/50 border border-slate-800">
+              <p class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">AuditorÃ­a</p>
+              <div class="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <span class="text-slate-500">Creado por:</span>
+                  <span class="text-slate-300 ml-1">{{ currentItem?.createdBy || 'â€”' }}</span>
+                  <div *ngIf="currentItem?.createdAt" class="text-[10px] text-slate-600 mt-0.5">{{ currentItem?.createdAt | date: 'dd/MM/yyyy HH:mm' }}</div>
                 </div>
-              </td>
-            </tr>
-            <tr *ngIf="filtered.length === 0">
-              <td colspan="9" class="px-4 py-10 text-center text-slate-500">Sin tipos de orden.</td>
-            </tr>
-          </tbody>
-        </table>
+                <div>
+                  <span class="text-slate-500">Modificado por:</span>
+                  <span class="text-slate-300 ml-1">{{ currentItem?.updatedBy || 'â€”' }}</span>
+                  <div *ngIf="currentItem?.updatedAt" class="text-[10px] text-slate-600 mt-0.5">{{ currentItem?.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</div>
+                </div>
+              </div>
+            </div>
+            <app-audit-history *ngIf="editingId" entityType="OrderType" [entityId]="editingId" />
+          </fieldset>
+        </form>
       </div>
-    </div>
+      <div class="px-5 py-4 border-t border-slate-800 flex gap-2 shrink-0">
+        <ng-container *ngIf="viewOnly; else editActions">
+          <button type="button" (click)="cancelEdit()" class="flex-1 ui-btn-ghost">Cerrar</button>
+        </ng-container>
+        <ng-template #editActions>
+          <button type="submit" form="order-type-form" [disabled]="loading" class="flex-1 ui-btn-primary">{{ editingId ? 'Guardar cambios' : 'Agregar' }}</button>
+          <button type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+        </ng-template>
+      </div>
+    </aside>
   </div>
 </div>

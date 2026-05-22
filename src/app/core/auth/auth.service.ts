@@ -71,7 +71,20 @@ export class AuthService {
     }
   }
 
+  getCurrentUsername(): string {
+    const user = this.currentUser;
+    return user?.username || user?.email || '-';
+  }
+
   isAuthenticated(): boolean {
     return !!this.token;
+  }
+
+  forgotPassword(email: string): Observable<{ message: string; resetToken?: string; expiresIn?: string }> {
+    return this.http.post<any>(`${this.apiUrl}${environment.endpoints.auth}/forgot-password`, { email });
+  }
+
+  resetPassword(token: string, newPassword: string): Observable<{ message: string }> {
+    return this.http.post<any>(`${this.apiUrl}${environment.endpoints.auth}/reset-password`, { token, newPassword });
   }
 }

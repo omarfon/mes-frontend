@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DespachosService, Despacho, TipoDespacho, EstadoDespacho, CreateDespachoDto } from './dispatch.service';
+import { ConfirmService } from '../../../shared/components/confirm-modal/confirm.service';
 
 @Component({
   standalone: true,
@@ -44,9 +45,13 @@ export class DispatchComponent implements OnInit {
   tipos = Object.values(TipoDespacho);
   estados = Object.values(EstadoDespacho);
 
+  // Vista detalle
+  viewingDespacho: Despacho | null = null;
+
   constructor(
     private despachosService: DespachosService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private confirmSvc: ConfirmService
   ) {}
 
   ngOnInit() {
@@ -256,28 +261,38 @@ export class DispatchComponent implements OnInit {
   }
 
   remove(id: string) {
-    if (!confirm('¿Eliminar este despacho?')) return;
-
-    this.loading = true;
-    this.despachosService.delete(id).subscribe({
-      next: () => {
-        console.log('Despacho deleted');
-        this.loadDespachos();
-        this.ensurePageInRange();
-      },
-      error: (err) => {
-        console.error('Error deleting:', err);
-        this.error = this.extractErrorMessage(err);
-        this.loading = false;
-        this.cdr.detectChanges();
-      }
-    });
+    this.confirmSvc.open({ title: 'Eliminar despacho', message: '¿Estás seguro? Esta acción no se puede deshacer.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.loading = true;
+        this.despachosService.delete(id).subscribe({
+          next: () => {
+            console.log('Despacho deleted');
+            this.loadDespachos();
+            this.ensurePageInRange();
+          },
+          error: (err) => {
+            console.error('Error deleting:', err);
+            this.error = this.extractErrorMessage(err);
+            this.loading = false;
+            this.cdr.detectChanges();
+          }
+        });
+      });
   }
 
   cancelEdit() {
     this.editingId = null;
     this.resetForm();
     this.formPanelOpen = false;
+  }
+
+  view(d: Despacho) {
+    this.viewingDespacho = d;
+  }
+
+  closeView() {
+    this.viewingDespacho = null;
   }
 
   openCreatePanel() {

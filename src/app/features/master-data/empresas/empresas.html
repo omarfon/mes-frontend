@@ -5,116 +5,163 @@
       <p class="ui-subtitle">Empresas clientes para estudios de factibilidad y cotizaciones.</p>
     </div>
 
-    <div class="w-full max-w-sm">
-      <div class="relative">
-        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
-        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar empresa..." />
+    <div class="flex items-center gap-3">
+      <div class="w-full max-w-sm">
+        <div class="relative">
+          <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+          <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar empresa..." />
+        </div>
       </div>
+      <button type="button" (click)="openCreatePanel()"
+        class="ui-btn-primary text-xs flex items-center gap-2 whitespace-nowrap">
+        <i class="pi pi-plus text-xs"></i>
+        Nueva empresa
+      </button>
     </div>
   </div>
 
   <!-- Error -->
   <div *ngIf="error" class="ui-alert-error">{{ error }}</div>
 
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+  <div class="ui-surface p-5">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-sm font-semibold">Listado</p>
+      <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
+    </div>
+    <div *ngIf="loading" class="text-center py-8 text-slate-500 text-sm">Cargando...</div>
+    <div *ngIf="!loading" class="ui-table-wrap">
+      <table class="ui-table">
+        <thead class="ui-thead">
+          <tr>
+            <th class="ui-th">RUC</th>
+            <th class="ui-th">Razón social</th>
+            <th class="ui-th">Dirección</th>
+            <th class="ui-th">Teléfono</th>
+            <th class="ui-th">Email</th>
+            <th class="ui-th">Estado</th>
+            <th class="ui-th w-40">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="bg-slate-950/20">
+          <tr *ngFor="let it of filtered" class="ui-tr">
+            <td class="ui-td font-mono text-xs">{{ it.ruc }}</td>
+            <td class="ui-td font-medium">{{ it.name }}</td>
+            <td class="ui-td text-slate-400">{{ it.address || '-' }}</td>
+            <td class="ui-td">{{ it.phone || '-' }}</td>
+            <td class="ui-td">{{ it.email || '-' }}</td>
+            <td class="ui-td">
+              <span [ngClass]="it.active ? 'ui-badge-ok' : 'ui-badge-bad'">
+                {{ it.active ? 'Activa' : 'Inactiva' }}
+              </span>
+            </td>
+            <td class="ui-td">
+              <div class="flex items-center gap-1">
+                <button (click)="view(it)" title="Ver"
+                  class="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition">
+                  <i class="pi pi-eye text-xs"></i>
+                </button>
+                <button (click)="edit(it)" title="Editar"
+                  class="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-800 text-slate-400 hover:text-blue-400 transition">
+                  <i class="pi pi-pencil text-xs"></i>
+                </button>
+                <button (click)="remove(it.id)" title="Eliminar"
+                  class="w-7 h-7 flex items-center justify-center rounded hover:bg-red-900/40 text-slate-400 hover:text-red-400 transition">
+                  <i class="pi pi-trash text-xs"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filtered.length === 0">
+            <td colspan="7" class="ui-td text-center text-slate-500 py-6">Sin registros</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-    <!-- Formulario -->
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">{{ editingId ? 'Editar empresa' : 'Nueva empresa' }}</p>
-        <span class="text-[11px] text-slate-500">Campos mínimos</span>
+  <!-- ═══════════  PANEL LATERAL  ═══════════ -->
+  <div *ngIf="formPanelOpen" class="fixed inset-0 z-40 flex justify-end">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" (click)="cancelEdit()"></div>
+    <aside class="relative z-50 w-full max-w-xl h-full bg-slate-950 border-l border-slate-800 shadow-2xl flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-800 shrink-0">
+        <div>
+          <p class="text-sm font-semibold">{{ viewOnly ? 'Ver empresa' : (editingId ? 'Editar empresa' : 'Nueva empresa') }}</p>
+          <span class="text-[11px] text-slate-500">Campos mínimos</span>
+        </div>
+        <button type="button" (click)="cancelEdit()"
+          class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition">
+          <i class="pi pi-times text-xs"></i>
+        </button>
       </div>
-
-      <form (ngSubmit)="submit()" class="space-y-4">
-        <div>
-          <label class="ui-label">RUC *</label>
-          <input [(ngModel)]="form.ruc" name="ruc" required class="ui-input" placeholder="20123456789" />
-        </div>
-
-        <div>
-          <label class="ui-label">Razón social *</label>
-          <input [(ngModel)]="form.name" name="name" required class="ui-input" placeholder="Empresa S.A." />
-        </div>
-
-        <div>
-          <label class="ui-label">Dirección</label>
-          <input [(ngModel)]="form.address" name="address" class="ui-input" placeholder="Av. Principal 123" />
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
+      <div class="flex-1 overflow-y-auto px-5 py-4">
+        <form (ngSubmit)="submit()" id="empresa-form">
+          <fieldset [disabled]="viewOnly" class="space-y-4 border-0 m-0 p-0 min-w-0">
           <div>
-            <label class="ui-label">Teléfono</label>
-            <input [(ngModel)]="form.phone" name="phone" class="ui-input" placeholder="999888777" />
+            <label class="ui-label">RUC *</label>
+            <input [(ngModel)]="form.ruc" name="ruc" required class="ui-input" placeholder="20123456789" />
           </div>
           <div>
-            <label class="ui-label">Email</label>
-            <input [(ngModel)]="form.email" name="email" class="ui-input" placeholder="contacto@empresa.com" />
+            <label class="ui-label">Razón social *</label>
+            <input [(ngModel)]="form.name" name="name" required class="ui-input" placeholder="Empresa S.A." />
           </div>
-        </div>
-
-        <label class="inline-flex items-center gap-2 text-xs text-slate-300">
-          <input type="checkbox" [(ngModel)]="form.active" name="active"
-                 class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
-          Activa
-        </label>
-
-        <div class="flex gap-2 pt-1">
-          <button type="submit" [disabled]="loading" class="flex-1 ui-btn-primary">
+          <div>
+            <label class="ui-label">Dirección</label>
+            <input [(ngModel)]="form.address" name="address" class="ui-input" placeholder="Av. Principal 123" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="ui-label">Teléfono</label>
+              <input [(ngModel)]="form.phone" name="phone" class="ui-input" placeholder="999888777" />
+            </div>
+            <div>
+              <label class="ui-label">Email</label>
+              <input [(ngModel)]="form.email" name="email" class="ui-input" placeholder="contacto@empresa.com" />
+            </div>
+          </div>
+          <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+            <input type="checkbox" [(ngModel)]="form.active" name="active"
+                   class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+            Activa
+          </label>
+          <div class="px-3 py-2.5 rounded-lg bg-slate-900/50 border border-slate-800">
+            <p class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">Auditoría</p>
+            <div class="grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <span class="text-slate-500">Creado por:</span>
+                <span class="text-slate-300 ml-1">{{ currentItem?.createdBy || '—' }}</span>
+                <div *ngIf="currentItem?.createdAt" class="text-[10px] text-slate-600 mt-0.5">
+                  {{ currentItem?.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+                </div>
+              </div>
+              <div>
+                <span class="text-slate-500">Modificado por:</span>
+                <span class="text-slate-300 ml-1">{{ currentItem?.updatedBy || '—' }}</span>
+                <div *ngIf="currentItem?.updatedAt" class="text-[10px] text-slate-600 mt-0.5">
+                  {{ currentItem?.updatedAt | date: 'dd/MM/yyyy HH:mm' }}
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Historial de cambios (solo al editar) -->
+          <app-audit-history
+            *ngIf="editingId"
+            entityType="Empresa"
+            [entityId]="editingId"
+          />
+          </fieldset>
+        </form>
+      </div>
+      <div class="px-5 py-4 border-t border-slate-800 flex gap-2 shrink-0">
+        <ng-container *ngIf="viewOnly; else editActions">
+          <button type="button" (click)="cancelEdit()" class="flex-1 ui-btn-ghost">Cerrar</button>
+        </ng-container>
+        <ng-template #editActions>
+          <button type="submit" form="empresa-form" [disabled]="loading" class="flex-1 ui-btn-primary">
             {{ editingId ? 'Guardar' : 'Agregar' }}
           </button>
-          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
-        </div>
-      </form>
-    </div>
-
-    <!-- Tabla -->
-    <div class="xl:col-span-2 ui-surface p-5">
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">Listado</p>
-        <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
+          <button type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+        </ng-template>
       </div>
-
-      <div *ngIf="loading" class="text-center py-8 text-slate-500 text-sm">Cargando...</div>
-
-      <div *ngIf="!loading" class="ui-table-wrap">
-        <table class="ui-table">
-          <thead class="ui-thead">
-            <tr>
-              <th class="ui-th">RUC</th>
-              <th class="ui-th">Razón social</th>
-              <th class="ui-th">Dirección</th>
-              <th class="ui-th">Teléfono</th>
-              <th class="ui-th">Email</th>
-              <th class="ui-th">Estado</th>
-              <th class="ui-th w-40">Acciones</th>
-            </tr>
-          </thead>
-          <tbody class="bg-slate-950/20">
-            <tr *ngFor="let it of filtered" class="ui-tr">
-              <td class="ui-td font-mono text-xs">{{ it.ruc }}</td>
-              <td class="ui-td font-medium">{{ it.name }}</td>
-              <td class="ui-td text-slate-400">{{ it.address || '-' }}</td>
-              <td class="ui-td">{{ it.phone || '-' }}</td>
-              <td class="ui-td">{{ it.email || '-' }}</td>
-              <td class="ui-td">
-                <span [ngClass]="it.active ? 'ui-badge-ok' : 'ui-badge-bad'">
-                  {{ it.active ? 'Activa' : 'Inactiva' }}
-                </span>
-              </td>
-              <td class="ui-td">
-                <div class="flex gap-2">
-                  <button (click)="edit(it)" class="ui-btn-ghost text-xs">Editar</button>
-                  <button (click)="remove(it.id)" class="ui-btn-danger text-xs">Eliminar</button>
-                </div>
-              </td>
-            </tr>
-            <tr *ngIf="filtered.length === 0">
-              <td colspan="7" class="ui-td text-center text-slate-500 py-6">Sin registros</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
+    </aside>
   </div>
 </div>

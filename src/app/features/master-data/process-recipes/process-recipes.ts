@@ -2,11 +2,15 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProcessRecipesService, ProcessRecipe, RecipeParam, CreateProcessRecipeDto, CreateRecipeParamDto } from './process-recipes.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuditHistoryComponent } from '../../../shared/components/audit-history/audit-history';
+import { ConfirmService } from '../../../shared/components/confirm-modal/confirm.service';
+import { ToastService } from '../../../shared/components/toast/toast.service';
 
 @Component({
   standalone: true,
   selector: 'app-process-recipes',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AuditHistoryComponent],
   templateUrl: './process-recipes.html',
 })
 export class ProcessRecipesComponent implements OnInit {
@@ -22,6 +26,7 @@ export class ProcessRecipesComponent implements OnInit {
   items: ProcessRecipe[] = [];
   selectedParams: RecipeParam[] = [];
   editingId: string | null = null;
+  currentItem: ProcessRecipe | null = null;
   editingParamId: string | null = null;
   selectedId: string | null = null;
   q = '';
@@ -29,7 +34,7 @@ export class ProcessRecipesComponent implements OnInit {
   loading = false;
   error: string | null = null;
 
-  constructor(private svc: ProcessRecipesService, private cdr: ChangeDetectorRef) {}
+  constructor(private svc: ProcessRecipesService, private cdr: ChangeDetectorRef, private authSvc: AuthService, private confirmSvc: ConfirmService, private toast: ToastService) {}
 
   ngOnInit() { this.load(); }
 
@@ -78,11 +83,19 @@ export class ProcessRecipesComponent implements OnInit {
   submit() {
     if (!this.form.code || !this.form.productCode) return;
     this.loading = true;
+    const payload = { ...this.form } as any;
+    const username = this.authSvc.getCurrentUsername();
+    if (!this.editingId) {
+      payload.createdBy = username;
+    } else {
+      payload.updatedBy = username;
+    }
     const obs = this.editingId
-      ? this.svc.update(this.editingId, this.form)
-      : this.svc.create(this.form);
+      ? this.svc.update(this.editingId, payload)
+      : this.svc.create(payload);
     obs.subscribe({
       next: () => {
+        this.toast.show(this.editingId ? 'Receta actualizada' : 'Receta creada');
         this.load();
         this.editingId ? this.cancelEdit() : this.resetForm();
       },
@@ -92,6 +105,7 @@ export class ProcessRecipesComponent implements OnInit {
 
   edit(it: ProcessRecipe) {
     this.editingId = it.id;
+    this.currentItem = it;
     this.form = {
       code: it.code,
       name: it.name,
@@ -105,21 +119,25 @@ export class ProcessRecipesComponent implements OnInit {
   }
 
   remove(id: string) {
-    if (!confirm('¿Eliminar esta receta y todos sus parámetros?')) return;
-    this.svc.delete(id).subscribe({
-      next: () => {
-        if (this.selectedId === id) {
-          this.selectedId = null;
-          this.selectedParams = [];
-        }
-        if (this.editingId === id) this.cancelEdit();
-        this.load();
-      },
-      error: err => { this.error = this.extractError(err); },
-    });
+    this.confirmSvc.open({ title: 'Eliminar receta', message: '¿Estás seguro? Se eliminarán todos sus parámetros.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.svc.delete(id).subscribe({
+          next: () => {
+            this.toast.show('Receta eliminada');
+            if (this.selectedId === id) {
+              this.selectedId = null;
+              this.selectedParams = [];
+            }
+            if (this.editingId === id) this.cancelEdit();
+            this.load();
+          },
+          error: err => { this.error = this.extractError(err); },
+        });
+      });
   }
 
-  cancelEdit() { this.editingId = null; this.resetForm(); }
+  cancelEdit() { this.editingId = null; this.currentItem = null; this.resetForm(); }
 
   resetForm() {
     this.form = { code: '', name: '', productCode: '', operationCode: '', version: '1.0', approvedBy: '', approvedAt: '', active: true };
@@ -157,15 +175,20 @@ export class ProcessRecipesComponent implements OnInit {
   }
 
   removeParam(id?: string) {
-    if (!id || !this.selectedId || !confirm('¿Eliminar este parámetro?')) return;
-    this.svc.deleteParam(this.selectedId, id).subscribe({
-      next: () => {
-        this.selectedParams = this.selectedParams.filter(p => p.id !== id);
-        if (this.editingParamId === id) this.cancelParamEdit();
-        this.cdr.detectChanges();
-      },
-      error: err => { this.error = this.extractError(err); },
-    });
+    if (!id || !this.selectedId) return;
+    this.confirmSvc.open({ title: 'Eliminar parámetro', message: '¿Estás seguro? Esta acción no se puede deshacer.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.svc.deleteParam(this.selectedId!, id).subscribe({
+          next: () => {
+            this.toast.show('Parámetro eliminado');
+            this.selectedParams = this.selectedParams.filter(p => p.id !== id);
+            if (this.editingParamId === id) this.cancelParamEdit();
+            this.cdr.detectChanges();
+          },
+          error: err => { this.error = this.extractError(err); },
+        });
+      });
   }
 
   cancelParamEdit() {

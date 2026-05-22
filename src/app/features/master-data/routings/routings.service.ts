@@ -25,7 +25,9 @@ export interface Routing {
   version: string;
   active: boolean;
   steps: RoutingStep[];
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 

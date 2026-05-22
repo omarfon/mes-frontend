@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../auth/auth.service';
 
 @Component({
@@ -11,18 +11,21 @@ import { AuthService } from '../../auth/auth.service';
 })
 export class MainLayout {
   sidebarCollapsed = false;
+  userMenuOpen = false;
 
-  constructor(public auth: AuthService) {}
+  constructor(public auth: AuthService, private router: Router) {}
 
   toggleSidebar() {
     this.sidebarCollapsed = !this.sidebarCollapsed;
   }
 
+  toggleUserMenu() {
+    this.userMenuOpen = !this.userMenuOpen;
+  }
+
   logout() {
     this.auth.logout();
-    // si ya tienes rutas protegidas, el guard te mandará al login
-    // si prefieres directo:
-    // location.href = '/auth/login';
+    this.router.navigate(['/auth/login']);
   }
   masterMenuOpen = false;
 

@@ -2,11 +2,15 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MachinesService, Machine, MachineStatus, CreateMachineDto, MachineType } from './machines.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuditHistoryComponent } from '../../../shared/components/audit-history/audit-history';
+import { ConfirmService } from '../../../shared/components/confirm-modal/confirm.service';
+import { ToastService } from '../../../shared/components/toast/toast.service';
 
 @Component({
   standalone: true,
   selector: 'app-machines',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AuditHistoryComponent],
   templateUrl: './machines.html',
 })
 export class MachinesComponent implements OnInit {
@@ -46,6 +50,9 @@ export class MachinesComponent implements OnInit {
 
   items: Machine[] = [];
   editingId: string | null = null;
+  currentItem: Machine | null = null;
+  formPanelOpen = false;
+  viewOnly = false;
   q = '';
   filterArea = '';
   loading = false;
@@ -53,8 +60,13 @@ export class MachinesComponent implements OnInit {
 
   constructor(
     private machinesService: MachinesService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private authSvc: AuthService,
+    private confirmSvc: ConfirmService,
+    private toast: ToastService
   ) {}
+
+  openCreatePanel() { this.editingId = null; this.currentItem = null; this.resetForm(); this.viewOnly = false; this.formPanelOpen = true; }
 
   ngOnInit() {
     this.loadMachines();
@@ -137,9 +149,16 @@ export class MachinesComponent implements OnInit {
       if (v !== '' && v !== null && v !== undefined) dto[k] = v;
     });
 
+    const username = this.authSvc.getCurrentUsername();
+    if (!this.editingId) {
+      dto.createdBy = username;
+    } else {
+      dto.updatedBy = username;
+    }
+
     if (this.editingId) {
       this.machinesService.update(this.editingId, dto).subscribe({
-        next: () => { this.loadMachines(); this.cancelEdit(); },
+        next: () => { this.toast.show('Máquina actualizada'); this.loadMachines(); this.cancelEdit(); this.formPanelOpen = false; },
         error: (err) => {
           this.error = 'Error al actualizar: ' + (err.error?.message || err.message || 'Error desconocido');
           this.loading = false;
@@ -147,7 +166,7 @@ export class MachinesComponent implements OnInit {
       });
     } else {
       this.machinesService.create(dto).subscribe({
-        next: () => { this.loadMachines(); this.resetForm(); },
+        next: () => { this.toast.show('Máquina creada'); this.loadMachines(); this.resetForm(); this.formPanelOpen = false; },
         error: (err) => {
           this.error = 'Error al crear: ' + (err.error?.message || err.message || 'Error desconocido');
           this.loading = false;
@@ -158,6 +177,7 @@ export class MachinesComponent implements OnInit {
 
   edit(item: Machine) {
     this.editingId = item.id;
+    this.currentItem = item;
     this.formTab = 'general';
     this.form = {
       code: item.code, name: item.name, description: item.description || '',
@@ -178,22 +198,54 @@ export class MachinesComponent implements OnInit {
       isCritical: item.isCritical ?? false, requiresCalibration: item.requiresCalibration ?? false,
       status: item.status,
     };
+    this.viewOnly = false;
+    this.formPanelOpen = true;
+  }
+
+  view(item: Machine) {
+    this.editingId = item.id;
+    this.currentItem = item;
+    this.formTab = 'general';
+    this.form = {
+      code: item.code, name: item.name, description: item.description || '',
+      type: item.type || '', model: item.model || '', brand: item.brand || '',
+      serialNumber: item.serialNumber || '', year: item.year ?? null,
+      area: item.area || '', location: item.location || '', workCenter: item.workCenter || '',
+      nominalCapacity: item.nominalCapacity ?? null, capacityUnit: item.capacityUnit || '',
+      cycleTimeSec: item.cycleTimeSec ?? null, setupTimeMin: item.setupTimeMin ?? null,
+      powerKw: item.powerKw ?? null, voltageV: item.voltageV ?? null,
+      maintenanceIntervalHours: item.maintenanceIntervalHours ?? null,
+      maintenanceIntervalDays: item.maintenanceIntervalDays ?? null,
+      lastMaintenanceDate: item.lastMaintenanceDate ? item.lastMaintenanceDate.substring(0, 10) : '',
+      nextMaintenanceDate: item.nextMaintenanceDate ? item.nextMaintenanceDate.substring(0, 10) : '',
+      maintenanceCostPerHour: item.maintenanceCostPerHour ?? null,
+      operatingCostPerHour: item.operatingCostPerHour ?? null,
+      avgDowntimeMin: item.avgDowntimeMin ?? null,
+      mtbfHours: item.mtbfHours ?? null, mttrMin: item.mttrMin ?? null,
+      isCritical: item.isCritical ?? false, requiresCalibration: item.requiresCalibration ?? false,
+      status: item.status,
+    };
+    this.viewOnly = true;
+    this.formPanelOpen = true;
   }
 
   remove(id: string) {
-    if (!confirm('¿Estás seguro de eliminar esta máquina?')) return;
-    this.loading = true;
-    this.error = null;
-    this.machinesService.delete(id).subscribe({
-      next: () => { this.loadMachines(); if (this.editingId === id) this.cancelEdit(); },
-      error: (err) => {
-        this.error = 'Error al eliminar: ' + (err.error?.message || err.message || 'Error desconocido');
-        this.loading = false;
-      }
-    });
+    this.confirmSvc.open({ title: 'Eliminar máquina', message: '¿Estás seguro? Esta acción no se puede deshacer.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.loading = true;
+        this.error = null;
+        this.machinesService.delete(id).subscribe({
+          next: () => { this.toast.show('Máquina eliminada'); this.loadMachines(); if (this.editingId === id) this.cancelEdit(); },
+          error: (err) => {
+            this.error = 'Error al eliminar: ' + (err.error?.message || err.message || 'Error desconocido');
+            this.loading = false;
+          }
+        });
+      });
   }
 
-  cancelEdit() { this.editingId = null; this.resetForm(); }
+  cancelEdit() { this.editingId = null; this.currentItem = null; this.viewOnly = false; this.resetForm(); this.formPanelOpen = false; }
 
   resetForm() { this.form = this.emptyForm(); this.formTab = 'general'; this.error = null; }
 

@@ -1,5 +1,239 @@
 <div class="space-y-5">
 
+  <!-- ── Panel overlay ── -->
+  <div *ngIf="formPanelOpen" class="fixed inset-0 z-40 flex justify-end">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" (click)="cancelEdit()"></div>
+    <aside class="relative z-50 w-full max-w-xl h-full bg-slate-950 border-l border-slate-800 shadow-2xl flex flex-col overflow-hidden">
+      <!-- Panel header -->
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-800 shrink-0">
+        <p class="text-sm font-semibold">{{ viewOnly ? 'Ver Máquina' : (editingId ? 'Editar Máquina' : 'Nueva Máquina') }}</p>
+        <button type="button" (click)="cancelEdit()" class="text-slate-400 hover:text-white"><span class="pi pi-times"></span></button>
+      </div>
+      <!-- Tabs -->
+      <div class="flex gap-1 px-5 py-2 border-b border-slate-800/50 shrink-0">
+        <button type="button" (click)="formTab='general'" class="px-3 py-2 text-xs font-medium rounded-t-lg transition"
+          [class.bg-slate-800]="formTab==='general'" [class.text-white]="formTab==='general'" [class.text-slate-400]="formTab!=='general'">General</button>
+        <button type="button" (click)="formTab='production'" class="px-3 py-2 text-xs font-medium rounded-t-lg transition"
+          [class.bg-slate-800]="formTab==='production'" [class.text-white]="formTab==='production'" [class.text-slate-400]="formTab!=='production'">Producción</button>
+        <button type="button" (click)="formTab='maintenance'" class="px-3 py-2 text-xs font-medium rounded-t-lg transition"
+          [class.bg-slate-800]="formTab==='maintenance'" [class.text-white]="formTab==='maintenance'" [class.text-slate-400]="formTab!=='maintenance'">Mantenimiento</button>
+      </div>
+      <!-- Panel body -->
+      <div class="flex-1 overflow-y-auto px-5 py-4">
+        <div *ngIf="error" class="mb-3 px-3 py-2 bg-rose-950 border border-rose-700 rounded-lg text-xs text-rose-300">{{ error }}</div>
+        <div *ngIf="loading" class="mb-3 px-3 py-2 bg-blue-950 border border-blue-700 rounded-lg text-xs text-blue-300">Procesando...</div>
+        <form id="machine-form" #machineForm="ngForm" (ngSubmit)="submit()">
+          <fieldset [disabled]="viewOnly" class="space-y-4 border-0 m-0 p-0 min-w-0">
+
+            <!-- TAB: General -->
+            <div *ngIf="formTab==='general'" class="space-y-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="ui-label">Código *</label>
+                  <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="MC-001" />
+                </div>
+                <div>
+                  <label class="ui-label">Estado</label>
+                  <select [(ngModel)]="form.status" name="status" class="ui-select">
+                    <option value="ACTIVE">Activa</option>
+                    <option value="MAINTENANCE">Mantenimiento</option>
+                    <option value="INACTIVE">Inactiva</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="ui-label">Nombre *</label>
+                <input [(ngModel)]="form.name" name="name" required class="ui-input" placeholder="Nombre de la máquina" />
+              </div>
+              <div>
+                <label class="ui-label">Descripción</label>
+                <input [(ngModel)]="form.description" name="description" class="ui-input" placeholder="Descripción breve..." />
+              </div>
+              <div>
+                <label class="ui-label">Tipo</label>
+                <select [(ngModel)]="form.type" name="type" class="ui-select">
+                  <option value="">— Seleccionar —</option>
+                  <option *ngFor="let t of machineTypes" [value]="t.value">{{ t.label }}</option>
+                </select>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="ui-label">Marca</label>
+                  <input [(ngModel)]="form.brand" name="brand" class="ui-input" placeholder="Siemens, ABB..." />
+                </div>
+                <div>
+                  <label class="ui-label">Modelo</label>
+                  <input [(ngModel)]="form.model" name="model" class="ui-input" placeholder="Modelo" />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="ui-label">N° Serie</label>
+                  <input [(ngModel)]="form.serialNumber" name="serialNumber" class="ui-input" placeholder="Serial" />
+                </div>
+                <div>
+                  <label class="ui-label">Año</label>
+                  <input [(ngModel)]="form.year" name="year" type="number" class="ui-input" placeholder="2024" />
+                </div>
+              </div>
+              <div>
+                <label class="ui-label">Área / Sección</label>
+                <input [(ngModel)]="form.area" name="area" class="ui-input" placeholder="Producción / Empaque / Bodega..." list="areaList" />
+                <datalist id="areaList">
+                  <option *ngFor="let a of areas" [value]="a"></option>
+                </datalist>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="ui-label">Ubicación</label>
+                  <input [(ngModel)]="form.location" name="location" class="ui-input" placeholder="Planta 1, Nave 2..." />
+                </div>
+                <div>
+                  <label class="ui-label">Centro de trabajo</label>
+                  <input [(ngModel)]="form.workCenter" name="workCenter" class="ui-input" placeholder="CT-01" />
+                </div>
+              </div>
+              <div class="flex gap-4 pt-1">
+                <label class="flex items-center gap-2 text-xs cursor-pointer">
+                  <input type="checkbox" [(ngModel)]="form.isCritical" name="isCritical" class="rounded border-slate-600 bg-slate-800 text-blue-500" />
+                  Equipo crítico
+                </label>
+                <label class="flex items-center gap-2 text-xs cursor-pointer">
+                  <input type="checkbox" [(ngModel)]="form.requiresCalibration" name="requiresCalibration" class="rounded border-slate-600 bg-slate-800 text-blue-500" />
+                  Requiere calibración
+                </label>
+              </div>
+            </div>
+
+            <!-- TAB: Producción -->
+            <div *ngIf="formTab==='production'" class="space-y-3">
+              <p class="text-[11px] text-slate-500 uppercase tracking-wide mb-2">Capacidad y tiempos</p>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="ui-label">Capacidad nominal</label>
+                  <input [(ngModel)]="form.nominalCapacity" name="nominalCapacity" type="number" class="ui-input" placeholder="100" />
+                </div>
+                <div>
+                  <label class="ui-label">Unidad de capacidad</label>
+                  <input [(ngModel)]="form.capacityUnit" name="capacityUnit" class="ui-input" placeholder="piezas/h, kg/h, m/min..." />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="ui-label">Tiempo de ciclo (seg)</label>
+                  <input [(ngModel)]="form.cycleTimeSec" name="cycleTimeSec" type="number" class="ui-input" placeholder="30" />
+                </div>
+                <div>
+                  <label class="ui-label">Tiempo de setup (min)</label>
+                  <input [(ngModel)]="form.setupTimeMin" name="setupTimeMin" type="number" class="ui-input" placeholder="15" />
+                </div>
+              </div>
+              <div class="my-3 border-t border-slate-800/50"></div>
+              <p class="text-[11px] text-slate-500 uppercase tracking-wide mb-2">Energía</p>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="ui-label">Potencia (kW)</label>
+                  <input [(ngModel)]="form.powerKw" name="powerKw" type="number" step="0.1" class="ui-input" placeholder="7.5" />
+                </div>
+                <div>
+                  <label class="ui-label">Voltaje (V)</label>
+                  <input [(ngModel)]="form.voltageV" name="voltageV" type="number" class="ui-input" placeholder="220" />
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB: Mantenimiento -->
+            <div *ngIf="formTab==='maintenance'" class="space-y-3">
+              <p class="text-[11px] text-slate-500 uppercase tracking-wide mb-2">Intervalos de mantenimiento</p>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="ui-label">Intervalo (horas)</label>
+                  <input [(ngModel)]="form.maintenanceIntervalHours" name="maintenanceIntervalHours" type="number" class="ui-input" placeholder="500" />
+                </div>
+                <div>
+                  <label class="ui-label">Intervalo (días)</label>
+                  <input [(ngModel)]="form.maintenanceIntervalDays" name="maintenanceIntervalDays" type="number" class="ui-input" placeholder="30" />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="ui-label">Último mantenimiento</label>
+                  <input [(ngModel)]="form.lastMaintenanceDate" name="lastMaintenanceDate" type="date" class="ui-input" />
+                </div>
+                <div>
+                  <label class="ui-label">Próximo mantenimiento</label>
+                  <input [(ngModel)]="form.nextMaintenanceDate" name="nextMaintenanceDate" type="date" class="ui-input" />
+                </div>
+              </div>
+              <div class="my-3 border-t border-slate-800/50"></div>
+              <p class="text-[11px] text-slate-500 uppercase tracking-wide mb-2">Indicadores de confiabilidad</p>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="ui-label">MTBF (horas)</label>
+                  <input [(ngModel)]="form.mtbfHours" name="mtbfHours" type="number" class="ui-input" placeholder="720" />
+                  <span class="text-[10px] text-slate-500">Tiempo medio entre fallas</span>
+                </div>
+                <div>
+                  <label class="ui-label">MTTR (min)</label>
+                  <input [(ngModel)]="form.mttrMin" name="mttrMin" type="number" class="ui-input" placeholder="45" />
+                  <span class="text-[10px] text-slate-500">Tiempo medio de reparación</span>
+                </div>
+              </div>
+              <div>
+                <label class="ui-label">Downtime promedio (min)</label>
+                <input [(ngModel)]="form.avgDowntimeMin" name="avgDowntimeMin" type="number" class="ui-input" placeholder="60" />
+              </div>
+              <div class="my-3 border-t border-slate-800/50"></div>
+              <p class="text-[11px] text-slate-500 uppercase tracking-wide mb-2">Costos</p>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="ui-label">Costo mant. / hora</label>
+                  <input [(ngModel)]="form.maintenanceCostPerHour" name="maintenanceCostPerHour" type="number" step="0.01" class="ui-input" placeholder="25.00" />
+                </div>
+                <div>
+                  <label class="ui-label">Costo operación / hora</label>
+                  <input [(ngModel)]="form.operatingCostPerHour" name="operatingCostPerHour" type="number" step="0.01" class="ui-input" placeholder="15.00" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Auditoría -->
+            <div class="px-3 py-2.5 rounded-lg bg-slate-900/50 border border-slate-800">
+              <p class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">Auditoría</p>
+              <div class="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <span class="text-slate-500">Creado por:</span>
+                  <span class="text-slate-300 ml-1">{{ currentItem?.createdBy || '—' }}</span>
+                  <div *ngIf="currentItem?.createdAt" class="text-[10px] text-slate-600 mt-0.5">{{ currentItem?.createdAt | date: 'dd/MM/yyyy HH:mm' }}</div>
+                </div>
+                <div>
+                  <span class="text-slate-500">Modificado por:</span>
+                  <span class="text-slate-300 ml-1">{{ currentItem?.updatedBy || '—' }}</span>
+                  <div *ngIf="currentItem?.updatedAt" class="text-[10px] text-slate-600 mt-0.5">{{ currentItem?.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</div>
+                </div>
+              </div>
+            </div>
+            <app-audit-history *ngIf="editingId" entityType="Machine" [entityId]="editingId" />
+          </fieldset>
+        </form>
+      </div>
+      <!-- Panel footer -->
+      <div class="px-5 py-4 border-t border-slate-800 shrink-0">
+        <ng-container *ngIf="viewOnly; else editActions">
+          <button type="button" (click)="cancelEdit()" class="w-full ui-btn-ghost">Cerrar</button>
+        </ng-container>
+        <ng-template #editActions>
+          <div class="flex gap-2">
+            <button type="submit" form="machine-form" [disabled]="loading" class="flex-1 ui-btn-primary">
+              {{ loading ? 'Procesando...' : (editingId ? 'Guardar cambios' : 'Agregar') }}
+            </button>
+            <button type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+          </div>
+        </ng-template>
+      </div>
+    </aside>
+  </div>
+
   <!-- Header -->
   <div class="ui-page-header">
     <div>
@@ -16,257 +250,11 @@
         <option value="">Todas las áreas</option>
         <option *ngFor="let a of areas" [value]="a">{{ a }}</option>
       </select>
+      <button type="button" (click)="openCreatePanel()" class="ui-btn-primary whitespace-nowrap"><span class="pi pi-plus mr-1"></span>Nuevo</button>
     </div>
   </div>
-
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-
-    <!-- ─── FORM ─── -->
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">{{ editingId ? 'Editar máquina' : 'Nueva máquina' }}</p>
-        <span class="text-[11px] text-slate-500">Todos los campos</span>
-      </div>
-
-      <!-- Tabs -->
-      <div class="flex gap-1 mb-4 border-b border-slate-800/50">
-        <button type="button" (click)="formTab='general'"
-          class="px-3 py-2 text-xs font-medium rounded-t-lg transition"
-          [class.bg-slate-800]="formTab==='general'" [class.text-white]="formTab==='general'"
-          [class.text-slate-400]="formTab!=='general'">
-          General
-        </button>
-        <button type="button" (click)="formTab='production'"
-          class="px-3 py-2 text-xs font-medium rounded-t-lg transition"
-          [class.bg-slate-800]="formTab==='production'" [class.text-white]="formTab==='production'"
-          [class.text-slate-400]="formTab!=='production'">
-          Producción
-        </button>
-        <button type="button" (click)="formTab='maintenance'"
-          class="px-3 py-2 text-xs font-medium rounded-t-lg transition"
-          [class.bg-slate-800]="formTab==='maintenance'" [class.text-white]="formTab==='maintenance'"
-          [class.text-slate-400]="formTab!=='maintenance'">
-          Mantenimiento
-        </button>
-      </div>
-
-      <!-- Mensajes -->
-      <div *ngIf="error" class="mb-3 px-3 py-2 bg-rose-500/10 border border-rose-500/30 rounded-lg text-xs text-rose-400">
-        {{ error }}
-      </div>
-      <div *ngIf="loading" class="mb-3 px-3 py-2 bg-blue-500/10 border border-blue-500/30 rounded-lg text-xs text-blue-400">
-        Procesando...
-      </div>
-
-      <form #machineForm="ngForm" (ngSubmit)="submit()" class="space-y-4">
-
-        <!-- TAB: General -->
-        <div *ngIf="formTab==='general'" class="space-y-3">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="ui-label">Código *</label>
-              <input [(ngModel)]="form.code" name="code" required class="ui-input" placeholder="MC-001" />
-            </div>
-            <div>
-              <label class="ui-label">Estado</label>
-              <select [(ngModel)]="form.status" name="status" class="ui-select">
-                <option value="ACTIVE">Activa</option>
-                <option value="MAINTENANCE">Mantenimiento</option>
-                <option value="INACTIVE">Inactiva</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label class="ui-label">Nombre *</label>
-            <input [(ngModel)]="form.name" name="name" required class="ui-input" placeholder="Nombre de la máquina" />
-          </div>
-
-          <div>
-            <label class="ui-label">Descripción</label>
-            <input [(ngModel)]="form.description" name="description" class="ui-input" placeholder="Descripción breve..." />
-          </div>
-
-          <div>
-            <label class="ui-label">Tipo</label>
-            <select [(ngModel)]="form.type" name="type" class="ui-select">
-              <option value="">— Seleccionar —</option>
-              <option *ngFor="let t of machineTypes" [value]="t.value">{{ t.label }}</option>
-            </select>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="ui-label">Marca</label>
-              <input [(ngModel)]="form.brand" name="brand" class="ui-input" placeholder="Siemens, ABB..." />
-            </div>
-            <div>
-              <label class="ui-label">Modelo</label>
-              <input [(ngModel)]="form.model" name="model" class="ui-input" placeholder="Modelo" />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="ui-label">N° Serie</label>
-              <input [(ngModel)]="form.serialNumber" name="serialNumber" class="ui-input" placeholder="Serial" />
-            </div>
-            <div>
-              <label class="ui-label">Año</label>
-              <input [(ngModel)]="form.year" name="year" type="number" class="ui-input" placeholder="2024" />
-            </div>
-          </div>
-
-          <div>
-            <label class="ui-label">Área / Sección</label>
-            <input [(ngModel)]="form.area" name="area" class="ui-input" placeholder="Producción / Empaque / Bodega..." list="areaList" />
-            <datalist id="areaList">
-              <option *ngFor="let a of areas" [value]="a"></option>
-            </datalist>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="ui-label">Ubicación</label>
-              <input [(ngModel)]="form.location" name="location" class="ui-input" placeholder="Planta 1, Nave 2..." />
-            </div>
-            <div>
-              <label class="ui-label">Centro de trabajo</label>
-              <input [(ngModel)]="form.workCenter" name="workCenter" class="ui-input" placeholder="CT-01" />
-            </div>
-          </div>
-
-          <div class="flex gap-4 pt-1">
-            <label class="flex items-center gap-2 text-xs cursor-pointer">
-              <input type="checkbox" [(ngModel)]="form.isCritical" name="isCritical"
-                class="rounded border-slate-600 bg-slate-800 text-blue-500" />
-              Equipo crítico
-            </label>
-            <label class="flex items-center gap-2 text-xs cursor-pointer">
-              <input type="checkbox" [(ngModel)]="form.requiresCalibration" name="requiresCalibration"
-                class="rounded border-slate-600 bg-slate-800 text-blue-500" />
-              Requiere calibración
-            </label>
-          </div>
-        </div>
-
-        <!-- TAB: Producción -->
-        <div *ngIf="formTab==='production'" class="space-y-3">
-          <p class="text-[11px] text-slate-500 uppercase tracking-wide mb-2">Capacidad y tiempos</p>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="ui-label">Capacidad nominal</label>
-              <input [(ngModel)]="form.nominalCapacity" name="nominalCapacity" type="number" class="ui-input" placeholder="100" />
-            </div>
-            <div>
-              <label class="ui-label">Unidad de capacidad</label>
-              <input [(ngModel)]="form.capacityUnit" name="capacityUnit" class="ui-input" placeholder="piezas/h, kg/h, m/min..." />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="ui-label">Tiempo de ciclo (seg)</label>
-              <input [(ngModel)]="form.cycleTimeSec" name="cycleTimeSec" type="number" class="ui-input" placeholder="30" />
-            </div>
-            <div>
-              <label class="ui-label">Tiempo de setup (min)</label>
-              <input [(ngModel)]="form.setupTimeMin" name="setupTimeMin" type="number" class="ui-input" placeholder="15" />
-            </div>
-          </div>
-
-          <div class="my-3 border-t border-slate-800/50"></div>
-          <p class="text-[11px] text-slate-500 uppercase tracking-wide mb-2">Energía</p>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="ui-label">Potencia (kW)</label>
-              <input [(ngModel)]="form.powerKw" name="powerKw" type="number" step="0.1" class="ui-input" placeholder="7.5" />
-            </div>
-            <div>
-              <label class="ui-label">Voltaje (V)</label>
-              <input [(ngModel)]="form.voltageV" name="voltageV" type="number" class="ui-input" placeholder="220" />
-            </div>
-          </div>
-        </div>
-
-        <!-- TAB: Mantenimiento -->
-        <div *ngIf="formTab==='maintenance'" class="space-y-3">
-          <p class="text-[11px] text-slate-500 uppercase tracking-wide mb-2">Intervalos de mantenimiento</p>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="ui-label">Intervalo (horas)</label>
-              <input [(ngModel)]="form.maintenanceIntervalHours" name="maintenanceIntervalHours" type="number" class="ui-input" placeholder="500" />
-            </div>
-            <div>
-              <label class="ui-label">Intervalo (días)</label>
-              <input [(ngModel)]="form.maintenanceIntervalDays" name="maintenanceIntervalDays" type="number" class="ui-input" placeholder="30" />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="ui-label">Último mantenimiento</label>
-              <input [(ngModel)]="form.lastMaintenanceDate" name="lastMaintenanceDate" type="date" class="ui-input" />
-            </div>
-            <div>
-              <label class="ui-label">Próximo mantenimiento</label>
-              <input [(ngModel)]="form.nextMaintenanceDate" name="nextMaintenanceDate" type="date" class="ui-input" />
-            </div>
-          </div>
-
-          <div class="my-3 border-t border-slate-800/50"></div>
-          <p class="text-[11px] text-slate-500 uppercase tracking-wide mb-2">Indicadores de confiabilidad</p>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="ui-label">MTBF (horas)</label>
-              <input [(ngModel)]="form.mtbfHours" name="mtbfHours" type="number" class="ui-input" placeholder="720" />
-              <span class="text-[10px] text-slate-500">Tiempo medio entre fallas</span>
-            </div>
-            <div>
-              <label class="ui-label">MTTR (min)</label>
-              <input [(ngModel)]="form.mttrMin" name="mttrMin" type="number" class="ui-input" placeholder="45" />
-              <span class="text-[10px] text-slate-500">Tiempo medio de reparación</span>
-            </div>
-          </div>
-
-          <div>
-            <label class="ui-label">Downtime promedio (min)</label>
-            <input [(ngModel)]="form.avgDowntimeMin" name="avgDowntimeMin" type="number" class="ui-input" placeholder="60" />
-          </div>
-
-          <div class="my-3 border-t border-slate-800/50"></div>
-          <p class="text-[11px] text-slate-500 uppercase tracking-wide mb-2">Costos</p>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="ui-label">Costo mant. / hora</label>
-              <input [(ngModel)]="form.maintenanceCostPerHour" name="maintenanceCostPerHour" type="number" step="0.01" class="ui-input" placeholder="25.00" />
-            </div>
-            <div>
-              <label class="ui-label">Costo operación / hora</label>
-              <input [(ngModel)]="form.operatingCostPerHour" name="operatingCostPerHour" type="number" step="0.01" class="ui-input" placeholder="15.00" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Botones -->
-        <div class="flex gap-2 pt-2">
-          <button type="submit" [disabled]="loading" class="flex-1 ui-btn-primary">
-            {{ loading ? 'Procesando...' : (editingId ? 'Guardar cambios' : 'Agregar') }}
-          </button>
-          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">
-            Cancelar
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- ─── TABLE ─── -->
-    <div class="xl:col-span-2 ui-surface p-5">
+  <!-- ─── TABLE ─── -->
+  <div class="ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold">Listado</p>
         <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
@@ -322,9 +310,10 @@
                 </span>
               </td>
               <td class="ui-td">
-                <div class="flex gap-2">
-                  <button (click)="edit(it)" [disabled]="loading" class="ui-btn-ghost text-xs">Editar</button>
-                  <button (click)="remove(it.id)" [disabled]="loading" class="ui-btn-danger text-xs">Eliminar</button>
+                <div class="flex gap-1">
+                  <button (click)="view(it)" [disabled]="loading" title="Ver" class="w-7 h-7 flex items-center justify-center rounded ui-btn-ghost"><span class="pi pi-eye text-xs"></span></button>
+                  <button (click)="edit(it)" [disabled]="loading" title="Editar" class="w-7 h-7 flex items-center justify-center rounded ui-btn-ghost"><span class="pi pi-pencil text-xs"></span></button>
+                  <button (click)="remove(it.id)" [disabled]="loading" title="Eliminar" class="w-7 h-7 flex items-center justify-center rounded ui-btn-danger"><span class="pi pi-trash text-xs"></span></button>
                 </div>
               </td>
             </tr>
@@ -336,6 +325,5 @@
           </tbody>
         </table>
       </div>
-    </div>
   </div>
 </div>

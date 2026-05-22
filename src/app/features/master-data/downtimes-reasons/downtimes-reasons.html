@@ -1,132 +1,146 @@
 <div class="space-y-5">
+  <!-- ── Panel overlay ── -->
+  <div *ngIf="formPanelOpen" class="fixed inset-0 z-40 flex justify-end">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" (click)="cancelEdit()"></div>
+    <aside class="relative z-50 w-full max-w-xl h-full bg-slate-950 border-l border-slate-800 shadow-2xl flex flex-col overflow-hidden">
+      <!-- Panel header -->
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-800 shrink-0">
+        <p class="text-sm font-semibold">{{ viewOnly ? 'Ver Motivo de Parada' : (editingId ? 'Editar Motivo de Parada' : 'Nuevo Motivo de Parada') }}</p>
+        <button type="button" (click)="cancelEdit()" class="text-slate-400 hover:text-white"><span class="pi pi-times"></span></button>
+      </div>
+      <!-- Panel body -->
+      <div class="flex-1 overflow-y-auto px-5 py-4">
+        <div *ngIf="error" class="mb-3 px-3 py-2 bg-rose-950 border border-rose-700 rounded-lg text-xs text-rose-300">{{ error }}</div>
+        <div *ngIf="loading" class="mb-3 px-3 py-2 bg-blue-950 border border-blue-700 rounded-lg text-xs text-blue-300">Procesando...</div>
+        <form id="downtime-reason-form" #reasonForm="ngForm" (ngSubmit)="submit()">
+          <fieldset [disabled]="viewOnly" class="space-y-4 border-0 m-0 p-0 min-w-0">
+            <div>
+              <label class="ui-label">Código *</label>
+              <input [(ngModel)]="form.codigo" name="codigo" required class="ui-input" placeholder="MP001" />
+            </div>
+            <div>
+              <label class="ui-label">Nombre *</label>
+              <input [(ngModel)]="form.nombre" name="nombre" required class="ui-input" placeholder="Falta de material" />
+            </div>
+            <div>
+              <label class="ui-label">Descripción</label>
+              <textarea [(ngModel)]="form.descripcion" name="descripcion" rows="2" class="ui-input" placeholder="Descripción detallada..."></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="ui-label">Categoría *</label>
+                <select [(ngModel)]="form.categoria" name="categoria" required class="ui-select">
+                  <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="ui-label">Tipo</label>
+                <select [(ngModel)]="form.tipo" name="tipo" class="ui-select">
+                  <option *ngFor="let t of tipos" [value]="t">{{ t }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="ui-label">Color</label>
+                <input type="color" [(ngModel)]="form.color" name="color" class="ui-input h-10" />
+              </div>
+              <div>
+                <label class="ui-label">Icono/Emoji</label>
+                <input [(ngModel)]="form.icono" name="icono" class="ui-input" placeholder="⚠️" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="ui-label">Tiempo estándar (min)</label>
+                <input type="number" [(ngModel)]="form.tiempoEstandardMinutos" name="tiempoEstandardMinutos" min="0" class="ui-input" />
+              </div>
+              <div>
+                <label class="ui-label">Prioridad (1-5)</label>
+                <input type="number" [(ngModel)]="form.prioridad" name="prioridad" min="1" max="5" class="ui-input" />
+              </div>
+            </div>
+            <div>
+              <label class="ui-label">Departamento Responsable</label>
+              <input [(ngModel)]="form.departamentoResponsable" name="departamentoResponsable" class="ui-input" placeholder="Mantenimiento" />
+            </div>
+            <div class="space-y-2">
+              <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+                <input type="checkbox" [(ngModel)]="form.requiereAprobacion" name="requiereAprobacion" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+                Requiere aprobación
+              </label>
+              <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+                <input type="checkbox" [(ngModel)]="form.requiereComentario" name="requiereComentario" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+                Requiere comentario obligatorio
+              </label>
+              <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+                <input type="checkbox" [(ngModel)]="form.requiereEvidencia" name="requiereEvidencia" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+                Requiere evidencia
+              </label>
+              <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+                <input type="checkbox" [(ngModel)]="form.impactaOEE" name="impactaOEE" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+                Impacta en OEE
+              </label>
+              <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+                <input type="checkbox" [(ngModel)]="form.activo" name="activo" class="h-4 w-4 rounded border-slate-700 bg-slate-900" />
+                Activo
+              </label>
+            </div>
+            <!-- Auditoría -->
+            <div class="px-3 py-2.5 rounded-lg bg-slate-900/50 border border-slate-800">
+              <p class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">Auditoría</p>
+              <div class="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <span class="text-slate-500">Creado por:</span>
+                  <span class="text-slate-300 ml-1">{{ currentItem?.createdBy || '—' }}</span>
+                  <div *ngIf="currentItem?.createdAt" class="text-[10px] text-slate-600 mt-0.5">{{ currentItem?.createdAt | date: 'dd/MM/yyyy HH:mm' }}</div>
+                </div>
+                <div>
+                  <span class="text-slate-500">Modificado por:</span>
+                  <span class="text-slate-300 ml-1">{{ currentItem?.updatedBy || '—' }}</span>
+                  <div *ngIf="currentItem?.updatedAt" class="text-[10px] text-slate-600 mt-0.5">{{ currentItem?.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</div>
+                </div>
+              </div>
+            </div>
+            <app-audit-history *ngIf="editingId" entityType="DowntimeReason" [entityId]="editingId" />
+          </fieldset>
+        </form>
+      </div>
+      <!-- Panel footer -->
+      <div class="px-5 py-4 border-t border-slate-800 shrink-0">
+        <ng-container *ngIf="viewOnly; else editActions">
+          <button type="button" (click)="cancelEdit()" class="w-full ui-btn-ghost">Cerrar</button>
+        </ng-container>
+        <ng-template #editActions>
+          <div class="flex gap-2">
+            <button type="submit" form="downtime-reason-form" [disabled]="loading" class="flex-1 ui-btn-primary">
+              {{ loading ? 'Procesando...' : (editingId ? 'Guardar' : 'Agregar') }}
+            </button>
+            <button type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
+          </div>
+        </ng-template>
+      </div>
+    </aside>
+  </div>
+
   <div class="ui-page-header">
     <div>
       <h3 class="ui-title">Maestro · Motivos de Parada</h3>
       <p class="ui-subtitle">Catálogo para OEE: mantenimiento, material, calidad, etc.</p>
     </div>
 
-    <div class="w-full max-w-sm">
-      <div class="relative">
-        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
-        <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar motivo..." />
+    <div class="flex items-center gap-2">
+      <div class="w-full max-w-sm">
+        <div class="relative">
+          <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
+          <input [(ngModel)]="q" class="ui-input pl-9" placeholder="Buscar motivo..." />
+        </div>
       </div>
+      <button type="button" (click)="openCreatePanel()" class="ui-btn-primary whitespace-nowrap"><span class="pi pi-plus mr-1"></span>Nuevo</button>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">{{ editingId ? 'Editar motivo' : 'Nuevo motivo' }}</p>
-        <span class="text-[11px] text-slate-500">Campos completos</span>
-      </div>
-
-      <!-- Mensajes de estado -->
-      <div *ngIf="error" class="mb-3 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
-        {{ error }}
-      </div>
-
-      <div *ngIf="loading" class="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
-        Procesando...
-      </div>
-
-      <form #reasonForm="ngForm" (ngSubmit)="submit()" class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-        <div>
-          <label class="ui-label">Código *</label>
-          <input [(ngModel)]="form.codigo" name="codigo" required class="ui-input" placeholder="MP001" />
-        </div>
-
-        <div>
-          <label class="ui-label">Nombre *</label>
-          <input [(ngModel)]="form.nombre" name="nombre" required class="ui-input" placeholder="Falta de material" />
-        </div>
-
-        <div>
-          <label class="ui-label">Descripción</label>
-          <textarea [(ngModel)]="form.descripcion" name="descripcion" rows="2" class="ui-input" placeholder="Descripción detallada..."></textarea>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="ui-label">Categoría *</label>
-            <select [(ngModel)]="form.categoria" name="categoria" required class="ui-select">
-              <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="ui-label">Tipo</label>
-            <select [(ngModel)]="form.tipo" name="tipo" class="ui-select">
-              <option *ngFor="let t of tipos" [value]="t">{{ t }}</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="ui-label">Color</label>
-            <input type="color" [(ngModel)]="form.color" name="color" class="ui-input h-10" />
-          </div>
-
-          <div>
-            <label class="ui-label">Icono/Emoji</label>
-            <input [(ngModel)]="form.icono" name="icono" class="ui-input" placeholder="⚠️" />
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="ui-label">Tiempo estándar (min)</label>
-            <input type="number" [(ngModel)]="form.tiempoEstandardMinutos" name="tiempoEstandardMinutos" min="0" class="ui-input" />
-          </div>
-
-          <div>
-            <label class="ui-label">Prioridad (1-5)</label>
-            <input type="number" [(ngModel)]="form.prioridad" name="prioridad" min="1" max="5" class="ui-input" />
-          </div>
-        </div>
-
-        <div>
-          <label class="ui-label">Departamento Responsable</label>
-          <input [(ngModel)]="form.departamentoResponsable" name="departamentoResponsable" class="ui-input" placeholder="Mantenimiento" />
-        </div>
-
-        <div class="space-y-2">
-          <label class="inline-flex items-center gap-2 text-xs text-slate-700">
-            <input type="checkbox" [(ngModel)]="form.requiereAprobacion" name="requiereAprobacion" class="h-4 w-4 rounded border-slate-300" />
-            Requiere aprobación
-          </label>
-
-          <label class="inline-flex items-center gap-2 text-xs text-slate-700">
-            <input type="checkbox" [(ngModel)]="form.requiereComentario" name="requiereComentario" class="h-4 w-4 rounded border-slate-300" />
-            Requiere comentario obligatorio
-          </label>
-
-          <label class="inline-flex items-center gap-2 text-xs text-slate-700">
-            <input type="checkbox" [(ngModel)]="form.requiereEvidencia" name="requiereEvidencia" class="h-4 w-4 rounded border-slate-300" />
-            Requiere evidencia
-          </label>
-
-          <label class="inline-flex items-center gap-2 text-xs text-slate-700">
-            <input type="checkbox" [(ngModel)]="form.impactaOEE" name="impactaOEE" class="h-4 w-4 rounded border-slate-300" />
-            Impacta en OEE
-          </label>
-
-          <label class="inline-flex items-center gap-2 text-xs text-slate-700">
-            <input type="checkbox" [(ngModel)]="form.activo" name="activo" class="h-4 w-4 rounded border-slate-300" />
-            Activo
-          </label>
-        </div>
-
-        <div class="flex gap-2 pt-1">
-          <button type="submit" [disabled]="loading" class="flex-1 ui-btn-primary">
-            {{ loading ? 'Procesando...' : (editingId ? 'Guardar' : 'Agregar') }}
-          </button>
-          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>
-        </div>
-      </form>
-    </div>
-
-    <div class="xl:col-span-2 ui-surface p-5">
+  <div class="ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold">Listado</p>
         <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
@@ -170,9 +184,10 @@
                 </span>
               </td>
               <td class="ui-td">
-                <div class="flex gap-2">
-                  <button (click)="edit(it)" [disabled]="loading" class="ui-btn-ghost text-xs">Editar</button>
-                  <button (click)="remove(it.id)" [disabled]="loading" class="ui-btn-danger text-xs">Eliminar</button>
+                <div class="flex gap-1">
+                  <button (click)="view(it)" [disabled]="loading" title="Ver" class="w-7 h-7 flex items-center justify-center rounded ui-btn-ghost"><span class="pi pi-eye text-xs"></span></button>
+                  <button (click)="edit(it)" [disabled]="loading" title="Editar" class="w-7 h-7 flex items-center justify-center rounded ui-btn-ghost"><span class="pi pi-pencil text-xs"></span></button>
+                  <button (click)="remove(it.id)" [disabled]="loading" title="Eliminar" class="w-7 h-7 flex items-center justify-center rounded ui-btn-danger"><span class="pi pi-trash text-xs"></span></button>
                 </div>
               </td>
             </tr>
@@ -184,6 +199,5 @@
           </tbody>
         </table>
       </div>
-    </div>
   </div>
 </div>

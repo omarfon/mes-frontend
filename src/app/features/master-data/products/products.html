@@ -19,6 +19,12 @@
           <input [(ngModel)]="q" (ngModelChange)="onSearch()" class="ui-input pl-9" placeholder="Buscar por código, nombre, familia..." />
         </div>
       </div>
+
+      <button type="button" (click)="openNew()"
+        class="ui-btn-primary text-xs flex items-center gap-2 whitespace-nowrap">
+        <i class="pi pi-plus text-xs"></i>
+        Nuevo producto
+      </button>
     </div>
   </div>
 
@@ -127,17 +133,25 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+  <!-- ═══════════  PANEL LATERAL  ═══════════ -->
+  <div *ngIf="panelOpen" class="fixed inset-0 z-40 flex justify-end">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" (click)="closePanel()"></div>
+    <aside class="relative z-50 w-full max-w-xl h-full bg-slate-950 border-l border-slate-800 shadow-2xl flex flex-col overflow-hidden">
 
-    <!-- ═══════════  FORMULARIO  ═══════════ -->
-    <div class="ui-surface p-5">
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-sm font-semibold">{{ editingId ? 'Editar producto' : 'Nuevo producto' }}</p>
-        <span class="text-[11px] text-slate-500">(*) obligatorios</span>
+      <!-- Cabecera del panel -->
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-800 shrink-0">
+        <div>
+          <p class="text-sm font-semibold">{{ viewOnly ? 'Ver producto' : (editingId ? 'Editar producto' : 'Nuevo producto') }}</p>
+          <span class="text-[11px] text-slate-500">(*) campos obligatorios</span>
+        </div>
+        <button type="button" (click)="closePanel()"
+          class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition">
+          <i class="pi pi-times text-xs"></i>
+        </button>
       </div>
 
       <!-- Tabs del formulario -->
-      <div class="flex gap-1 mb-4 border-b border-slate-800/70 text-xs">
+      <div class="flex gap-1 px-5 pt-3 border-b border-slate-800/70 text-xs shrink-0">
         <button type="button" (click)="formTab='general'"
           class="px-3 py-2 rounded-t-lg transition"
           [ngClass]="formTab==='general' ? 'bg-slate-800/60 text-white' : 'text-slate-400 hover:text-slate-200'">
@@ -155,7 +169,10 @@
         </button>
       </div>
 
-      <form (ngSubmit)="submit()" class="space-y-4">
+      <!-- Cuerpo del formulario (scrollable) -->
+      <div class="flex-1 overflow-y-auto px-5 py-4">
+        <form (ngSubmit)="submit()" id="product-form">
+          <fieldset [disabled]="viewOnly" class="space-y-4 border-0 m-0 p-0 min-w-0">
 
         <!-- ── TAB: General ── -->
         <ng-container *ngIf="formTab==='general'">
@@ -325,19 +342,57 @@
         </ng-container>
 
         <!-- Botones -->
-        <div class="flex gap-2 pt-1">
-          <button type="submit" class="flex-1 ui-btn-primary">
+
+        <!-- Auditoría -->
+        <div class="mb-4 px-3 py-2.5 rounded-lg bg-slate-900/50 border border-slate-800">
+          <p class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">Auditoría</p>
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <span class="text-slate-500">Creado por:</span>
+              <span class="text-slate-300 ml-1">{{ currentItem?.createdBy || '—' }}</span>
+              <div *ngIf="currentItem?.createdAt" class="text-[10px] text-slate-600 mt-0.5">
+                {{ currentItem?.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+              </div>
+            </div>
+            <div>
+              <span class="text-slate-500">Modificado por:</span>
+              <span class="text-slate-300 ml-1">{{ currentItem?.updatedBy || '—' }}</span>
+              <div *ngIf="currentItem?.updatedAt" class="text-[10px] text-slate-600 mt-0.5">
+                {{ currentItem?.updatedAt | date: 'dd/MM/yyyy HH:mm' }}
+              </div>
+            </div>
+          </div>
+        </div>
+          <!-- Historial de cambios (solo al editar) -->
+          <app-audit-history
+            *ngIf="editingId"
+            entityType="Product"
+            [entityId]="editingId"
+          />
+          </fieldset>
+        </form>
+      </div>
+
+      <!-- Footer del panel -->
+      <div class="px-5 py-4 border-t border-slate-800 flex gap-2 shrink-0">
+        <ng-container *ngIf="viewOnly; else editActions">
+          <button type="button" (click)="closePanel()" class="flex-1 ui-btn-ghost">Cerrar</button>
+        </ng-container>
+        <ng-template #editActions>
+          <button type="submit" form="product-form" class="flex-1 ui-btn-primary">
             {{ editingId ? 'Guardar cambios' : 'Agregar' }}
           </button>
-          <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">
+          <button type="button" (click)="closePanel()" class="ui-btn-ghost">
             Cancelar
           </button>
-        </div>
-      </form>
-    </div>
+        </ng-template>
+      </div>
 
-    <!-- ═══════════  TABLA  ═══════════ -->
-    <div class="xl:col-span-2 ui-surface p-5">
+    </aside>
+  </div>
+
+  <!-- ═══════════  TABLA  ═══════════ -->
+  <div class="ui-surface p-5">
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm font-semibold">Listado</p>
         <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
@@ -396,8 +451,20 @@
               </td>
               <td class="ui-td">
                 <div class="flex gap-2">
-                  <button (click)="edit(it)" class="ui-btn-ghost text-xs">Editar</button>
-                  <button (click)="remove(it.id)" class="ui-btn-danger text-xs">Eliminar</button>
+                  <div class="flex items-center gap-1">
+                  <button (click)="view(it)" title="Ver"
+                    class="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition">
+                    <i class="pi pi-eye text-xs"></i>
+                  </button>
+                  <button (click)="edit(it)" title="Editar"
+                    class="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-800 text-slate-400 hover:text-blue-400 transition">
+                    <i class="pi pi-pencil text-xs"></i>
+                  </button>
+                  <button (click)="remove(it.id)" title="Eliminar"
+                    class="w-7 h-7 flex items-center justify-center rounded hover:bg-red-900/40 text-slate-400 hover:text-red-400 transition">
+                    <i class="pi pi-trash text-xs"></i>
+                  </button>
+                </div>
                 </div>
               </td>
             </tr>
@@ -431,6 +498,5 @@
         </div>
       </div>
 
-    </div>
   </div>
 </div>

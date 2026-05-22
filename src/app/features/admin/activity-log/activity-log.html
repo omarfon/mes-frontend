@@ -1,0 +1,473 @@
+<div class="min-h-screen bg-gray-50 p-6">
+
+  <!-- Cabecera -->
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+      <span class="text-2xl">🔍</span> Auditoría de Transacciones
+    </h1>
+    <p class="text-gray-500 text-sm mt-1">Historial completo de creaciones, ediciones y eliminaciones por usuario.</p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-1 bg-white rounded-xl shadow-sm border border-gray-200 p-1 mb-6 w-fit">
+    <button (click)="setTab('dashboard')"
+      [class]="activeTab === 'dashboard' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'"
+      class="px-4 py-2 rounded-lg text-sm font-medium transition-all">
+      Dashboard
+    </button>
+    <button (click)="setTab('recent')"
+      [class]="activeTab === 'recent' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'"
+      class="px-4 py-2 rounded-lg text-sm font-medium transition-all">
+      Transacciones recientes
+    </button>
+    <button (click)="setTab('by-user')"
+      [class]="activeTab === 'by-user' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'"
+      class="px-4 py-2 rounded-lg text-sm font-medium transition-all">
+      Por usuario
+    </button>
+  </div>
+
+  <!-- Error -->
+  @if (error) {
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-red-700 text-sm">{{ error }}</div>
+  }
+
+  <!-- ═══════════════════════════════════════
+       TAB: DASHBOARD
+       ═══════════════════════════════════════ -->
+  @if (activeTab === 'dashboard') {
+    @if (loading) {
+      <div class="flex items-center justify-center h-48 text-gray-400">Cargando...</div>
+    } @else if (dashboard) {
+
+      <!-- KPI cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+          <p class="text-xs text-gray-500 uppercase font-semibold tracking-wide">Transacciones hoy</p>
+          <p class="text-3xl font-bold text-indigo-600 mt-1">{{ dashboard.totalToday }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+          <p class="text-xs text-gray-500 uppercase font-semibold tracking-wide">Usuarios activos hoy</p>
+          <p class="text-3xl font-bold text-emerald-600 mt-1">{{ dashboard.byUser.length }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+          <p class="text-xs text-gray-500 uppercase font-semibold tracking-wide">Últimas cargadas</p>
+          <p class="text-3xl font-bold text-blue-600 mt-1">{{ dashboard.recent.length }}</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Últimas transacciones -->
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200">
+          <div class="px-5 py-4 border-b border-gray-100">
+            <h2 class="font-semibold text-gray-800">Últimas transacciones</h2>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                <tr>
+                  <th class="px-4 py-3 text-left">Fecha</th>
+                  <th class="px-4 py-3 text-left">Usuario</th>
+                  <th class="px-4 py-3 text-left">Módulo</th>
+                  <th class="px-4 py-3 text-left">Acción</th>
+                  <th class="px-4 py-3 text-left">Entidad</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                @for (entry of dashboard.recent; track entry.id) {
+                  <tr (click)="openDetail(entry)"
+                    class="hover:bg-indigo-50 cursor-pointer transition-colors">
+                    <td class="px-4 py-3 text-gray-500 whitespace-nowrap">
+                      {{ entry.fechaCreacion || entry.createdAt | date:'dd/MM/yy HH:mm' }}
+                    </td>
+                    <td class="px-4 py-3">
+                      <div class="font-medium text-gray-800">{{ entry.userName || entry.userEmail }}</div>
+                      <div class="text-xs text-gray-400">{{ entry.userEmail }}</div>
+                    </td>
+                    <td class="px-4 py-3 text-gray-600">{{ entry.module }}</td>
+                    <td class="px-4 py-3">
+                      <span [class]="actionBadge(entry.action)"
+                        class="px-2 py-0.5 rounded-full text-xs font-semibold">
+                        {{ actionLabel(entry.action) }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 text-gray-600">
+                      {{ entry.entityName || entry.entityType }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Panel lateral -->
+        <div class="flex flex-col gap-6">
+
+          <!-- Por acción -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <h2 class="font-semibold text-gray-800 mb-4">Por tipo de acción (7 días)</h2>
+            <div class="space-y-3">
+              @for (row of dashboard.byAction; track row.action) {
+                <div class="flex items-center gap-3">
+                  <span [class]="actionBadge(row.action)"
+                    class="px-2 py-0.5 rounded-full text-xs font-semibold w-24 text-center">
+                    {{ actionLabel(row.action) }}
+                  </span>
+                  <div class="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                    <div class="bg-indigo-500 h-2 rounded-full"
+                      [style.width.%]="(row.count / (dashboard.byAction[0]?.count || 1)) * 100">
+                    </div>
+                  </div>
+                  <span class="text-sm font-semibold text-gray-700 w-8 text-right">{{ row.count }}</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Top usuarios hoy -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <h2 class="font-semibold text-gray-800 mb-4">Top usuarios hoy</h2>
+            <div class="space-y-2">
+              @for (u of dashboard.byUser; track u.userEmail) {
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="text-sm font-medium text-gray-800">{{ u.userName || u.userEmail }}</div>
+                    <div class="text-xs text-gray-400">{{ u.userEmail }}</div>
+                  </div>
+                  <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2.5 py-1 rounded-full">
+                    {{ u.count }}
+                  </span>
+                </div>
+              }
+              @if (!dashboard.byUser.length) {
+                <p class="text-sm text-gray-400">Sin actividad hoy</p>
+              }
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    }
+  }
+
+  <!-- ═══════════════════════════════════════
+       TAB: RECIENTES
+       ═══════════════════════════════════════ -->
+  @if (activeTab === 'recent') {
+    <!-- Filtros -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4 flex flex-wrap gap-3 items-end">
+      <div>
+        <label class="text-xs text-gray-500 block mb-1">Filtrar por email</label>
+        <input [(ngModel)]="filterUserEmail" type="email" placeholder="usuario@empresa.com"
+          class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-300 focus:outline-none">
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 block mb-1">Límite</label>
+        <select [(ngModel)]="filterLimit"
+          class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-300 focus:outline-none">
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+          <option [value]="100">100</option>
+        </select>
+      </div>
+      <button (click)="loadRecent()"
+        class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
+        Buscar
+      </button>
+    </div>
+
+    <!-- Tabla -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      @if (loadingRecent) {
+        <div class="flex items-center justify-center h-32 text-gray-400 text-sm">Cargando...</div>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+              <tr>
+                <th class="px-4 py-3 text-left">Fecha</th>
+                <th class="px-4 py-3 text-left">Usuario</th>
+                <th class="px-4 py-3 text-left">Módulo</th>
+                <th class="px-4 py-3 text-left">Acción</th>
+                <th class="px-4 py-3 text-left">Entidad</th>
+                <th class="px-4 py-3 text-left">Descripción</th>
+                <th class="px-4 py-3 text-left">IP</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              @for (entry of recentEntries; track entry.id; let i = $index) {
+                <tr (click)="openDetail(entry)"
+                  class="hover:bg-indigo-50 cursor-pointer transition-colors">
+                  <td class="px-4 py-3 text-gray-500 whitespace-nowrap">
+                    {{ entry.fechaCreacion || entry.createdAt | date:'dd/MM/yy HH:mm:ss' }}
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="font-medium text-gray-800">{{ entry.userName || '—' }}</div>
+                    <div class="text-xs text-gray-400">{{ entry.userEmail }}</div>
+                  </td>
+                  <td class="px-4 py-3 text-gray-600">{{ entry.module || '—' }}</td>
+                  <td class="px-4 py-3">
+                    <span [class]="actionBadge(entry.action)"
+                      class="px-2 py-0.5 rounded-full text-xs font-semibold">
+                      {{ actionLabel(entry.action) }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-gray-600">
+                    <div>{{ entry.entityType }}</div>
+                    @if (entry.entityName) {
+                      <div class="text-xs text-gray-400">{{ entry.entityName }}</div>
+                    }
+                  </td>
+                  <td class="px-4 py-3 text-gray-500 max-w-xs truncate" [title]="entry.description">
+                    {{ entry.description }}
+                  </td>
+                  <td class="px-4 py-3 text-gray-400 text-xs">{{ entry.ipAddress }}</td>
+                </tr>
+              }
+              @if (!recentEntries.length) {
+                <tr>
+                  <td colspan="7" class="text-center py-12 text-gray-400">
+                    No hay transacciones registradas.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════════
+       TAB: POR USUARIO
+       ═══════════════════════════════════════ -->
+  @if (activeTab === 'by-user') {
+    <!-- Filtro días -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4 flex gap-3 items-end">
+      <div>
+        <label class="text-xs text-gray-500 block mb-1">Período (días)</label>
+        <select [(ngModel)]="filterDays"
+          class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-300 focus:outline-none">
+          <option [value]="7">7 días</option>
+          <option [value]="30">30 días</option>
+          <option [value]="60">60 días</option>
+          <option [value]="90">90 días</option>
+        </select>
+      </div>
+      <button (click)="loadByUser()"
+        class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
+        Actualizar
+      </button>
+    </div>
+
+    <!-- Tabla por usuario -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      @if (loadingUsers) {
+        <div class="flex items-center justify-center h-32 text-gray-400 text-sm">Cargando...</div>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+              <tr>
+                <th class="px-4 py-3 text-left">Usuario</th>
+                <th class="px-4 py-3 text-center">Total</th>
+                <th class="px-4 py-3 text-center">Creaciones</th>
+                <th class="px-4 py-3 text-center">Ediciones</th>
+                <th class="px-4 py-3 text-center">Eliminaciones</th>
+                <th class="px-4 py-3 text-left">Última actividad</th>
+                <th class="px-4 py-3 text-left">Distribución</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              @for (u of userSummaries; track u.userEmail) {
+                <tr class="hover:bg-gray-50 transition-colors">
+                  <td class="px-4 py-3">
+                    <div class="font-medium text-gray-800">{{ u.userName || '—' }}</div>
+                    <div class="text-xs text-gray-400">{{ u.userEmail }}</div>
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2.5 py-1 rounded-full">
+                      {{ u.total }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-center text-green-700 font-semibold">{{ u.creates }}</td>
+                  <td class="px-4 py-3 text-center text-blue-700 font-semibold">{{ u.updates }}</td>
+                  <td class="px-4 py-3 text-center text-red-600 font-semibold">{{ u.deletes }}</td>
+                  <td class="px-4 py-3 text-gray-500 text-xs">
+                    {{ u.lastActivity | date:'dd/MM/yy HH:mm' }}
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="flex gap-0.5 h-4 rounded overflow-hidden w-32">
+                      @if (u.creates > 0) {
+                        <div class="bg-green-400" [style.flex]="u.creates" title="Crear: {{u.creates}}"></div>
+                      }
+                      @if (u.updates > 0) {
+                        <div class="bg-blue-400" [style.flex]="u.updates" title="Editar: {{u.updates}}"></div>
+                      }
+                      @if (u.deletes > 0) {
+                        <div class="bg-red-400" [style.flex]="u.deletes" title="Eliminar: {{u.deletes}}"></div>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+              @if (!userSummaries.length) {
+                <tr>
+                  <td colspan="7" class="text-center py-12 text-gray-400">
+                    No hay datos para el período seleccionado.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL DE DETALLE
+     ═══════════════════════════════════════════════════════════ -->
+@if (selectedEntry) {
+  <!-- Backdrop -->
+  <div class="fixed inset-0 bg-black/50 z-40 flex items-center justify-center p-4"
+    (click)="closeDetail()">
+
+    <!-- Panel (detiene propagación para no cerrar al hacer click dentro) -->
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto z-50"
+      (click)="$event.stopPropagation()">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div class="flex items-center gap-3">
+          <span [class]="actionBadge(selectedEntry.action)"
+            class="px-3 py-1 rounded-full text-sm font-semibold">
+            {{ actionLabel(selectedEntry.action) }}
+          </span>
+          <h2 class="font-bold text-gray-900 text-lg">Detalle de transacción</h2>
+        </div>
+        <button (click)="closeDetail()"
+          class="text-gray-400 hover:text-gray-600 transition-colors text-2xl leading-none">&times;</button>
+      </div>
+
+      <div class="px-6 py-5 space-y-5">
+
+        <!-- Info principal -->
+        <div class="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold mb-1">Fecha</p>
+            <p class="text-gray-800">{{ selectedEntry.fechaCreacion || selectedEntry.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold mb-1">ID Registro</p>
+            <p class="text-gray-500 font-mono text-xs break-all">{{ selectedEntry.id }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold mb-1">Usuario</p>
+            <p class="text-gray-800 font-medium">{{ selectedEntry.userName || '—' }}</p>
+            <p class="text-gray-400 text-xs">{{ selectedEntry.userEmail }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold mb-1">Módulo</p>
+            <p class="text-gray-800">{{ selectedEntry.module || '—' }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold mb-1">Tipo de entidad</p>
+            <p class="text-gray-800">{{ selectedEntry.entityType }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold mb-1">ID Entidad</p>
+            <p class="text-gray-500 font-mono text-xs break-all">{{ selectedEntry.entityId || '—' }}</p>
+          </div>
+          @if (selectedEntry.entityName) {
+            <div class="col-span-2">
+              <p class="text-xs text-gray-400 uppercase font-semibold mb-1">Nombre de entidad</p>
+              <p class="text-gray-800">{{ selectedEntry.entityName }}</p>
+            </div>
+          }
+          <div class="col-span-2">
+            <p class="text-xs text-gray-400 uppercase font-semibold mb-1">Descripción</p>
+            <p class="text-gray-700 leading-relaxed">{{ selectedEntry.description || '—' }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold mb-1">IP</p>
+            <p class="text-gray-600 font-mono text-xs">{{ selectedEntry.ipAddress || '—' }}</p>
+          </div>
+          @if (selectedEntry.userAgent) {
+            <div>
+              <p class="text-xs text-gray-400 uppercase font-semibold mb-1">User Agent</p>
+              <p class="text-gray-500 text-xs truncate" [title]="selectedEntry.userAgent">
+                {{ selectedEntry.userAgent }}
+              </p>
+            </div>
+          }
+        </div>
+
+        <!-- Valores anteriores -->
+        @if (selectedEntry.oldValues && jsonKeys(selectedEntry.oldValues).length) {
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold mb-2">Valores anteriores</p>
+            <div class="bg-red-50 border border-red-100 rounded-lg overflow-hidden">
+              <table class="w-full text-xs">
+                <tbody>
+                  @for (key of jsonKeys(selectedEntry.oldValues); track key) {
+                    <tr class="border-b border-red-100 last:border-0">
+                      <td class="px-3 py-2 font-medium text-red-700 w-1/3 align-top">{{ key }}</td>
+                      <td class="px-3 py-2 text-red-900 font-mono break-all">
+                        {{ formatJson(selectedEntry.oldValues![key]) }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+
+        <!-- Valores nuevos -->
+        @if (selectedEntry.newValues && jsonKeys(selectedEntry.newValues).length) {
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold mb-2">Valores nuevos</p>
+            <div class="bg-green-50 border border-green-100 rounded-lg overflow-hidden">
+              <table class="w-full text-xs">
+                <tbody>
+                  @for (key of jsonKeys(selectedEntry.newValues); track key) {
+                    <tr class="border-b border-green-100 last:border-0">
+                      <td class="px-3 py-2 font-medium text-green-700 w-1/3 align-top">{{ key }}</td>
+                      <td class="px-3 py-2 text-green-900 font-mono break-all">
+                        {{ formatJson(selectedEntry.newValues![key]) }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+
+        <!-- Metadata -->
+        @if (selectedEntry.metadata && jsonKeys(selectedEntry.metadata).length) {
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold mb-2">Metadata</p>
+            <pre class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-700 overflow-x-auto">{{ selectedEntry.metadata | json }}</pre>
+          </div>
+        }
+
+      </div>
+
+      <!-- Footer -->
+      <div class="px-6 py-4 border-t border-gray-100 flex justify-end">
+        <button (click)="closeDetail()"
+          class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+          Cerrar
+        </button>
+      </div>
+
+    </div>
+  </div>
+}

@@ -65,6 +65,9 @@ export class OrdersComponent implements OnInit {
   selectedOrderRoute: Orden | null = null;
   routeSteps: OrderRouteStep[] = [];
 
+  // Vista detalle
+  viewingOrder: Orden | null = null;
+
   // Reprogramación
   reprogrammingOrder: Orden | null = null;
   reprogramForm = {
@@ -528,6 +531,14 @@ export class OrdersComponent implements OnInit {
     this.reprogrammingOrder = null;
     this.reprogramForm = { fechaInicioPlanificada: '', fechaFinPlanificada: '' };
     this.reprogramError = null;
+  }
+
+  view(order: Orden) {
+    this.viewingOrder = order;
+  }
+
+  closeView() {
+    this.viewingOrder = null;
   }
 
   areReprogramDatesValid(): boolean {

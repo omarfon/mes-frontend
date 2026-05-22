@@ -5,11 +5,13 @@ import { EjecucionesService, Ejecucion, EstadoEjecucion, CreateEjecucionDto } fr
 import { OrdenesService } from '../orders/orders.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environmets/environments';
+import { ConfirmService } from '../../../shared/components/confirm-modal/confirm.service';
+import { AuditHistoryComponent } from '../../../shared/components/audit-history/audit-history';
 
 @Component({
   standalone: true,
   selector: 'app-execution',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AuditHistoryComponent],
   templateUrl: './execution.html',
 })
 export class ExecutionComponent implements OnInit {
@@ -26,9 +28,17 @@ export class ExecutionComponent implements OnInit {
   items: Ejecucion[] = [];
   editingId: string | null = null;
   formPanelOpen = false;
+  viewingItem: Ejecucion | null = null;
   q = '';
   loading = false;
   error: string | null = null;
+
+  // Paginación
+  pageSize = 10;
+  currentPage = 1;
+  total = 0;
+  totalPages = 1;
+  readonly pageSizeOptions = [5, 10, 25, 50];
 
   // Listas para los selects
   ordenes: any[] = [];
@@ -42,7 +52,8 @@ export class ExecutionComponent implements OnInit {
     private ejecucionesService: EjecucionesService,
     private ordenesService: OrdenesService,
     private http: HttpClient,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private confirmSvc: ConfirmService
   ) {}
 
   ngOnInit() {
@@ -92,32 +103,62 @@ export class ExecutionComponent implements OnInit {
   loadEjecuciones() {
     this.loading = true;
     this.error = null;
-    
-    this.ejecucionesService.getAll().subscribe({
-      next: (data) => {
-        console.log('✅ Ejecuciones loaded:', data);
-        this.items = data || [];
+
+    this.ejecucionesService.getPage(this.currentPage, this.pageSize, this.q).subscribe({
+      next: (response) => {
+        this.items = response.data || [];
+        this.total = response.meta?.total ?? 0;
+        this.totalPages = response.meta?.totalPages ?? 1;
         this.loading = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('❌ Error loading ejecuciones:', err);
         this.error = 'No se pudieron cargar las ejecuciones.';
-        this.loading = false;
         this.items = [];
+        this.total = 0;
+        this.totalPages = 1;
+        this.loading = false;
         this.cdr.detectChanges();
       }
     });
   }
 
   get filtered() {
-    const t = this.q.trim().toLowerCase();
-    if (!t) return this.items || [];
-    
-    return (this.items || []).filter(x =>
-      [x.ordenId, x.maquinaId, x.operadorId, x.estado, x.observaciones]
-        .some(v => String(v || '').toLowerCase().includes(t))
-    );
+    // Con paginación server-side, items ya es la página actual.
+    return this.items;
+  }
+
+  get pageNumbers(): number[] {
+    const total = this.totalPages;
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const cur = this.currentPage;
+    const pages = new Set([1, total, cur - 1, cur, cur + 1].filter(p => p >= 1 && p <= total));
+    return [...pages].sort((a, b) => a - b);
+  }
+
+  get pageRangeStart() {
+    return this.total === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  get pageRangeEnd() {
+    return Math.min(this.currentPage * this.pageSize, this.total);
+  }
+
+  setPage(page: number) {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+    this.loadEjecuciones();
+  }
+
+  onSearchChange() {
+    this.currentPage = 1;
+    this.loadEjecuciones();
+  }
+
+  onPageSizeChange() {
+    this.currentPage = 1;
+    this.loadEjecuciones();
   }
 
   submit() {
@@ -239,22 +280,32 @@ export class ExecutionComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  remove(id: string) {
-    if (!confirm('¿Eliminar esta ejecución?')) return;
+  view(item: Ejecucion) {
+    this.viewingItem = item;
+  }
 
-    this.loading = true;
-    this.ejecucionesService.delete(id).subscribe({
-      next: () => {
-        console.log('Ejecucion deleted');
-        this.loadEjecuciones();
-      },
-      error: (err) => {
-        console.error('Error deleting:', err);
-        this.error = this.extractErrorMessage(err);
-        this.loading = false;
-        this.cdr.detectChanges();
-      }
-    });
+  closeView() {
+    this.viewingItem = null;
+  }
+
+  remove(id: string) {
+    this.confirmSvc.open({ title: 'Eliminar ejecución', message: '¿Estás seguro? Esta acción no se puede deshacer.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.loading = true;
+        this.ejecucionesService.delete(id).subscribe({
+          next: () => {
+            console.log('Ejecucion deleted');
+            this.loadEjecuciones();
+          },
+          error: (err) => {
+            console.error('Error deleting:', err);
+            this.error = this.extractErrorMessage(err);
+            this.loading = false;
+            this.cdr.detectChanges();
+          }
+        });
+      });
   }
 
   cancelEdit() {

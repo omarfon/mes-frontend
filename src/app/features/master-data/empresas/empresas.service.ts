@@ -12,7 +12,9 @@ export interface Empresa {
   phone: string;
   email: string;
   active: boolean;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 

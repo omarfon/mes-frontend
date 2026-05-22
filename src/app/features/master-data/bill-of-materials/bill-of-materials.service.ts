@@ -27,7 +27,9 @@ export interface Bom {
   validFrom: string;
   active: boolean;
   lines: BomLine[];
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 

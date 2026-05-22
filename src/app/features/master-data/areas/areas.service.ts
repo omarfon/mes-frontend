@@ -14,7 +14,9 @@ export interface Area {
   type: AreaType;
   description: string;
   active: boolean;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 

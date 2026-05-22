@@ -14,7 +14,9 @@ export interface Location {
   parent?: string;
   parentCode?: string;
   active: boolean;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 

@@ -2,11 +2,15 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProcessesService, Proceso, TipoProceso, EstadoProceso, CreateProcesoDto } from './processes.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuditHistoryComponent } from '../../../shared/components/audit-history/audit-history';
+import { ConfirmService } from '../../../shared/components/confirm-modal/confirm.service';
+import { ToastService } from '../../../shared/components/toast/toast.service';
 
 @Component({
   standalone: true,
   selector: 'app-processes',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AuditHistoryComponent],
   templateUrl: './processes.html',
 })
 export class ProcessesComponent implements OnInit {
@@ -29,6 +33,9 @@ export class ProcessesComponent implements OnInit {
 
   items: Proceso[] = [];
   editingId: string | null = null;
+  currentItem: Proceso | null = null;
+  formPanelOpen = false;
+  viewOnly = false;
   q = '';
   loading = false;
   error: string | null = null;
@@ -39,8 +46,13 @@ export class ProcessesComponent implements OnInit {
 
   constructor(
     private processesService: ProcessesService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private authSvc: AuthService,
+    private confirmSvc: ConfirmService,
+    private toast: ToastService
   ) {}
+
+  openCreatePanel() { this.editingId = null; this.currentItem = null; this.resetForm(); this.viewOnly = false; this.formPanelOpen = true; }
 
   ngOnInit() {
     this.loadProcesses();
@@ -103,13 +115,23 @@ export class ProcessesComponent implements OnInit {
       notas: this.form.notas || undefined,
     };
 
+    const payload = dto as any;
+    const username = this.authSvc.getCurrentUsername();
+    if (!this.editingId) {
+      payload.createdBy = username;
+    } else {
+      payload.updatedBy = username;
+    }
+
     if (this.editingId) {
-      this.processesService.update(this.editingId, dto).subscribe({
+      this.processesService.update(this.editingId, payload).subscribe({
         next: (updated) => {
           console.log('Process updated:', updated);
-          this.q = ''; // Limpiar filtro
+          this.toast.show('Proceso actualizado');
+          this.q = '';
           this.loadProcesses();
           this.cancelEdit();
+          this.formPanelOpen = false;
         },
         error: (err) => {
           console.error('Error updating:', err);
@@ -119,12 +141,14 @@ export class ProcessesComponent implements OnInit {
         }
       });
     } else {
-      this.processesService.create(dto).subscribe({
+      this.processesService.create(payload).subscribe({
         next: (created) => {
           console.log('Process created:', created);
-          this.q = ''; // Limpiar filtro
+          this.toast.show('Proceso creado');
+          this.q = '';
           this.loadProcesses();
           this.resetForm();
+          this.formPanelOpen = false;
         },
         error: (err) => {
           console.error('Error creating:', err);
@@ -165,6 +189,7 @@ export class ProcessesComponent implements OnInit {
 
   edit(it: Proceso) {
     this.editingId = it.id;
+    this.currentItem = it;
     this.form = {
       codigo: it.codigo,
       nombre: it.nombre,
@@ -181,32 +206,60 @@ export class ProcessesComponent implements OnInit {
       costoEstandar: it.costoEstandar || 0,
       notas: it.notas || '',
     };
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.viewOnly = false;
+    this.formPanelOpen = true;
+  }
+
+  view(it: Proceso) {
+    this.editingId = it.id;
+    this.currentItem = it;
+    this.form = {
+      codigo: it.codigo,
+      nombre: it.nombre,
+      descripcion: it.descripcion || '',
+      tipo: it.tipo,
+      estado: it.estado || EstadoProceso.ACTIVO,
+      version: it.version || '1.0',
+      tiempoEstandarMinutos: it.tiempoEstandarMinutos || 0,
+      tiempoSetupMinutos: it.tiempoSetupMinutos || 0,
+      instrucciones: it.instrucciones || '',
+      requisitosCalidad: it.requisitosCalidad || '',
+      secuencia: it.secuencia || 1,
+      eficienciaEsperada: it.eficienciaEsperada || 85,
+      costoEstandar: it.costoEstandar || 0,
+      notas: it.notas || '',
+    };
+    this.viewOnly = true;
+    this.formPanelOpen = true;
   }
 
   remove(id: string) {
-    if (!confirm('¿Estás seguro de eliminar este proceso?')) return;
-
-    this.loading = true;
-    this.error = null;
-
-    this.processesService.delete(id).subscribe({
-      next: () => {
-        console.log('Process deleted');
-        this.loadProcesses();
-        if (this.editingId === id) this.cancelEdit();
-      },
-      error: (err) => {
-        console.error('Error deleting:', err);
-        this.error = this.extractErrorMessage(err);
-        this.loading = false;
-      }
-    });
+    this.confirmSvc.open({ title: 'Eliminar proceso', message: '¿Estás seguro? Esta acción no se puede deshacer.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.loading = true;
+        this.error = null;
+        this.processesService.delete(id).subscribe({
+          next: () => {
+            this.toast.show('Proceso eliminado');
+            this.loadProcesses();
+            if (this.editingId === id) this.cancelEdit();
+          },
+          error: (err) => {
+            console.error('Error deleting:', err);
+            this.error = this.extractErrorMessage(err);
+            this.loading = false;
+          }
+        });
+      });
   }
 
   cancelEdit() {
     this.editingId = null;
+    this.currentItem = null;
+    this.viewOnly = false;
     this.resetForm();
+    this.formPanelOpen = false;
   }
 
   resetForm() {

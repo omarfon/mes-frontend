@@ -9,9 +9,9 @@
     <div class="flex items-center gap-3">
       <div class="relative">
         <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></span>
-        <input [(ngModel)]="q" class="ui-input pl-9 w-64" placeholder="Buscar por código, cliente, producto..." />
+        <input [(ngModel)]="q" (ngModelChange)="onSearch()" class="ui-input pl-9 w-64" placeholder="Buscar por código, cliente, producto..." />
       </div>
-      <select [(ngModel)]="filterType" class="ui-select w-52">
+      <select [(ngModel)]="filterType" (ngModelChange)="onFilterChange()" class="ui-select w-52">
         <option value="">Todos los tipos</option>
         <option value="PRODUCTION_ORDER">Orden de Producción</option>
         <option value="PURCHASE_REQUEST">Solicitud de Pedido</option>
@@ -23,7 +23,7 @@
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
     <div class="ui-surface p-4 rounded-xl text-center">
       <p class="text-[10px] text-slate-500 uppercase tracking-wide">Total aprobados</p>
-      <p class="text-2xl font-bold mt-1">{{ items.length }}</p>
+      <p class="text-2xl font-bold mt-1">{{ total }}</p>
     </div>
     <div class="ui-surface p-4 rounded-xl text-center">
       <p class="text-[10px] text-blue-400 uppercase tracking-wide">Órdenes de producción</p>
@@ -43,7 +43,7 @@
   <div class="ui-surface p-5">
     <div class="flex items-center justify-between mb-4">
       <p class="text-sm font-semibold">Registros de historial</p>
-      <span class="text-[11px] text-slate-500">{{ filtered.length }} registros</span>
+      <span class="text-[11px] text-slate-500">{{ total }} registros</span>
     </div>
 
     <div class="ui-table-wrap">
@@ -62,7 +62,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let it of filtered" class="ui-tr">
+          <tr *ngFor="let it of filtered" class="ui-tr cursor-pointer hover:bg-emerald-500/5 transition-colors" (click)="openDetail(it)">
             <td class="ui-td font-medium">{{ it.studyCode }}</td>
             <td class="ui-td">{{ it.clientName }}</td>
             <td class="ui-td">{{ it.productName }}</td>
@@ -84,7 +84,7 @@
               </span>
             </td>
           </tr>
-          <tr *ngIf="filtered.length === 0">
+          <tr *ngIf="filtered.length === 0 && !loading">
             <td colspan="9" class="px-4 py-10 text-center text-slate-500">
               No hay registros en el historial.
             </td>
@@ -92,5 +92,176 @@
         </tbody>
       </table>
     </div>
+
+    <!-- Paginación -->
+    <div class="flex items-center justify-between mt-4 text-xs text-slate-400">
+      <span>{{ total }} registros · página {{ currentPage }} de {{ totalPages }}</span>
+      <div class="flex gap-1">
+        <button (click)="goTo(1)" [disabled]="currentPage === 1"
+          class="px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-800/50 disabled:opacity-30 transition">
+          «
+        </button>
+        <button (click)="goTo(currentPage - 1)" [disabled]="currentPage === 1"
+          class="px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-800/50 disabled:opacity-30 transition">
+          ‹
+        </button>
+        <ng-container *ngFor="let p of [].constructor(totalPages); let i = index">
+          <button *ngIf="i + 1 >= currentPage - 1 && i + 1 <= currentPage + 1"
+            (click)="goTo(i + 1)"
+            [ngClass]="(i + 1) === currentPage ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'border-slate-700 hover:bg-slate-800/50'"
+            class="px-2 py-1 rounded-lg border transition">
+            {{ i + 1 }}
+          </button>
+        </ng-container>
+        <button (click)="goTo(currentPage + 1)" [disabled]="currentPage === totalPages"
+          class="px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-800/50 disabled:opacity-30 transition">
+          ›
+        </button>
+        <button (click)="goTo(totalPages)" [disabled]="currentPage === totalPages"
+          class="px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-800/50 disabled:opacity-30 transition">
+          »
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ PANEL LATERAL DE DETALLE ═══════════════════════ -->
+<div *ngIf="selectedRecord"
+  class="fixed inset-0 z-40 flex justify-end"
+  (click)="closeDetail()">
+
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+
+  <!-- Panel -->
+  <div class="relative z-50 w-full max-w-lg h-full bg-[#111827] border-l border-slate-700 overflow-y-auto flex flex-col shadow-2xl"
+    (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-700 sticky top-0 bg-[#111827] z-10">
+      <div class="flex items-center gap-3">
+        <span class="ui-badge border text-xs" [ngClass]="resultTypeBadge(selectedRecord.resultType)">
+          {{ resultTypeLabel(selectedRecord.resultType) }}
+        </span>
+        <h3 class="font-bold text-white text-base">{{ selectedRecord.studyCode }}</h3>
+      </div>
+      <button (click)="closeDetail()"
+        class="text-slate-400 hover:text-white text-2xl leading-none transition-colors">&times;</button>
+    </div>
+
+    <div class="px-6 py-5 space-y-6 flex-1">
+
+      <!-- Estado -->
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full"
+          [ngClass]="{
+            'bg-blue-400': selectedRecord.status === 'IN_PROGRESS',
+            'bg-emerald-400': selectedRecord.status === 'COMPLETED',
+            'bg-rose-400': selectedRecord.status === 'CANCELLED'
+          }"></span>
+        <span class="text-sm font-medium" [ngClass]="statusColor(selectedRecord.status)">
+          {{ statusLabel(selectedRecord.status) }}
+        </span>
+      </div>
+
+      <!-- Info principal -->
+      <div>
+        <p class="text-[10px] text-slate-500 uppercase font-semibold tracking-wide mb-3">Información general</p>
+        <div class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+          <div>
+            <p class="text-[10px] text-slate-500 mb-0.5">Cliente</p>
+            <p class="text-white font-medium">{{ selectedRecord.clientName }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500 mb-0.5">Producto</p>
+            <p class="text-white font-medium">{{ selectedRecord.productName }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500 mb-0.5">Cantidad</p>
+            <p class="text-slate-200">{{ selectedRecord.quantity }} {{ selectedRecord.uom }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500 mb-0.5">Cotización</p>
+            <p class="text-slate-200">{{ selectedRecord.currency }} {{ selectedRecord.quotePrice | number:'1.2-2' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aprobación -->
+      <div>
+        <p class="text-[10px] text-slate-500 uppercase font-semibold tracking-wide mb-3">Aprobación</p>
+        <div class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+          <div>
+            <p class="text-[10px] text-slate-500 mb-0.5">Fecha aprobación</p>
+            <p class="text-slate-200">{{ selectedRecord.approvedDate | date:'dd/MM/yyyy HH:mm' }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-500 mb-0.5">Aprobado por</p>
+            <p class="text-slate-200">{{ selectedRecord.approvedBy || '—' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resultado -->
+      <div>
+        <p class="text-[10px] text-slate-500 uppercase font-semibold tracking-wide mb-3">Resultado generado</p>
+        <div class="bg-slate-800/60 rounded-xl border border-slate-700 p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] text-slate-500">Tipo</span>
+            <span class="ui-badge border text-xs" [ngClass]="resultTypeBadge(selectedRecord.resultType)">
+              {{ resultTypeLabel(selectedRecord.resultType) }}
+            </span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] text-slate-500">Código</span>
+            <span class="text-white font-mono font-semibold">{{ selectedRecord.resultCode }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] text-slate-500">Fecha resultado</span>
+            <span class="text-slate-300">{{ selectedRecord.resultDate | date:'dd/MM/yyyy' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Auditoría -->
+      <div>
+        <p class="text-[10px] text-slate-500 uppercase font-semibold tracking-wide mb-3">Auditoría</p>
+        <div class="bg-slate-800/40 rounded-xl border border-slate-700 divide-y divide-slate-700/60 text-sm">
+          <div class="flex items-center justify-between px-4 py-2.5">
+            <span class="text-[10px] text-slate-500">Creado el</span>
+            <span class="text-slate-300">{{ (selectedRecord.fechaCreacion | date:'dd/MM/yyyy HH:mm:ss') || '—' }}</span>
+          </div>
+          <div class="flex items-center justify-between px-4 py-2.5">
+            <span class="text-[10px] text-slate-500">Creado por</span>
+            <span class="text-slate-300">{{ selectedRecord.usuCreacion || '—' }}</span>
+          </div>
+          <div class="flex items-center justify-between px-4 py-2.5">
+            <span class="text-[10px] text-slate-500">Última edición</span>
+            <span class="text-slate-300">{{ (selectedRecord.fechaEdicion | date:'dd/MM/yyyy HH:mm:ss') || '—' }}</span>
+          </div>
+          <div class="flex items-center justify-between px-4 py-2.5">
+            <span class="text-[10px] text-slate-500">Editado por</span>
+            <span class="text-slate-300">{{ selectedRecord.usuEdicion || '—' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ID técnico -->
+      <div class="border-t border-slate-800 pt-4">
+        <p class="text-[10px] text-slate-500 mb-1">ID interno</p>
+        <p class="text-slate-500 font-mono text-xs break-all">{{ selectedRecord.id }}</p>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="px-6 py-4 border-t border-slate-700 sticky bottom-0 bg-[#111827]">
+      <button (click)="closeDetail()"
+        class="w-full py-2 rounded-xl border border-slate-600 text-sm text-slate-300 hover:bg-slate-800 transition-colors">
+        Cerrar
+      </button>
+    </div>
+
   </div>
 </div>

@@ -2,6 +2,10 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductsService, Product as ApiProduct } from './products.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuditHistoryComponent } from '../../../shared/components/audit-history/audit-history';
+import { ConfirmService } from '../../../shared/components/confirm-modal/confirm.service';
+import { ToastService } from '../../../shared/components/toast/toast.service';
 
 /** Tipos genéricos de producto (aplican a cualquier industria) */
 type ProductType =
@@ -50,6 +54,11 @@ interface Product {
   spec: string;
   /* ── Estado ── */
   active: boolean;
+  /* ── Auditoría ── */
+  createdBy?: string;
+  createdAt?: string;
+  updatedBy?: string;
+  updatedAt?: string;
 }
 
 type ProductForm = Omit<Product, 'id'>;
@@ -84,7 +93,7 @@ const EMPTY_FORM: ProductForm = {
 @Component({
   standalone: true,
   selector: 'app-products',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AuditHistoryComponent],
   templateUrl: './products.html',
 })
 export class ProductsComponent implements OnInit {
@@ -114,9 +123,12 @@ export class ProductsComponent implements OnInit {
   ];
 
   editingId: string | null = null;
+  currentItem: Product | null = null;
   q = '';
+  panelOpen = false;
+  viewOnly = false;
 
-  constructor(private svc: ProductsService, private cdr: ChangeDetectorRef) {}
+  constructor(private svc: ProductsService, private cdr: ChangeDetectorRef, private authSvc: AuthService, private confirmSvc: ConfirmService, private toast: ToastService) {}
 
   ngOnInit() { this.load(); }
 
@@ -181,29 +193,55 @@ export class ProductsComponent implements OnInit {
       subfamily: this.form.subfamily || undefined,
       erpCode: this.form.erpCode || undefined,
     };
+    const payload = dto as any;
+    const username = this.authSvc.getCurrentUsername();
+    if (!this.editingId) {
+      payload.createdBy = username;
+    } else {
+      payload.updatedBy = username;
+    }
     const obs = this.editingId
-      ? this.svc.update(this.editingId, dto)
-      : this.svc.create(dto);
+      ? this.svc.update(this.editingId, payload)
+      : this.svc.create(payload);
     obs.subscribe({
-      next: () => { this.editingId ? this.cancelEdit() : this.resetForm(); this.load(); },
+      next: () => { this.toast.show(this.editingId ? 'Producto actualizado' : 'Producto creado'); this.cancelEdit(); this.load(); },
       error: err => { this.error = this.extractError(err); },
     });
   }
+
+  openNew() { this.editingId = null; this.currentItem = null; this.resetForm(); this.viewOnly = false; this.panelOpen = true; }
+  closePanel() { this.panelOpen = false; this.editingId = null; this.currentItem = null; this.resetForm(); }
 
   edit(it: Product) {
     this.editingId = it.id;
+    this.currentItem = it;
     this.form = { ...EMPTY_FORM, ...it } as ProductForm;
+    this.formTab = 'general';
+    this.viewOnly = false;
+    this.panelOpen = true;
+  }
+
+  view(it: Product) {
+    this.editingId = it.id;
+    this.currentItem = it;
+    this.form = { ...EMPTY_FORM, ...it } as ProductForm;
+    this.formTab = 'general';
+    this.viewOnly = true;
+    this.panelOpen = true;
   }
 
   remove(id: string) {
-    if (!confirm('¿Eliminar este producto?')) return;
-    this.svc.delete(id).subscribe({
-      next: () => { if (this.editingId === id) this.cancelEdit(); this.load(); },
-      error: err => { this.error = this.extractError(err); },
-    });
+    this.confirmSvc.open({ title: 'Eliminar producto', message: '¿Estás seguro? Esta acción no se puede deshacer.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.svc.delete(id).subscribe({
+          next: () => { this.toast.show('Producto eliminado'); if (this.editingId === id) this.cancelEdit(); this.load(); },
+          error: err => { this.error = this.extractError(err); },
+        });
+      });
   }
 
-  cancelEdit() { this.editingId = null; this.resetForm(); }
+  cancelEdit() { this.editingId = null; this.currentItem = null; this.resetForm(); this.viewOnly = false; this.panelOpen = false; }
 
   resetForm() { this.form = { ...EMPTY_FORM }; this.formTab = 'general'; }
 

@@ -35,7 +35,9 @@ export interface Product {
   subfamily?: string;
   erpCode?: string;
   isActive?: boolean;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 

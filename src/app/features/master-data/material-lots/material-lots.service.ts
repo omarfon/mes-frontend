@@ -21,7 +21,9 @@ export interface MaterialLot {
   locationCode: string;
   status: LotStatus;
   notes: string;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 

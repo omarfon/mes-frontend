@@ -35,6 +35,8 @@ export interface Ejecucion {
   activo?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  maquina?: { id: string; code: string; name: string; };
+  operador?: { id: string; codigo: string; nombre: string; };
 }
 
 interface PaginatedResponse {
@@ -57,6 +59,15 @@ export class EjecucionesService {
     return this.http.get<PaginatedResponse>(this.apiUrl).pipe(
       map(response => response.data || [])
     );
+  }
+
+  getPage(page: number, limit: number, search?: string): Observable<PaginatedResponse> {
+    const params: Record<string, string> = {
+      page: String(page),
+      limit: String(limit),
+    };
+    if (search?.trim()) params['search'] = search.trim();
+    return this.http.get<PaginatedResponse>(this.apiUrl, { params });
   }
 
   getById(id: string): Observable<Ejecucion> {

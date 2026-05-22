@@ -13,13 +13,24 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/auth/login/login').then(m => m.LoginComponent),
       },
+      {
+        path: 'forgot-password',
+        loadComponent: () =>
+          import('./features/auth/forgot-password/forgot-password').then(m => m.ForgotPasswordComponent),
+      },
+      {
+        path: 'reset-password',
+        loadComponent: () =>
+          import('./features/auth/reset-password/reset-password').then(m => m.ResetPasswordComponent),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'login' },
     ],
   },
+  { path: '', pathMatch: 'full', redirectTo: 'auth/login' },
   {
     path: '',
     component: MainLayout,
-/*     canActivate: [AuthGuard], */
+    canActivate: [AuthGuard],
     children: [
       {
         path: 'dashboard',
@@ -85,6 +96,6 @@ export const routes: Routes = [
     ],
   },
 
-  { path: '**', redirectTo: '' },
+  { path: '**', redirectTo: 'auth/login' },
   
 ];

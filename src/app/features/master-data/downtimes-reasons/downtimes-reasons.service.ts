@@ -40,7 +40,9 @@ export interface DowntimeReason {
   accionesCorrectivas?: string[] | null;
   activo?: boolean;
   motivoPadreId?: string | null;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
   deletedAt?: string | null;
 }

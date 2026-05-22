@@ -67,6 +67,33 @@
           Afecta todos los turnos
         </label>
 
+
+        <!-- Auditoría -->
+        <div class="mb-4 px-3 py-2.5 rounded-lg bg-slate-900/50 border border-slate-800">
+          <p class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">Auditoría</p>
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <span class="text-slate-500">Creado por:</span>
+              <span class="text-slate-300 ml-1">{{ currentItem?.createdBy || '—' }}</span>
+              <div *ngIf="currentItem?.createdAt" class="text-[10px] text-slate-600 mt-0.5">
+                {{ currentItem?.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+              </div>
+            </div>
+            <div>
+              <span class="text-slate-500">Modificado por:</span>
+              <span class="text-slate-300 ml-1">{{ currentItem?.updatedBy || '—' }}</span>
+              <div *ngIf="currentItem?.updatedAt" class="text-[10px] text-slate-600 mt-0.5">
+                {{ currentItem?.updatedAt | date: 'dd/MM/yyyy HH:mm' }}
+              </div>
+            </div>
+          </div>
+        </div>
+          <!-- Historial de cambios (solo al editar) -->
+          <app-audit-history
+            *ngIf="editingId"
+            entityType="PlantCalendar"
+            [entityId]="editingId"
+          />
         <div class="flex gap-2 pt-1">
           <button type="submit" class="flex-1 ui-btn-primary">{{ editingId ? 'Guardar cambios' : 'Agregar' }}</button>
           <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="ui-btn-ghost">Cancelar</button>

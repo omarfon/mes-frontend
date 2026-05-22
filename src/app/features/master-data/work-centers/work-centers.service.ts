@@ -15,7 +15,9 @@ export interface WorkCenter {
   capacityPcsPerHour: number | null;
   description: string;
   active: boolean;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 

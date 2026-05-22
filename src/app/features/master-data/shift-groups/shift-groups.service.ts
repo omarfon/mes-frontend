@@ -14,7 +14,9 @@ export interface ShiftGroup {
   headcount: number;
   notes: string;
   active: boolean;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 

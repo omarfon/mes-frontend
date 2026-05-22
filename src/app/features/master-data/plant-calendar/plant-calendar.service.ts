@@ -15,7 +15,9 @@ export interface CalEntry {
   plantCode: string;
   affectsAll: boolean;
   notes: string;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 

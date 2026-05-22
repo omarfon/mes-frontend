@@ -2,22 +2,29 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LocationsService, Location, LocationType, CreateLocationDto } from './locations.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuditHistoryComponent } from '../../../shared/components/audit-history/audit-history';
+import { ConfirmService } from '../../../shared/components/confirm-modal/confirm.service';
+import { ToastService } from '../../../shared/components/toast/toast.service';
 
 @Component({
   standalone: true,
   selector: 'app-locations',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AuditHistoryComponent],
   templateUrl: './locations.html',
 })
 export class LocationsComponent implements OnInit {
   form: CreateLocationDto = { code: '', name: '', type: 'WAREHOUSE', parent: '', active: true };
   items: Location[] = [];
   editingId: string | null = null;
+  currentItem: Location | null = null;
+  formPanelOpen = false;
+  viewOnly = false;
   q = '';
   loading = false;
   error: string | null = null;
 
-  constructor(private svc: LocationsService, private cdr: ChangeDetectorRef) {}
+  constructor(private svc: LocationsService, private cdr: ChangeDetectorRef, private authSvc: AuthService, private confirmSvc: ConfirmService, private toast: ToastService) {}
 
   ngOnInit() { this.load(); }
 
@@ -36,30 +43,59 @@ export class LocationsComponent implements OnInit {
     return this.items.filter(x => [x.code, x.name, x.type, x.parent || ''].some(v => v.toLowerCase().includes(t)));
   }
 
+  openCreatePanel() {
+    this.editingId = null;
+    this.currentItem = null;
+    this.resetForm();
+    this.viewOnly = false;
+    this.formPanelOpen = true;
+  }
+
   submit() {
     if (!this.form.code || !this.form.name) return;
     this.loading = true;
-    const obs = this.editingId ? this.svc.update(this.editingId, this.form) : this.svc.create(this.form);
+    const payload = { ...this.form } as any;
+    const username = this.authSvc.getCurrentUsername();
+    if (!this.editingId) {
+      payload.createdBy = username;
+    } else {
+      payload.updatedBy = username;
+    }
+    const obs = this.editingId ? this.svc.update(this.editingId, payload) : this.svc.create(payload);
     obs.subscribe({
-      next: () => { this.load(); this.editingId ? this.cancelEdit() : this.resetForm(); },
+      next: () => { this.toast.show(this.editingId ? 'Registro actualizado' : 'Registro creado'); this.load(); this.editingId ? this.cancelEdit() : this.resetForm(); this.formPanelOpen = false; },
       error: err => { this.error = this.extractError(err); this.loading = false; },
     });
   }
 
   edit(it: Location) {
     this.editingId = it.id;
+    this.currentItem = it;
     this.form = { code: it.code, name: it.name, type: it.type as LocationType, parent: it.parent || '', active: it.active };
+    this.viewOnly = false;
+    this.formPanelOpen = true;
+  }
+
+  view(it: Location) {
+    this.editingId = it.id;
+    this.currentItem = it;
+    this.form = { code: it.code, name: it.name, type: it.type as LocationType, parent: it.parent || '', active: it.active };
+    this.viewOnly = true;
+    this.formPanelOpen = true;
   }
 
   remove(id: string) {
-    if (!confirm('¿Eliminar esta ubicación?')) return;
-    this.svc.delete(id).subscribe({
-      next: () => { this.load(); if (this.editingId === id) this.cancelEdit(); },
-      error: err => { this.error = this.extractError(err); },
-    });
+    this.confirmSvc.open({ title: 'Eliminar ubicación', message: '¿Estás seguro? Esta acción no se puede deshacer.' })
+      .subscribe(ok => {
+        if (!ok) return;
+        this.svc.delete(id).subscribe({
+          next: () => { this.toast.show('Ubicación eliminada'); this.load(); if (this.editingId === id) this.cancelEdit(); },
+          error: err => { this.error = this.extractError(err); },
+        });
+      });
   }
 
-  cancelEdit() { this.editingId = null; this.resetForm(); }
+  cancelEdit() { this.editingId = null; this.currentItem = null; this.viewOnly = false; this.resetForm(); this.formPanelOpen = false; }
 
   resetForm() {
     this.form = { code: '', name: '', type: 'WAREHOUSE', parent: '', active: true };

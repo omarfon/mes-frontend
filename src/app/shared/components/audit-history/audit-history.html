@@ -1,0 +1,104 @@
+<div class="mt-4 border-t border-slate-800 pt-4">
+  <p class="text-[10px] uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+    <i class="pi pi-history text-[11px]"></i>
+    {{ titulo }}
+  </p>
+
+  <!-- Cargando -->
+  <div *ngIf="loading" class="flex items-center gap-2 text-xs text-slate-500 py-2">
+    <i class="pi pi-spin pi-spinner text-xs"></i>
+    Cargando historial...
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error && !loading" class="text-xs text-red-400 py-2">
+    {{ error }}
+  </div>
+
+  <!-- Sin registros -->
+  <div *ngIf="!loading && !error && records.length === 0"
+       class="text-xs text-slate-600 py-2">
+    Sin registros de cambios.
+  </div>
+
+  <!-- Timeline -->
+  <div *ngIf="!loading && records.length > 0" class="space-y-2">
+    <div *ngFor="let r of records"
+         class="rounded-lg border border-slate-800 bg-slate-900/40 overflow-hidden">
+
+      <!-- Cabecera del registro -->
+      <button type="button"
+              class="w-full flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-slate-800/50 transition"
+              (click)="toggle(r.id)">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="shrink-0 text-[10px] border rounded px-1.5 py-0.5 font-semibold"
+                [ngClass]="actionClass(r.action)">
+            {{ actionLabel(r.action) }}
+          </span>
+          <span class="text-[11px] text-slate-400 truncate">
+            {{ r.description || r.entityType + ' · ' + r.action }}
+          </span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <span class="text-[10px] text-slate-600">{{ formatDate(r.fechaCreacion) }}</span>
+          <i class="pi text-[10px] text-slate-500"
+             [ngClass]="expandedId === r.id ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
+        </div>
+      </button>
+
+      <!-- Detalle expandible: diff de campos -->
+      <div *ngIf="expandedId === r.id" class="border-t border-slate-800 px-3 py-2">
+        <!-- Usuario -->
+        <p *ngIf="r.user" class="text-[10px] text-slate-500 mb-2">
+          Por: <span class="text-slate-300">{{ r.user.email }}</span>
+          <span *ngIf="r.ipAddress" class="ml-2 text-slate-600">· IP {{ r.ipAddress }}</span>
+        </p>
+        <p *ngIf="!r.user" class="text-[10px] text-slate-600 mb-2">Usuario no registrado</p>
+
+        <!-- Solo CREATE o DELETE: mostrar valores -->
+        <ng-container *ngIf="r.action === 'CREATE' && r.newValues">
+          <p class="text-[10px] text-slate-500 mb-1">Valores iniciales:</p>
+          <div class="space-y-0.5">
+            <div *ngFor="let entry of r.newValues | keyvalue"
+                 class="flex gap-2 text-[10px]">
+              <span class="text-slate-500 w-28 shrink-0 truncate">{{ entry.key }}</span>
+              <span class="text-emerald-400 truncate">{{ entry.value ?? '—' }}</span>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="r.action === 'DELETE' && r.oldValues">
+          <p class="text-[10px] text-slate-500 mb-1">Valores antes de eliminar:</p>
+          <div class="space-y-0.5">
+            <div *ngFor="let entry of r.oldValues | keyvalue"
+                 class="flex gap-2 text-[10px]">
+              <span class="text-slate-500 w-28 shrink-0 truncate">{{ entry.key }}</span>
+              <span class="text-red-400 truncate">{{ entry.value ?? '—' }}</span>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- UPDATE: diff campo a campo -->
+        <ng-container *ngIf="r.action === 'UPDATE'">
+          <ng-container *ngIf="camposModificados(r) as cambios">
+            <p class="text-[10px] text-slate-500 mb-1">
+              {{ cambios.length }} campo(s) modificado(s):
+            </p>
+            <div *ngIf="cambios.length === 0" class="text-[10px] text-slate-600">
+              Sin diferencias detectadas.
+            </div>
+            <div *ngFor="let c of cambios"
+                 class="mb-1.5 rounded bg-slate-800/50 px-2 py-1">
+              <p class="text-[10px] font-semibold text-slate-300 mb-0.5">{{ c.campo }}</p>
+              <div class="flex gap-2 text-[10px]">
+                <span class="text-red-400 line-through truncate max-w-[120px]">{{ c.anterior ?? '—' }}</span>
+                <i class="pi pi-arrow-right text-slate-600 shrink-0 self-center" style="font-size:9px"></i>
+                <span class="text-emerald-400 truncate max-w-[120px]">{{ c.nuevo ?? '—' }}</span>
+              </div>
+            </div>
+          </ng-container>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</div>

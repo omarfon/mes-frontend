@@ -12,7 +12,9 @@ export interface Plant {
   city: string;
   timezone: string;
   active: boolean;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 
